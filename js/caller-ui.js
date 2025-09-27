@@ -50,53 +50,172 @@ async function translateText(text, targetLang) {
   }
 }
 
+// 🔔 NOVA FUNÇÃO: Enviar notificação FCM para acordar receiver
+async function enviarNotificacaoWakeUp(receiverToken, receiverId, meuId) {
+  try {
+    console.log('🔔 Enviando notificação FCM para acordar receiver...');
+    
+    const response = await fetch('https://serve-app-e9ia.onrender.com/send-notification', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token: receiverToken,
+        title: '📞 Chamada de Tradução',
+        body: 'Alguém quer conversar com você!',
+        data: {
+          type: 'wake_up_call',
+          callerId: meuId,
+          click_action: 'FLUTTER_NOTIFICATION_CLICK',
+          url: window.location.origin + '/receiver.html?pendingCaller=' + meuId
+        }
+      })
+    });
+
+    const result = await response.json();
+    console.log('✅ Notificação enviada:', result);
+    return result.success;
+  } catch (error) {
+    console.error('❌ Erro ao enviar notificação:', error);
+    return false;
+  }
+}
+
+// 🔍 NOVA FUNÇÃO: Verificar se receiver está online
+function verificarReceiverOnline(receiverId) {
+  return new Promise((resolve) => {
+    // Timeout de 3 segundos para verificação
+    const timeout = setTimeout(() => {
+      console.log('⏰ Timeout - receiver não respondeu');
+      resolve(false);
+    }, 3000);
+
+    // Tenta enviar mensagem de teste via WebRTC
+    if (window.rtcCore && window.rtcCore.socket) {
+      window.rtcCore.socket.emit('test-connection', receiverId, (response) => {
+        clearTimeout(timeout);
+        if (response && response.online) {
+          console.log('✅ Receiver está online');
+          resolve(true);
+        } else {
+          console.log('❌ Receiver offline');
+          resolve(false);
+        }
+      });
+    } else {
+      clearTimeout(timeout);
+      console.log('❌ Socket não disponível');
+      resolve(false);
+    }
+  });
+}
+
+// ⏳ NOVA FUNÇÃO: Mostrar estado "Aguardando resposta"
+function mostrarEstadoAguardando() {
+  const statusElement = document.createElement('div');
+  statusElement.id = 'aguardando-status';
+  statusElement.innerHTML = `
+    <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 10px;
+                text-align: center; z-index: 1000;">
+      <div style="font-size: 24px; margin-bottom: 10px;">📞</div>
+      <div>Chamando...</div>
+      <div style="font-size: 12px; opacity: 0.8;">Aguardando receptor atender</div>
+      <div id="contador-tempo" style="margin-top: 10px;">30s</div>
+    </div>
+  `;
+  document.body.appendChild(statusElement);
+
+  // Contador de 30 segundos
+  let tempoRestante = 30;
+  const contador = setInterval(() => {
+    tempoRestante--;
+    document.getElementById('contador-tempo').textContent = tempoRestante + 's';
+    
+    if (tempoRestante <= 0) {
+      clearInterval(contador);
+      statusElement.innerHTML = `
+        <div style="text-align: center;">
+          <div style="font-size: 24px; margin-bottom: 10px;">❌</div>
+          <div>Receptor indisponível</div>
+          <button onclick="this.parentElement.parentElement.remove()" 
+                  style="margin-top: 10px; padding: 5px 10px; background: #ff4444; color: white; border: none; border-radius: 5px;">
+            Fechar
+          </button>
+        </div>
+      `;
+    }
+  }, 1000);
+}
+
+// 🔄 NOVA FUNÇÃO: Iniciar escuta para conexão reversa
+function iniciarEscutaConexaoReversa(receiverId, meuId) {
+  console.log('👂 Escutando por conexão reversa do receiver...');
+  
+  // Configura callback para quando receiver se conectar
+  window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
+    console.log('✅ Receiver conectou! Aceitando chamada...');
+    
+    // Remove tela de aguardando
+    const statusElement = document.getElementById('aguardando-status');
+    if (statusElement) statusElement.remove();
+    
+    // Aceita a chamada normalmente
+    window.rtcCore.handleIncomingCall(offer, window.localStream, (remoteStream) => {
+      remoteStream.getAudioTracks().forEach(track => track.enabled = false);
+      const remoteVideo = document.getElementById('remoteVideo');
+      if (remoteVideo) remoteVideo.srcObject = remoteStream;
+    });
+  };
+
+  // Timeout de 30 segundos
+  setTimeout(() => {
+    console.log('⏰ Timeout da escuta reversa');
+    window.rtcCore.onIncomingCall = null; // Remove listener
+  }, 30000);
+}
+
 window.onload = async () => {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-   let localStream = stream;
-   document.getElementById('localVideo').srcObject = localStream;
+    window.localStream = stream;
+    document.getElementById('localVideo').srcObject = window.localStream;
 
     window.rtcCore = new WebRTCCore();
 
-   // ✅ CORRETO: Box SEMPRE visível e fixo, frase só aparece com a voz
-window.rtcCore.setDataChannelCallback((mensagem) => {
-  console.log('📩 Mensagem recebida:', mensagem);
+    // ✅ CORRETO: Box SEMPRE visível e fixo, frase só aparece com a voz
+    window.rtcCore.setDataChannelCallback((mensagem) => {
+      console.log('📩 Mensagem recebida:', mensagem);
 
-  const elemento = document.getElementById('texto-recebido');
-  if (elemento) {
-    // Box SEMPRE visível, mas texto vazio inicialmente
-    elemento.textContent = ""; // ← TEXTO FICA VAZIO NO INÍCIO
-    elemento.style.opacity = '1'; // ← BOX SEMPRE VISÍVEL
-    elemento.style.transition = 'opacity 0.5s ease'; // ← Transição suave
-    
-    // ✅ PULSAÇÃO AO RECEBER MENSAGEM:
-    elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
-    elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
-    elemento.style.border = '2px solid #ff0000';
-  }
-
-  if (window.SpeechSynthesis) {
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(mensagem);
-    utterance.lang = window.targetTranslationLang || 'pt-BR';
-    utterance.rate = 0.9;
-    utterance.volume = 0.8;
-
-    utterance.onstart = () => {
+      const elemento = document.getElementById('texto-recebido');
       if (elemento) {
-        // ✅ PARA A PULSAÇÃO E VOLTA AO NORMAL QUANDO A VOZ COMEÇA:
-        elemento.style.animation = 'none';
-        elemento.style.backgroundColor = ''; // Volta ao fundo original
-        elemento.style.border = ''; // Remove a borda vermelha
-        
-        // SÓ MOSTRA O TEXTO QUANDO A VOZ COMEÇA
-        elemento.textContent = mensagem;
+        elemento.textContent = "";
+        elemento.style.opacity = '1';
+        elemento.style.transition = 'opacity 0.5s ease';
+        elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
+        elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
+        elemento.style.border = '2px solid #ff0000';
       }
-    };
 
-    window.speechSynthesis.speak(utterance);
-  }
-});
+      if (window.SpeechSynthesis) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(mensagem);
+        utterance.lang = window.targetTranslationLang || 'pt-BR';
+        utterance.rate = 0.9;
+        utterance.volume = 0.8;
+
+        utterance.onstart = () => {
+          if (elemento) {
+            elemento.style.animation = 'none';
+            elemento.style.backgroundColor = '';
+            elemento.style.border = '';
+            elemento.textContent = mensagem;
+          }
+        };
+
+        window.speechSynthesis.speak(utterance);
+      }
+    });
+
     const myId = crypto.randomUUID().substr(0, 8);
     document.getElementById('myId').textContent = myId;
 
@@ -114,15 +233,33 @@ window.rtcCore.setDataChannelCallback((mensagem) => {
       lang: receiverLang
     };
 
-    // ✅ AUTOMATIZADO - inicia chamada automaticamente quando tem receiverId
+    // ✅ AUTOMATIZADO - AGORA COM VERIFICAÇÃO BIDIRECIONAL
     if (receiverId) {
-      document.getElementById('callActionBtn').style.display = 'none'; // Esconde o botão
+      document.getElementById('callActionBtn').style.display = 'none';
       
-      // Inicia chamada automaticamente
-      if (localStream) {
+      if (window.localStream) {
         const meuIdioma = await obterIdiomaCompleto(navigator.language);
-        console.log('🚀 Chamada automática iniciada. Idioma:', meuIdioma);
-        window.rtcCore.startCall(receiverId, localStream, meuIdioma);
+        
+        // 🔄 NOVO FLUXO: Verifica se receiver está online primeiro
+        console.log('🔍 Verificando se receiver está online...');
+        const isOnline = await verificarReceiverOnline(receiverId);
+        
+        if (isOnline) {
+          // ✅ RECEIVER ONLINE: Funciona como antes
+          console.log('🚀 Chamada automática iniciada. Idioma:', meuIdioma);
+          window.rtcCore.startCall(receiverId, window.localStream, meuIdioma);
+        } else {
+          // 🔔 RECEIVER OFFLINE: Novo fluxo bidirecional
+          console.log('📞 Receiver offline. Enviando notificação...');
+          const notificacaoEnviada = await enviarNotificacaoWakeUp(receiverToken, receiverId, myId);
+          
+          if (notificacaoEnviada) {
+            mostrarEstadoAguardando();
+            iniciarEscutaConexaoReversa(receiverId, myId);
+          } else {
+            alert('❌ Não foi possível notificar o receptor. Tente novamente.');
+          }
+        }
       }
     }
 
