@@ -100,6 +100,64 @@ async function aplicarBandeiraRemota(langCode) {
     }
 }
 
+// 🔄 NOVA FUNÇÃO: Escutar por offer existente do caller
+function escutarPorOfferExistente(callerId, localStream, meuIdioma) {
+    console.log('👂 Escutando por offer existente do caller:', callerId);
+    
+    return new Promise((resolve, reject) => {
+        let offerRecebido = false;
+        
+        // ⏰ Timeout de 15 segundos
+        const timeout = setTimeout(() => {
+            if (!offerRecebido) {
+                console.log('❌ Timeout: Offer não recebido em 15 segundos');
+                reject(new Error('Timeout esperando offer do caller'));
+            }
+        }, 15000);
+        
+        // 🔔 Configura callback para quando offer chegar
+        const callbackOriginal = window.rtcCore.onIncomingCall;
+        
+        window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
+            console.log('✅ Offer recebido do caller!', offer ? '✅' : '❌');
+            
+            if (offer) {
+                offerRecebido = true;
+                clearTimeout(timeout);
+                
+                // Restaura callback original
+                window.rtcCore.onIncomingCall = callbackOriginal;
+                
+                // Aceita a chamada existente
+                window.rtcCore.handleIncomingCall(offer, localStream, (remoteStream) => {
+                    remoteStream.getAudioTracks().forEach(track => track.enabled = false);
+
+                    const overlay = document.querySelector('.info-overlay');
+                    if (overlay) overlay.classList.add('hidden');
+
+                    const remoteVideo = document.getElementById('remoteVideo');
+                    if (remoteVideo) {
+                        remoteVideo.srcObject = remoteStream;
+                    }
+
+                    window.targetTranslationLang = idiomaDoCaller || window.targetTranslationLang;
+                    console.log('🎯 Conexão estabelecida via notificação!');
+                    
+                    resolve(true);
+                });
+            }
+        };
+        
+        // 🔄 Tenta se conectar à sala do caller para receber o offer
+        setTimeout(() => {
+            if (window.rtcCore && window.rtcCore.socket) {
+                console.log('🔌 Conectando à sala do caller...');
+                // O simples fato de estar na mesma sala fará o offer ser recebido
+            }
+        }, 1000);
+    });
+}
+
 window.onload = async () => {
     try {
         console.log('🚀 Iniciando receiver-ui.js...');
@@ -259,33 +317,35 @@ window.onload = async () => {
             });
         };
 
-        // ✅ 7. Se foi aberto via notificação, inicia chamada reversa (NOVO)
+        // ✅ 7. 🔥 CORREÇÃO CRÍTICA: Se foi aberto via notificação, ESCUTA por offer existente
         if (pendingCaller) {
-            console.log('📞 Iniciando chamada reversa para caller:', pendingCaller);
+            console.log('📞 Modo notificação: Escutando por offer do caller...');
             
-            const iniciarChamadaReversa = async () => {
+            const conectarViaNotificacao = async () => {
                 try {
-                    const meuIdioma = await obterIdiomaCompleto(lang);
+                    mostrarEstadoConectando();
                     
-                    // Delay para garantir WebRTC 100% pronto
-                    setTimeout(() => {
-                        if (window.rtcCore && localStream) {
-                            window.rtcCore.startCall(pendingCaller, localStream, meuIdioma);
-                            mostrarEstadoConectando();
-                            console.log('✅ Chamada reversa iniciada com sucesso');
-                        } else {
-                            console.log('❌ WebRTC não pronto, tentando novamente...');
-                            setTimeout(iniciarChamadaReversa, 1000);
-                        }
-                    }, 2000);
+                    // 🔄 AGORA CORRETO: Escuta por offer existente do caller
+                    await escutarPorOfferExistente(pendingCaller, localStream, lang);
+                    
+                    console.log('✅ Conexão estabelecida via notificação!');
                     
                 } catch (error) {
-                    console.error('❌ Erro na chamada reversa:', error);
+                    console.error('❌ Falha na conexão via notificação:', error);
+                    
+                    // ⚠️ Fallback: Tenta conexão normal se escuta falhar
+                    console.log('🔄 Tentando fallback para conexão normal...');
+                    try {
+                        const meuIdioma = await obterIdiomaCompleto(lang);
+                        window.rtcCore.startCall(pendingCaller, localStream, meuIdioma);
+                    } catch (fallbackError) {
+                        console.error('❌ Fallback também falhou:', fallbackError);
+                    }
                 }
             };
 
-            // Inicia após breve delay
-            setTimeout(iniciarChamadaReversa, 1500);
+            // Inicia após breve delay para WebRTC inicializar
+            setTimeout(conectarViaNotificacao, 2000);
         }
 
         // ✅ 8. TRADUÇÃO DOS TEXTOS FIXOS (RESTAURADO)
