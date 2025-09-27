@@ -106,23 +106,30 @@ body {
   z-index: 40;
 }
 
+/* ESTILO ORIGINAL DO BOTÃO (quando inativo) */
 .record-btn {
-  position: absolute;
-  top: 46%;
-  left: 78%;
-  width: 65px;
-  height: 65px;
-  border-radius: 50%;
-  background: #219ebc;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-  cursor: pointer;
-  border: none;
-  color: white;
-  transition: transform 0.2s, background-color 0.3s;
-  z-index: 30;
+    position: absolute;
+    top: 46%;
+    left: 78%;
+    width: 65px;
+    height: 65px;
+    border-radius: 50%;
+    background: #ff6b6b; /* MUDADO: vermelho quando inativo */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    cursor: pointer;
+    border: none;
+    color: white;
+    transition: transform 0.2s, background-color 0.3s;
+    z-index: 30;
+}
+
+/* ESTILO QUANDO GRAVANDO (classe .recording) */
+.record-btn.recording {
+    background: #4CAF50; /* MUDADO: verde quando gravando */
+    animation: pulse 1.5s infinite;
 }
 
 .record-btn:active {
@@ -314,11 +321,6 @@ receiver.html #texto-recebido {
 .info-overlay.hidden {
   opacity: 0;
   pointer-events: none;
-}
-
-.record-btn.recording {
-  background: #ff6b6b;
-  animation: pulse 1.5s infinite;
 }
 
 /* Dropdown de idiomas */
