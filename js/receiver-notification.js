@@ -1,4 +1,4 @@
-// js/receiver-notification.js - MODO NOTIFICAÇÃO APENAS (CORRIGIDO)
+// js/receiver-notification.js - MODO NOTIFICAÇÃO (CÓDIGO LIMPO)
 import { WebRTCCore } from '../core/webrtc-core.js';
 
 // 🎯 FUNÇÃO PARA OBTER IDIOMA COMPLETO
@@ -39,37 +39,26 @@ async function translateText(text, targetLang) {
   }
 }
 
-// 🔥 CONFIGURA TELA PARA MODO CHAMADA
+// 🔥 CONFIGURA TELA PARA MODO CHAMADA (SIMPLIFICADO)
 function configurarTelaChamada() {
     console.log('🎬 Configurando tela para modo chamada...');
     
-    // ✅ ESCONDE TUDO DO QR CODE
+    // ✅ ESCONDE ELEMENTOS DO QR CODE
     const qrModal = document.querySelector('.qr-modal');
     const qrContainer = document.getElementById('qrcode');
-    const scanBtn = document.getElementById('scanBtn');
-    
     if (qrModal) qrModal.style.display = 'none';
     if (qrContainer) qrContainer.style.display = 'none';
-    if (scanBtn) scanBtn.style.display = 'none';
     
-    // ✅ MOSTRA TUDO DA CHAMADA
+    // ✅ MOSTRA ELEMENTOS DA CHAMADA
     const videoContainer = document.querySelector('.video-container');
-    const localVideo = document.getElementById('localVideo');
-    const remoteVideo = document.getElementById('remoteVideo');
     const overlay = document.querySelector('.info-overlay');
-    
     if (videoContainer) videoContainer.style.display = 'flex';
-    if (localVideo) localVideo.style.display = 'block';
-    if (remoteVideo) remoteVideo.style.display = 'block';
     if (overlay) {
         overlay.classList.remove('hidden');
         overlay.style.display = 'block';
     }
     
-    // ✅ MUDA TÍTULO
-    document.title = 'Chamada Recebida - Tradutor';
-    
-    // ✅ ADICIONA STATUS
+    // ✅ STATUS DE CONEXÃO
     const statusElement = document.createElement('div');
     statusElement.id = 'notification-status';
     statusElement.innerHTML = `
@@ -116,11 +105,10 @@ async function aplicarBandeiraRemota(langCode) {
     }
 }
 
-// 🔥🔥🔥 FUNÇÃO PRINCIPAL - MODO NOTIFICAÇÃO (CORRIGIDA)
 window.onload = async () => {
     try {
-        console.log('🚀🔥 INICIANDO MODO NOTIFICAÇÃO - receiver-notification.js');
-        
+        console.log('🚀 INICIANDO MODO NOTIFICAÇÃO - receiver-notification.js');
+
         // ✅ 1. CONFIGURA TELA IMEDIATAMENTE
         configurarTelaChamada();
         
@@ -130,8 +118,6 @@ window.onload = async () => {
             audio: false
         });
 
-        console.log('📷 Câmera acessada com sucesso');
-
         let localStream = stream;
         const localVideo = document.getElementById('localVideo');
         if (localVideo) localVideo.srcObject = localStream;
@@ -139,24 +125,21 @@ window.onload = async () => {
         // ✅ 3. INICIALIZA WEBRTC
         window.rtcCore = new WebRTCCore();
 
+        // ✅ 4. OBTÉM PARÂMETROS
         const params = new URLSearchParams(window.location.search);
         const pendingCaller = params.get('pendingCaller');
         const callerLang = params.get('callerLang');
         const lang = params.get('lang') || navigator.language || 'pt-BR';
         const token = params.get('token') || '';
 
-        console.log('🔔 Parâmetros Notificação:', { 
-            pendingCaller: pendingCaller || 'Nenhum',
-            callerLang: callerLang || 'Não informado',
-            lang: lang
-        });
+        console.log('🔔 Modo Notificação - Caller:', pendingCaller);
 
         if (!pendingCaller) {
             console.error('❌ ERRO: Modo notificação sem pendingCaller!');
             return;
         }
 
-        // ✅✅✅ 4. CORREÇÃO CRÍTICA: USA ID FIXO (IGUAL AO ORIGINAL)
+        // ✅ 5. GERA ID FIXO (MESMA LÓGICA DO ORIGINAL)
         const url = window.location.href;
         const fixedId = url.split('?')[1] || crypto.randomUUID().substr(0, 8);
 
@@ -169,14 +152,13 @@ window.onload = async () => {
         }
 
         const myId = fakeRandomUUID(fixedId).substr(0, 8);
-        console.log('🎯 ID FIXO DO RECEIVER:', myId);
+        window.targetTranslationLang = lang;
 
-        // ✅ 5. INICIALIZA WEBRTC COM ID FIXO
+        // ✅ 6. INICIALIZA WEBRTC
         window.rtcCore.initialize(myId);
         window.rtcCore.setupSocketHandlers();
-        console.log('🔌 WebRTC inicializado com ID fixo');
 
-        // ✅ 6. CONFIGURA CALLBACKS (MESMO DO ORIGINAL)
+        // ✅ 7. CONFIGURA CALLBACKS (MESMO DO ORIGINAL)
         window.rtcCore.setDataChannelCallback((mensagem) => {
             console.log('📩 Mensagem recebida:', mensagem);
 
@@ -209,11 +191,12 @@ window.onload = async () => {
             }
         });
 
-        // ✅ 7. CONFIGURA CALLBACK PARA CHAMADA RECEBIDA
+        // ✅ 8. CONFIGURA CHAMADA RECEBIDA
         window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
-            console.log('🎯 Offer recebido do caller:', idiomaDoCaller);
-
             if (!localStream) return;
+
+            console.log('🎯 Caller fala:', idiomaDoCaller);
+            console.log('🎯 Eu (receiver) entendo:', lang);
 
             window.sourceTranslationLang = idiomaDoCaller;
             window.targetTranslationLang = lang;
@@ -233,22 +216,19 @@ window.onload = async () => {
                 const statusElement = document.getElementById('notification-status');
                 if (statusElement) statusElement.remove();
 
-                // ✅ APLICA BANDEIRA
                 if (idiomaDoCaller) {
                     aplicarBandeiraRemota(idiomaDoCaller);
                 }
 
-                console.log('✅✅✅ CONEXÃO ESTABELECIDA VIA NOTIFICAÇÃO!');
+                console.log('✅ CONEXÃO ESTABELECIDA VIA NOTIFICAÇÃO!');
             });
         };
 
-        // ✅ 8. APLICA BANDEIRAS
+        // ✅ 9. APLICA BANDEIRAS
         aplicarBandeiraLocal(lang);
-        if (callerLang) {
-            aplicarBandeiraRemota(callerLang);
-        }
+        if (callerLang) aplicarBandeiraRemota(callerLang);
 
-        // ✅ 9. TRADUZ TEXTOS FIXOS
+        // ✅ 10. TRADUZ TEXTOS FIXOS
         const frasesParaTraduzir = {
             "translator-label": "Real-time translation."
         };
@@ -261,59 +241,20 @@ window.onload = async () => {
             }
         }
 
-        // ✅ 10. 🔥🔥🔥 CONEXÃO DIRETA - ESCUTA POR OFFER EXISTENTE
-        console.log('📞🔔 INICIANDO CONEXÃO DIRETA VIA NOTIFICAÇÃO...');
-        
-        let offerRecebido = false;
-        
-        // ⏰ TIMEOUT DE 20 SEGUNDOS
-        const timeout = setTimeout(() => {
-            if (!offerRecebido) {
-                console.log('❌ Timeout: Tentando fallback...');
-                
-                // FALLBACK: Tenta iniciar chamada
-                const meuIdioma = await obterIdiomaCompleto(lang);
-                window.rtcCore.startCall(pendingCaller, localStream, meuIdioma);
-            }
-        }, 20000);
-        
-        // ✅ CONFIGURA ESCUTA
-        const callbackOriginal = window.rtcCore.onIncomingCall;
-        
-        window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
-            console.log('✅✅✅ OFFER RECEBIDO DO CALLER!');
-            
-            if (offer) {
-                offerRecebido = true;
-                clearTimeout(timeout);
-                window.rtcCore.onIncomingCall = callbackOriginal;
-                
-                window.rtcCore.handleIncomingCall(offer, localStream, (remoteStream) => {
-                    remoteStream.getAudioTracks().forEach(track => track.enabled = false);
-
-                    const overlay = document.querySelector('.info-overlay');
-                    if (overlay) overlay.classList.add('hidden');
-
-                    const remoteVideo = document.getElementById('remoteVideo');
-                    if (remoteVideo) remoteVideo.srcObject = remoteStream;
-
-                    // ✅ REMOVE STATUS
-                    const statusElement = document.getElementById('notification-status');
-                    if (statusElement) statusElement.remove();
-
-                    console.log('🎉🎉🎉 CONEXÃO BIDIRECIONAL ESTABELECIDA!');
-                });
-            }
-        };
-
-        // ✅ INICIALIZA TRADUTOR
+        // ✅ 11. INICIALIZA TRADUTOR
         setTimeout(() => {
             if (typeof initializeTranslator === 'function') {
                 initializeTranslator();
             }
         }, 1000);
 
-        console.log('✅✅✅ receiver-notification.js CARREGADO COM SUCESSO');
+        // ✅ 12. 🔥 CONEXÃO AUTOMÁTICA VIA NOTIFICAÇÃO
+        console.log('📞 AGUARDANDO CONEXÃO DO CALLER...');
+        
+        // O caller já deve ter enviado o offer, então só precisamos esperar
+        // A lógica do onIncomingCall acima vai capturar automaticamente
+
+        console.log('✅ receiver-notification.js PRONTO');
 
     } catch (error) {
         console.error("❌ Erro no modo notificação:", error);
@@ -322,7 +263,7 @@ window.onload = async () => {
         if (statusElement) {
             statusElement.innerHTML = `
                 <div style="background: #cc0000; color: white; padding: 15px; text-align: center;">
-                    ❌ Erro na conexão. Tente novamente.
+                    ❌ Erro na conexão
                 </div>
             `;
         }
