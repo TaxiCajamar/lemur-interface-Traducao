@@ -39,6 +39,52 @@ async function translateText(text, targetLang) {
   }
 }
 
+// 🔄 NOVA FUNÇÃO: Iniciar chamada reversa para o caller
+async function iniciarChamadaReversa(callerId, localStream, meuIdioma) {
+  console.log('📞 Iniciando chamada reversa para caller:', callerId);
+  
+  if (window.rtcCore && localStream) {
+    try {
+      // Usa a função existente startCall para iniciar a chamada
+      window.rtcCore.startCall(callerId, localStream, meuIdioma);
+      
+      // Mostra estado de "Conectando..."
+      mostrarEstadoConectando();
+      
+    } catch (error) {
+      console.error('❌ Erro na chamada reversa:', error);
+    }
+  }
+}
+
+// ⏳ NOVA FUNÇÃO: Mostrar estado "Conectando..."
+function mostrarEstadoConectando() {
+  // Remove estado anterior se existir
+  const estadoAnterior = document.getElementById('estado-conexao');
+  if (estadoAnterior) estadoAnterior.remove();
+  
+  const statusElement = document.createElement('div');
+  statusElement.id = 'estado-conexao';
+  statusElement.innerHTML = `
+    <div style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); 
+                background: rgba(0,100,0,0.8); color: white; padding: 10px 20px; 
+                border-radius: 20px; text-align: center; z-index: 1000; font-size: 14px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span>🔗</span>
+        <span>Conectando...</span>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(statusElement);
+  
+  // Remove após 5 segundos
+  setTimeout(() => {
+    if (statusElement.parentNode) {
+      statusElement.remove();
+    }
+  }, 5000);
+}
+
 window.onload = async () => {
     try {
         // ✅ Solicita acesso à câmera (vídeo sem áudio)
@@ -75,6 +121,7 @@ window.onload = async () => {
         const params = new URLSearchParams(window.location.search);
         const token = params.get('token') || '';
         const lang = params.get('lang') || navigator.language || 'pt-BR';
+        const pendingCaller = params.get('pendingCaller'); // 🔄 NOVO: Verifica se tem caller aguardando
 
         window.targetTranslationLang = lang;
 
@@ -84,45 +131,51 @@ window.onload = async () => {
         window.rtcCore.initialize(myId);
         window.rtcCore.setupSocketHandlers();
 
-       // ✅ CORRETO: Box SEMPRE visível e fixo, frase só aparece com a voz
-window.rtcCore.setDataChannelCallback((mensagem) => {
-  console.log('📩 Mensagem recebida:', mensagem);
+        // ✅ CORRETO: Box SEMPRE visível e fixo, frase só aparece com a voz
+        window.rtcCore.setDataChannelCallback((mensagem) => {
+          console.log('📩 Mensagem recebida:', mensagem);
 
-  const elemento = document.getElementById('texto-recebido');
-  if (elemento) {
-    // Box SEMPRE visível, mas texto vazio inicialmente
-    elemento.textContent = ""; // ← TEXTO FICA VAZIO NO INÍCIO
-    elemento.style.opacity = '1'; // ← BOX SEMPRE VISÍVEL
-    elemento.style.transition = 'opacity 0.5s ease'; // ← Transição suave
-    
-    // ✅ PULSAÇÃO AO RECEBER MENSAGEM:
-    elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
-    elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
-    elemento.style.border = '2px solid #ff0000';
-  }
+          const elemento = document.getElementById('texto-recebido');
+          if (elemento) {
+            elemento.textContent = "";
+            elemento.style.opacity = '1';
+            elemento.style.transition = 'opacity 0.5s ease';
+            elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
+            elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
+            elemento.style.border = '2px solid #ff0000';
+          }
 
-  if (window.SpeechSynthesis) {
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(mensagem);
-    utterance.lang = window.targetTranslationLang || 'pt-BR';
-    utterance.rate = 0.9;
-    utterance.volume = 0.8;
+          if (window.SpeechSynthesis) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(mensagem);
+            utterance.lang = window.targetTranslationLang || 'pt-BR';
+            utterance.rate = 0.9;
+            utterance.volume = 0.8;
 
-    utterance.onstart = () => {
-      if (elemento) {
-        // ✅ PARA A PULSAÇÃO E VOLTA AO NORMAL QUANDO A VOZ COMEÇA:
-        elemento.style.animation = 'none';
-        elemento.style.backgroundColor = ''; // Volta ao fundo original
-        elemento.style.border = ''; // Remove a borda vermelha
-        
-        // SÓ MOSTRA O TEXTO QUANDO A VOZ COMEÇA
-        elemento.textContent = mensagem;
-      }
-    };
+            utterance.onstart = () => {
+              if (elemento) {
+                elemento.style.animation = 'none';
+                elemento.style.backgroundColor = '';
+                elemento.style.border = '';
+                elemento.textContent = mensagem;
+              }
+            };
 
-    window.speechSynthesis.speak(utterance);
-  }
-});
+            window.speechSynthesis.speak(utterance);
+          }
+        });
+
+        // 🔄 NOVO: Se foi aberto via notificação, inicia chamada reversa
+        if (pendingCaller) {
+          console.log('🔔 Receiver acordado por notificação. Caller aguardando:', pendingCaller);
+          
+          // Espera um pouco para garantir que tudo está carregado
+          setTimeout(async () => {
+            const meuIdioma = await obterIdiomaCompleto(lang);
+            await iniciarChamadaReversa(pendingCaller, localStream, meuIdioma);
+          }, 1000);
+        }
+
         window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
             if (!localStream) return;
 
