@@ -96,8 +96,9 @@ window.onload = async () => {
                 elemento.style.transition = 'opacity 0.5s ease'; // ← Transição suave
                 
                 // ✅ PULSAÇÃO IDÊNTICA AO CALLER:
-                elemento.style.animation = 'pulsar-flutuar 2s infinite';
-                elemento.style.backgroundColor = 'rgba(255, 71, 87, 0.3)'; // Vermelho vibrante
+                elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
+elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
+elemento.style.border = '2px solid #ff0000';
             }
 
             if (window.speechSynthesis) {
