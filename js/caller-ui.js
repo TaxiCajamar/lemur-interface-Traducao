@@ -50,35 +50,21 @@ async function translateText(text, targetLang) {
   }
 }
 
-// 🔔 FUNÇÃO: Enviar notificação FCM CORRIGIDA (VERSÃO SEGURA)
+// 🔔 FUNÇÃO: Enviar notificação FCM - TESTE DIRETO
 async function enviarNotificacaoWakeUp(receiverToken, receiverId, meuId, meuIdioma, targetLang) {
   try {
-    console.log('🔔 Enviando notificação FCM para acordar receiver...');
+    console.log('🎯 TESTE DIRETO: Enviando notificação...');
     
-    // ✅✅✅ CORREÇÃO FORÇADA: Garantir que usa receiver-notification.html
-    const baseUrl = window.location.origin;
-    
-    // ⚠️ VERIFICAÇÃO EXTRA: Garantir que não é receiver.html
-    let notificationUrl = baseUrl + '/receiver-notification.html?pendingCaller=' + meuId + 
-                         '&callerLang=' + meuIdioma + 
-                         '&targetLang=' + targetLang +
-                         '&receiverId=' + receiverId;
-    
-    // ⚠️ VERIFICAÇÃO DE SEGURANÇA: Se por acaso tiver receiver.html, substitui
-    if (notificationUrl.includes('receiver.html')) {
-      console.error('❌ ERRO CRÍTICO: URL contém receiver.html! Corrigindo...');
-      notificationUrl = notificationUrl.replace('receiver.html', 'receiver-notification.html');
-    }
-    
-    console.log('🔗 URL FINAL DA NOTIFICAÇÃO:', notificationUrl);
+    // ✅ URL FIXA PARA O NOVO HTML
+    const notificationUrl = 'https://lemur-interface-traducao.pages.dev/receiver-notification.html';
     
     const response = await fetch('https://serve-app-e9ia.onrender.com/send-notification', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         token: receiverToken,
-        title: '📞 Chamada de Tradução',
-        body: 'Alguém quer conversar com você!',
+        title: '📞 TESTE - Novo HTML',
+        body: 'Abrindo página nova diretamente',
         data: {
           type: 'wake_up_call',
           callerId: meuId,
@@ -99,7 +85,6 @@ async function enviarNotificacaoWakeUp(receiverToken, receiverId, meuId, meuIdio
     return false;
   }
 }
-
 // ⏳ FUNÇÃO: Mostrar estado "Aguardando resposta"
 function mostrarEstadoAguardando() {
   const statusElement = document.createElement('div');
