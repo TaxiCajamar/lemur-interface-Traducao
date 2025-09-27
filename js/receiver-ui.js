@@ -75,56 +75,54 @@ window.onload = async () => {
         const params = new URLSearchParams(window.location.search);
         const token = params.get('token') || '';
         const lang = params.get('lang') || navigator.language || 'pt-BR';
-        const pendingCaller = params.get('pendingCaller'); // ✅ NOVO: Verifica notificação
 
         window.targetTranslationLang = lang;
 
-        // ✅✅✅ CORREÇÃO CRÍTICA: SÓ GERA QR CODE SE NÃO FOR NOTIFICAÇÃO
-        if (!pendingCaller) {
-            const callerUrl = `${window.location.origin}/caller.html?targetId=${myId}&token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
-            QRCodeGenerator.generate("qrcode", callerUrl);
-            console.log('📱 Modo normal: QR Code gerado');
-        } else {
-            console.log('🔔 Modo notificação: Pulando geração de QR Code');
-        }
+        const callerUrl = `${window.location.origin}/caller.html?targetId=${myId}&token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
+        QRCodeGenerator.generate("qrcode", callerUrl);
 
         window.rtcCore.initialize(myId);
         window.rtcCore.setupSocketHandlers();
 
-        // ✅ CORRETO: Box SEMPRE visível e fixo, frase só aparece com a voz
-        window.rtcCore.setDataChannelCallback((mensagem) => {
-            console.log('📩 Mensagem recebida:', mensagem);
+       // ✅ CORRETO: Box SEMPRE visível e fixo, frase só aparece com a voz
+window.rtcCore.setDataChannelCallback((mensagem) => {
+  console.log('📩 Mensagem recebida:', mensagem);
 
-            const elemento = document.getElementById('texto-recebido');
-            if (elemento) {
-                elemento.textContent = "";
-                elemento.style.opacity = '1';
-                elemento.style.transition = 'opacity 0.5s ease';
-                elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
-                elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
-                elemento.style.border = '2px solid #ff0000';
-            }
+  const elemento = document.getElementById('texto-recebido');
+  if (elemento) {
+    // Box SEMPRE visível, mas texto vazio inicialmente
+    elemento.textContent = ""; // ← TEXTO FICA VAZIO NO INÍCIO
+    elemento.style.opacity = '1'; // ← BOX SEMPRE VISÍVEL
+    elemento.style.transition = 'opacity 0.5s ease'; // ← Transição suave
+    
+    // ✅ PULSAÇÃO AO RECEBER MENSAGEM:
+    elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
+    elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
+    elemento.style.border = '2px solid #ff0000';
+  }
 
-            if (window.SpeechSynthesis) {
-                window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(mensagem);
-                utterance.lang = window.targetTranslationLang || 'pt-BR';
-                utterance.rate = 0.9;
-                utterance.volume = 0.8;
+  if (window.SpeechSynthesis) {
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(mensagem);
+    utterance.lang = window.targetTranslationLang || 'pt-BR';
+    utterance.rate = 0.9;
+    utterance.volume = 0.8;
 
-                utterance.onstart = () => {
-                    if (elemento) {
-                        elemento.style.animation = 'none';
-                        elemento.style.backgroundColor = '';
-                        elemento.style.border = '';
-                        elemento.textContent = mensagem;
-                    }
-                };
+    utterance.onstart = () => {
+      if (elemento) {
+        // ✅ PARA A PULSAÇÃO E VOLTA AO NORMAL QUANDO A VOZ COMEÇA:
+        elemento.style.animation = 'none';
+        elemento.style.backgroundColor = ''; // Volta ao fundo original
+        elemento.style.border = ''; // Remove a borda vermelha
+        
+        // SÓ MOSTRA O TEXTO QUANDO A VOZ COMEÇA
+        elemento.textContent = mensagem;
+      }
+    };
 
-                window.speechSynthesis.speak(utterance);
-            }
-        });
-
+    window.speechSynthesis.speak(utterance);
+  }
+});
         window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
             if (!localStream) return;
 
