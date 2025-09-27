@@ -50,7 +50,7 @@ async function translateText(text, targetLang) {
   }
 }
 
-// 🔔 FUNÇÃO: Enviar notificação FCM para acordar receiver
+// 🔔 FUNÇÃO: Enviar notificação FCM para acordar receiver (SÓ PARA OFFLINE)
 async function enviarNotificacaoWakeUp(receiverToken, receiverId, meuId, meuIdioma, targetLang) {
   try {
     console.log('🔔 Enviando notificação FCM para acordar receiver...');
@@ -82,47 +82,7 @@ async function enviarNotificacaoWakeUp(receiverToken, receiverId, meuId, meuIdio
   }
 }
 
-// 🔍 VERIFICAÇÃO SIMPLIFICADA E CONFIÁVEL
-function verificarReceiverOnline(receiverId) {
-  return new Promise((resolve) => {
-    console.log('🔍 Iniciando verificação de online para:', receiverId);
-    
-    // Timeout de 3 segundos para a verificação
-    const timeout = setTimeout(() => {
-      console.log('⏰ Timeout - receiver não respondeu');
-      resolve(false);
-    }, 3000);
-
-    // ✅ TENTATIVA PRINCIPAL: Verifica via socket
-    if (window.rtcCore && window.rtcCore.socket) {
-      // Primeiro tenta o método novo
-      window.rtcCore.socket.emit('ping-user', receiverId, (response) => {
-        clearTimeout(timeout);
-        if (response && response.online) {
-          console.log('✅ Receiver está ONLINE (método ping)');
-          resolve(true);
-        } else {
-          // Tenta o método antigo para compatibilidade
-          window.rtcCore.socket.emit('test-connection', receiverId, (response2) => {
-            if (response2 && response2.online) {
-              console.log('✅ Receiver está ONLINE (método test)');
-              resolve(true);
-            } else {
-              console.log('❌ Receiver OFFLINE');
-              resolve(false);
-            }
-          });
-        }
-      });
-    } else {
-      clearTimeout(timeout);
-      console.log('❌ Socket não disponível, assumindo OFFLINE');
-      resolve(false);
-    }
-  });
-}
-
-// ⏳ FUNÇÃO: Mostrar estado "Aguardando resposta"
+// ⏳ FUNÇÃO: Mostrar estado "Aguardando resposta" (SÓ PARA OFFLINE)
 function mostrarEstadoAguardando() {
   const statusElement = document.createElement('div');
   statusElement.id = 'aguardando-status';
@@ -131,14 +91,13 @@ function mostrarEstadoAguardando() {
                 background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 10px;
                 text-align: center; z-index: 1000;">
       <div style="font-size: 24px; margin-bottom: 10px;">📞</div>
-      <div>Chamando...</div>
-      <div style="font-size: 12px; opacity: 0.8;">Aguardando receptor atender</div>
+      <div>Chamando receptor...</div>
+      <div style="font-size: 12px; opacity: 0.8;">Aguardando atender</div>
       <div id="contador-tempo" style="margin-top: 10px;">30s</div>
     </div>
   `;
   document.body.appendChild(statusElement);
 
-  // Contador de 30 segundos
   let tempoRestante = 30;
   const contador = setInterval(() => {
     tempoRestante--;
@@ -160,13 +119,13 @@ function mostrarEstadoAguardando() {
   }, 1000);
 }
 
-// 🔄 FUNÇÃO: Iniciar escuta para conexão reversa
+// 🔄 FUNÇÃO: Iniciar escuta para conexão reversa (SÓ PARA OFFLINE)
 function iniciarEscutaConexaoReversa(receiverId, meuId) {
   console.log('👂 Escutando por conexão reversa do receiver...');
   
   // Configura callback para quando receiver se conectar
   window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
-    console.log('✅ Receiver conectou! Aceitando chamada...');
+    console.log('✅ Receiver conectou via notificação! Aceitando chamada...');
     
     // Remove tela de aguardando
     const statusElement = document.getElementById('aguardando-status');
@@ -177,28 +136,13 @@ function iniciarEscutaConexaoReversa(receiverId, meuId) {
       remoteStream.getAudioTracks().forEach(track => track.enabled = false);
       const remoteVideo = document.getElementById('remoteVideo');
       if (remoteVideo) remoteVideo.srcObject = remoteStream;
-      
-      // ✅ Atualiza interface para mostrar conexão estabelecida
-      console.log('🎉 Conexão bidirecional estabelecida!');
+      console.log('🎉 Conexão bidirecional estabelecida via notificação!');
     });
   };
 
   // Timeout de 30 segundos
   setTimeout(() => {
     console.log('⏰ Timeout da escuta reversa');
-    const statusElement = document.getElementById('aguardando-status');
-    if (statusElement) {
-      statusElement.innerHTML = `
-        <div style="text-align: center;">
-          <div style="font-size: 24px; margin-bottom: 10px;">❌</div>
-          <div>Tempo esgotado</div>
-          <button onclick="this.parentElement.parentElement.remove()" 
-                  style="margin-top: 10px; padding: 5px 10px; background: #ff4444; color: white; border: none; border-radius: 5px;">
-            Fechar
-          </button>
-        </div>
-      `;
-    }
     window.rtcCore.onIncomingCall = null;
   }, 30000);
 }
@@ -264,47 +208,61 @@ window.onload = async () => {
       lang: receiverLang
     };
 
-    // ✅ AUTOMATIZADO - AGORA COM VERIFICAÇÃO BIDIRECIONAL PRÁTICA
+    // ✅✅✅ CORREÇÃO CRÍTICA: RESTAURAR COMPORTAMENTO ORIGINAL ✅✅✅
     if (receiverId) {
       document.getElementById('callActionBtn').style.display = 'none';
       
+      // ✅ PRIMEIRO: TENTA CONEXÃO NORMAL (COMO SEMPRE FUNCIONOU)
       if (window.localStream) {
         const meuIdioma = await obterIdiomaCompleto(navigator.language);
+        console.log('🚀 Tentando conexão normal com receiver...');
         
-        // 🔄 NOVO FLUXO PRÁTICO: Verifica se receiver está online
-        console.log('🔍 Verificando se receiver está online...');
-        const isOnline = await verificarReceiverOnline(receiverId);
+        // ⭐⭐ MUDANÇA PRINCIPAL: Tenta conexão direta primeiro
+        window.rtcCore.startCall(receiverId, window.localStream, meuIdioma);
         
-        if (isOnline) {
-          // ✅ RECEIVER ONLINE: Funciona como antes
-          console.log('🚀 Chamada automática iniciada. Idioma:', meuIdioma);
-          window.rtcCore.startCall(receiverId, window.localStream, meuIdioma);
-        } else {
-          // 🔔 RECEIVER OFFLINE: Novo fluxo bidirecional
-          console.log('📞 Receiver offline. Enviando notificação...');
-          const notificacaoEnviada = await enviarNotificacaoWakeUp(
-            receiverToken, 
-            receiverId, 
-            myId, 
-            meuIdioma, 
-            receiverLang
-          );
-          
-          if (notificacaoEnviada) {
-            mostrarEstadoAguardando();
-            iniciarEscutaConexaoReversa(receiverId, myId);
-          } else {
-            alert('❌ Não foi possível notificar o receptor. Tente novamente.');
+        // 🔄 NOVO: Monitora se a conexão falha (para então tentar notificação)
+        let conexaoEstabelecida = false;
+        
+        // Monitora por 5 segundos se a conexão foi estabelecida
+        const timeoutConexao = setTimeout(() => {
+          if (!conexaoEstabelecida) {
+            console.log('❌ Conexão normal falhou. Tentando notificação...');
+            tentarFluxoNotificacao(receiverToken, receiverId, myId, meuIdioma, receiverLang);
           }
-        }
+        }, 5000);
+        
+        // Se conectar com sucesso, cancela o timeout
+        window.rtcCore.setRemoteStreamCallback(stream => {
+          conexaoEstabelecida = true;
+          clearTimeout(timeoutConexao);
+          console.log('✅ Conexão normal estabelecida com sucesso!');
+          
+          stream.getAudioTracks().forEach(track => track.enabled = false);
+          const remoteVideo = document.getElementById('remoteVideo');
+          remoteVideo.srcObject = stream;
+        });
       }
     }
 
-    window.rtcCore.setRemoteStreamCallback(stream => {
-      stream.getAudioTracks().forEach(track => track.enabled = false);
-      const remoteVideo = document.getElementById('remoteVideo');
-      remoteVideo.srcObject = stream;
-    });
+    // 🔄 FUNÇÃO: Tentar fluxo de notificação apenas se conexão normal falhar
+    async function tentarFluxoNotificacao(receiverToken, receiverId, meuId, meuIdioma, targetLang) {
+      console.log('📞 Iniciando fluxo de notificação...');
+      
+      const notificacaoEnviada = await enviarNotificacaoWakeUp(
+        receiverToken, 
+        receiverId, 
+        meuId, 
+        meuIdioma, 
+        targetLang
+      );
+      
+      if (notificacaoEnviada) {
+        mostrarEstadoAguardando();
+        iniciarEscutaConexaoReversa(receiverId, meuId);
+      } else {
+        alert('❌ Não foi possível notificar o receptor. Tente novamente.');
+      }
+    }
 
     const navegadorLang = await obterIdiomaCompleto(navigator.language);
 
