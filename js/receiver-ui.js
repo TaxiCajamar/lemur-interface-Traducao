@@ -97,7 +97,7 @@ window.onload = async () => {
                 
                 // ✅ PULSAÇÃO IDÊNTICA AO CALLER:
                 elemento.style.animation = 'pulsar-flutuar 2s infinite';
-                elemento.style.backgroundColor = 'rgba(76, 175, 80, 0.2)'; // Verde bem fraquinho
+                elemento.style.backgroundColor = 'rgba(255, 71, 87, 0.3)'; // Vermelho vibrante
             }
 
             if (window.speechSynthesis) {
