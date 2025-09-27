@@ -50,8 +50,8 @@ async function translateText(text, targetLang) {
   }
 }
 
-// 🔔 NOVA FUNÇÃO: Enviar notificação FCM para acordar receiver
-async function enviarNotificacaoWakeUp(receiverToken, receiverId, meuId) {
+// 🔔 FUNÇÃO: Enviar notificação FCM para acordar receiver
+async function enviarNotificacaoWakeUp(receiverToken, receiverId, meuId, meuIdioma, targetLang) {
   try {
     console.log('🔔 Enviando notificação FCM para acordar receiver...');
     
@@ -65,8 +65,10 @@ async function enviarNotificacaoWakeUp(receiverToken, receiverId, meuId) {
         data: {
           type: 'wake_up_call',
           callerId: meuId,
+          callerLang: meuIdioma,
+          targetLang: targetLang,
           click_action: 'FLUTTER_NOTIFICATION_CLICK',
-          url: window.location.origin + '/receiver.html?pendingCaller=' + meuId
+          url: window.location.origin + '/receiver.html?pendingCaller=' + meuId + '&callerLang=' + meuIdioma + '&targetLang=' + targetLang
         }
       })
     });
@@ -80,36 +82,47 @@ async function enviarNotificacaoWakeUp(receiverToken, receiverId, meuId) {
   }
 }
 
-// 🔍 NOVA FUNÇÃO: Verificar se receiver está online
+// 🔍 VERIFICAÇÃO SIMPLIFICADA E CONFIÁVEL
 function verificarReceiverOnline(receiverId) {
   return new Promise((resolve) => {
-    // Timeout de 3 segundos para verificação
+    console.log('🔍 Iniciando verificação de online para:', receiverId);
+    
+    // Timeout de 3 segundos para a verificação
     const timeout = setTimeout(() => {
       console.log('⏰ Timeout - receiver não respondeu');
       resolve(false);
     }, 3000);
 
-    // Tenta enviar mensagem de teste via WebRTC
+    // ✅ TENTATIVA PRINCIPAL: Verifica via socket
     if (window.rtcCore && window.rtcCore.socket) {
-      window.rtcCore.socket.emit('test-connection', receiverId, (response) => {
+      // Primeiro tenta o método novo
+      window.rtcCore.socket.emit('ping-user', receiverId, (response) => {
         clearTimeout(timeout);
         if (response && response.online) {
-          console.log('✅ Receiver está online');
+          console.log('✅ Receiver está ONLINE (método ping)');
           resolve(true);
         } else {
-          console.log('❌ Receiver offline');
-          resolve(false);
+          // Tenta o método antigo para compatibilidade
+          window.rtcCore.socket.emit('test-connection', receiverId, (response2) => {
+            if (response2 && response2.online) {
+              console.log('✅ Receiver está ONLINE (método test)');
+              resolve(true);
+            } else {
+              console.log('❌ Receiver OFFLINE');
+              resolve(false);
+            }
+          });
         }
       });
     } else {
       clearTimeout(timeout);
-      console.log('❌ Socket não disponível');
+      console.log('❌ Socket não disponível, assumindo OFFLINE');
       resolve(false);
     }
   });
 }
 
-// ⏳ NOVA FUNÇÃO: Mostrar estado "Aguardando resposta"
+// ⏳ FUNÇÃO: Mostrar estado "Aguardando resposta"
 function mostrarEstadoAguardando() {
   const statusElement = document.createElement('div');
   statusElement.id = 'aguardando-status';
@@ -147,7 +160,7 @@ function mostrarEstadoAguardando() {
   }, 1000);
 }
 
-// 🔄 NOVA FUNÇÃO: Iniciar escuta para conexão reversa
+// 🔄 FUNÇÃO: Iniciar escuta para conexão reversa
 function iniciarEscutaConexaoReversa(receiverId, meuId) {
   console.log('👂 Escutando por conexão reversa do receiver...');
   
@@ -164,18 +177,36 @@ function iniciarEscutaConexaoReversa(receiverId, meuId) {
       remoteStream.getAudioTracks().forEach(track => track.enabled = false);
       const remoteVideo = document.getElementById('remoteVideo');
       if (remoteVideo) remoteVideo.srcObject = remoteStream;
+      
+      // ✅ Atualiza interface para mostrar conexão estabelecida
+      console.log('🎉 Conexão bidirecional estabelecida!');
     });
   };
 
   // Timeout de 30 segundos
   setTimeout(() => {
     console.log('⏰ Timeout da escuta reversa');
-    window.rtcCore.onIncomingCall = null; // Remove listener
+    const statusElement = document.getElementById('aguardando-status');
+    if (statusElement) {
+      statusElement.innerHTML = `
+        <div style="text-align: center;">
+          <div style="font-size: 24px; margin-bottom: 10px;">❌</div>
+          <div>Tempo esgotado</div>
+          <button onclick="this.parentElement.parentElement.remove()" 
+                  style="margin-top: 10px; padding: 5px 10px; background: #ff4444; color: white; border: none; border-radius: 5px;">
+            Fechar
+          </button>
+        </div>
+      `;
+    }
+    window.rtcCore.onIncomingCall = null;
   }, 30000);
 }
 
 window.onload = async () => {
   try {
+    console.log('🚀 Iniciando caller-ui.js...');
+
     const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
     window.localStream = stream;
     document.getElementById('localVideo').srcObject = window.localStream;
@@ -233,14 +264,14 @@ window.onload = async () => {
       lang: receiverLang
     };
 
-    // ✅ AUTOMATIZADO - AGORA COM VERIFICAÇÃO BIDIRECIONAL
+    // ✅ AUTOMATIZADO - AGORA COM VERIFICAÇÃO BIDIRECIONAL PRÁTICA
     if (receiverId) {
       document.getElementById('callActionBtn').style.display = 'none';
       
       if (window.localStream) {
         const meuIdioma = await obterIdiomaCompleto(navigator.language);
         
-        // 🔄 NOVO FLUXO: Verifica se receiver está online primeiro
+        // 🔄 NOVO FLUXO PRÁTICO: Verifica se receiver está online
         console.log('🔍 Verificando se receiver está online...');
         const isOnline = await verificarReceiverOnline(receiverId);
         
@@ -251,7 +282,13 @@ window.onload = async () => {
         } else {
           // 🔔 RECEIVER OFFLINE: Novo fluxo bidirecional
           console.log('📞 Receiver offline. Enviando notificação...');
-          const notificacaoEnviada = await enviarNotificacaoWakeUp(receiverToken, receiverId, myId);
+          const notificacaoEnviada = await enviarNotificacaoWakeUp(
+            receiverToken, 
+            receiverId, 
+            myId, 
+            meuIdioma, 
+            receiverLang
+          );
           
           if (notificacaoEnviada) {
             mostrarEstadoAguardando();
@@ -321,6 +358,8 @@ window.onload = async () => {
 
     aplicarBandeiraLocal(navegadorLang);
     aplicarBandeiraRemota(receiverLang);
+
+    console.log('✅ Caller-ui.js carregado com sucesso');
 
   } catch (error) {
     console.error("Erro ao solicitar acesso à câmera:", error);
