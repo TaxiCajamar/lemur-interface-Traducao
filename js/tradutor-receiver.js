@@ -11,7 +11,7 @@ function enviarParaOutroCelular(texto) {
 
 async function translateText(text) {
     try {
-        const response = await fetch('https://chat-tradutor.onrender.com/translate', {
+        const response = await fetch('https://chat-tradutor-bvvx.onrender.com/translate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
