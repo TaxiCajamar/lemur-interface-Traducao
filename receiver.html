@@ -101,20 +101,19 @@
     <!-- 🔌 Scripts -->
     <script src="https://lemur-signal-ings.onrender.com/socket.io/socket.io.js"></script>
     
-    <!-- ✅✅✅ LÓGICA INTELIGENTE - MANTÉM AMBOS OS CASOS -->
+    <!-- ✅✅✅ CORREÇÃO: SEMPRE CARREGA O FLUXO NORMAL -->
+    <script type="module" src="js/receiver-ui.js"></script>
+    
+    <!-- ✅✅✅ ADICIONAL: SE FOR NOTIFICAÇÃO, CARREGA TAMBÉM O MODO NOTIFICAÇÃO -->
     <script type="module">
         // Verifica se foi aberto via notificação
         const urlParams = new URLSearchParams(window.location.search);
         const pendingCaller = urlParams.get('pendingCaller');
         
         if (pendingCaller) {
-            // 🔔 MODO NOTIFICAÇÃO: Carrega receiver-notification.js
-            console.log('🔔 MODO NOTIFICAÇÃO ATIVADO - Carregando receiver-notification.js');
+            // 🔔 MODO NOTIFICAÇÃO: Carrega ADICIONALMENTE
+            console.log('🔔 MODO NOTIFICAÇÃO DETECTADO - Carregando receiver-notification.js');
             import('./js/receiver-notification.js');
-        } else {
-            // 📱 MODO NORMAL: Carrega receiver-ui.js (ORIGINAL - NÃO REMOVE!)
-            console.log('📱 MODO NORMAL (QR CODE) ATIVADO - Carregando receiver-ui.js');
-            import('./js/receiver-ui.js');
         }
     </script>
     
