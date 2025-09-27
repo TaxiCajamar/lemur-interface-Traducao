@@ -58,7 +58,7 @@ window.onload = async () => {
 
     window.rtcCore = new WebRTCCore();
 
-    // ✅ CORRETO: Box SEMPRE visível e fixo, frase só aparece com a voz
+   // ✅ CORRETO: Box SEMPRE visível e fixo, frase só aparece com a voz
 window.rtcCore.setDataChannelCallback((mensagem) => {
   console.log('📩 Mensagem recebida:', mensagem);
 
@@ -69,10 +69,10 @@ window.rtcCore.setDataChannelCallback((mensagem) => {
     elemento.style.opacity = '1'; // ← BOX SEMPRE VISÍVEL
     elemento.style.transition = 'opacity 0.5s ease'; // ← Transição suave
     
-    // ✅ ADICIONE AQUI A PULSAÇÃO:
+    // ✅ PULSAÇÃO AO RECEBER MENSAGEM:
     elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
-elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
-elemento.style.border = '2px solid #ff0000';
+    elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
+    elemento.style.border = '2px solid #ff0000';
   }
 
   if (window.SpeechSynthesis) {
@@ -84,9 +84,10 @@ elemento.style.border = '2px solid #ff0000';
 
     utterance.onstart = () => {
       if (elemento) {
-        // ✅ ADICIONE AQUI PARA PARAR A PULSAÇÃO:
+        // ✅ PARA A PULSAÇÃO E VOLTA AO NORMAL QUANDO A VOZ COMEÇA:
         elemento.style.animation = 'none';
-        elemento.style.backgroundColor = 'white'; // Volta ao branco original
+        elemento.style.backgroundColor = ''; // Volta ao fundo original
+        elemento.style.border = ''; // Remove a borda vermelha
         
         // SÓ MOSTRA O TEXTO QUANDO A VOZ COMEÇA
         elemento.textContent = mensagem;
