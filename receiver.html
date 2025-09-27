@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lemur-EchoMeP2P-Receiver</title>
+    <link rel="stylesheet" href="mobile-style.css" />
+    <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+</head>
+<body>
+    
+    <div class="box-principal">
+                      
+        <!-- Logo --> 
+        <img src="assets/images/Lemur2P2.png" alt="Lemur Logo" class="logo">
+        <img src="assets/images/Bridg.png" alt="ponte" class="ponte">
+        <img id="logo-traduz" src="assets/images/TradGlobo.png" alt="logo-traduz">
+        
+        <!-- Sub Titulo --> 
+        <div class="translator-label" id="translator-label">
+            Real-time translation.
+        </div>
+           
+      <!-- Remoto & Local -->
+    <div class="remoter-Lang">🏳️</div>
+    <div class="local-Lang">🏳️</div>
+    
+    <!-- 🎥 Vídeo remoto (já existente) -->
+<div class="video-wrapper">
+  <video id="remoteVideo" autoplay playsinline></video>
+
+  <!-- 🎥 Vídeo local em PiP -->
+  <div class="pip-local-wrapper">
+    <video id="localVideo" autoplay muted playsinline></video>
+  </div>
+</div>
+
+        <!-- 🧾 Overlay com QR Code -->
+        <div class="info-overlay"> 
+            <h2 id="qr-modal-title">This is your online key</h2>
+            <div id="qrcode" class="qrcode-container"></div>
+            <p class="qr-modal-description" id="qr-modal-description">
+                You can ask to scan, share or print on your business card.
+            </p>
+        </div>
+        
+        <!-- ===== TRADUTOR POR VOZ ===== -->
+        
+        <!-- Caixa de Texto -->
+        <div class="text-box">
+            <div class="text-display">
+                <div class="text-title">
+                    🌐
+                    <button class="speaker-btn" id="speakerButton" disabled>🔊</button>
+                </div>
+                <div id="translatedText" class="text-content">🎤</div>
+            </div>
+        </div>
+
+        <div id="texto-recebido"></div>
+
+<!-- 🏳️ Bandeira +  Microfone-->
+        
+       <!-- 🏳️ Bandeira -->
+<div class="language-flag" id="currentLanguageFlag">🇧🇷</div>
+
+<!-- 🎤 Microfone -->
+<button class="record-btn" id="recordButton" disabled>🎤</button>
+
+
+<!-- 🌍 Mundinho + Dropdown juntos - CORRIGIDO -->
+
+<div class="world-wrapper">
+  <button class="world-btn" id="worldButton">
+    <img src="assets/images/GloboLang.png" alt="Idioma" class="world-image">
+  </button>
+
+  <div class="language-dropdown" id="languageDropdown">
+    <div class="language-option" data-lang="pt-BR">🇧🇷</div>
+    <div class="language-option" data-lang="en">🇺🇸</div>
+    <div class="language-option" data-lang="es">🇪🇸</div>
+    <div class="language-option" data-lang="fr">🇫🇷</div>
+    <div class="language-option" data-lang="de">🇩🇪</div>
+    <div class="language-option" data-lang="it">🇮🇹</div>
+    <div class="language-option" data-lang="ja">🇯🇵</div>
+  </div>
+</div>
+             
+    </div>
+
+    <!-- Modal de gravação -->
+    <div class="recording-modal" id="recordingModal">
+        <div class="recording-indicator">
+            <div class="recording-dot"></div>
+            <div class="recording-text">●</div>
+            <div class="recording-timer" id="recordingTimer">0:00</div>
+        </div>
+        <button class="send-button" id="sendButton">📤</button>
+    </div>
+
+    <!-- 🔌 Scripts -->
+    <script src="https://lemur-signal.onrender.com/socket.io/socket.io.js"></script>
+    <script type="module" src="js/receiver-ui.js"></script>
+       <!-- Depois carrega tradutor.js eu chamei de js/script.js --> 
+    <script src="js/tradutor-receiver.js"></script>
+</body>
+</html>
