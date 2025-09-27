@@ -1,6 +1,5 @@
-// js/receiver-notification.js - VERSÃO COMPLETA (modo notificação)
+// js/receiver-notification.js - MODO NOTIFICAÇÃO INDEPENDENTE
 import { WebRTCCore } from '../core/webrtc-core.js';
-import { QRCodeGenerator } from './qr-code-utils.js';
 
 // 🎯 FUNÇÃO PARA OBTER IDIOMA COMPLETO
 async function obterIdiomaCompleto(lang) {
@@ -40,30 +39,6 @@ async function translateText(text, targetLang) {
   }
 }
 
-// 🔥 CONFIGURA TELA PARA MODO CHAMADA
-function configurarTelaChamada() {
-    console.log('🎬 Configurando tela para modo chamada...');
-    
-    // ✅ ESCONDE ELEMENTOS DO QR CODE
-    const qrModal = document.querySelector('.qr-modal');
-    const qrContainer = document.getElementById('qrcode');
-    if (qrModal) qrModal.style.display = 'none';
-    if (qrContainer) qrContainer.style.display = 'none';
-    
-    // ✅ STATUS DE CONEXÃO
-    const statusElement = document.createElement('div');
-    statusElement.id = 'notification-status';
-    statusElement.innerHTML = `
-        <div style="position: fixed; top: 0; left: 0; width: 100%; 
-                    background: linear-gradient(90deg, #006400, #008000);
-                    color: white; padding: 15px; text-align: center; 
-                    z-index: 10000; font-size: 16px; font-weight: bold;">
-            📞 CONECTANDO COM CHAMADOR...
-        </div>
-    `;
-    document.body.insertBefore(statusElement, document.body.firstChild);
-}
-
 // 🏳️ Aplica bandeira do idioma local
 async function aplicarBandeiraLocal(langCode) {
     try {
@@ -97,22 +72,34 @@ async function aplicarBandeiraRemota(langCode) {
     }
 }
 
-// 🔥🔥🔥 FUNÇÃO PRINCIPAL - MODO NOTIFICAÇÃO COMPLETO
+// 🔥🔥🔥 FUNÇÃO PRINCIPAL - MODO NOTIFICAÇÃO INDEPENDENTE
 window.onload = async () => {
     try {
-        console.log('🚀 INICIANDO MODO NOTIFICAÇÃO COMPLETO');
+        console.log('🚀 INICIANDO MODO NOTIFICAÇÃO INDEPENDENTE');
 
-        // ✅ 1. CONFIGURA TELA
-        configurarTelaChamada();
+        // ✅ 1. CONFIGURA INTERFACE PARA MODO CHAMADA
+        console.log('🎬 Configurando interface para modo chamada...');
         
-        // ✅ 2. SOLICITA ACESSO À CÂMERA
+        // Atualiza textos para modo notificação
+        const translatorLabel = document.getElementById('translator-label');
+        if (translatorLabel) translatorLabel.textContent = 'Chamada Recebida';
+        
+        const connectionTitle = document.getElementById('connection-title');
+        if (connectionTitle) connectionTitle.textContent = 'Conectando...';
+
+        // ✅ 2. SOLICITA ACESSO À CÂMERA E MICROFONE JUNTOS
+        console.log('📷🎤 Solicitando acesso à câmera e microfone...');
         const stream = await navigator.mediaDevices.getUserMedia({
             video: true,
-            audio: false
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                sampleRate: 44100
+            }
         });
 
         let localStream = stream;
-        window.localStream = localStream; // ✅ IMPORTANTE: Define global
+        window.localStream = localStream;
         
         const localVideo = document.getElementById('localVideo');
         if (localVideo) localVideo.srcObject = localStream;
@@ -123,36 +110,50 @@ window.onload = async () => {
         const params = new URLSearchParams(window.location.search);
         const pendingCaller = params.get('pendingCaller');
         const callerLang = params.get('callerLang');
+        const receiverId = params.get('receiverId');
         const lang = params.get('lang') || navigator.language || 'pt-BR';
-        const token = params.get('token') || '';
 
-        console.log('🔔 Modo Notificação - Caller:', pendingCaller);
+        console.log('🔔 Parâmetros notificação:', { 
+            pendingCaller, 
+            callerLang, 
+            receiverId 
+        });
 
         if (!pendingCaller) {
             console.error('❌ ERRO: Modo notificação sem pendingCaller!');
+            alert('Link de notificação inválido.');
             return;
         }
 
-        // ✅ 4. GERA ID FIXO
-        const url = window.location.href;
-        const fixedId = url.split('?')[1] || crypto.randomUUID().substr(0, 8);
-
-        function fakeRandomUUID(fixedValue) {
-            return {
-                substr: function(start, length) {
-                    return fixedValue.substr(start, length);
-                }
-            };
+        // ✅ 4. ID FIXO DO RECEIVER (do QR code impresso)
+        let myId;
+        if (receiverId) {
+            myId = receiverId; // ✅ ID do QR code impresso
+            console.log('🎯 Usando ID fixo do receiver:', myId);
+        } else {
+            // Fallback: gera ID da URL
+            const url = window.location.href;
+            const fixedId = url.split('?')[1] || crypto.randomUUID().substr(0, 8);
+            
+            function fakeRandomUUID(fixedValue) {
+                return {
+                    substr: function(start, length) {
+                        return fixedValue.substr(start, length);
+                    }
+                };
+            }
+            
+            myId = fakeRandomUUID(fixedId).substr(0, 8);
+            console.log('🔄 Usando ID gerado:', myId);
         }
 
-        const myId = fakeRandomUUID(fixedId).substr(0, 8);
         window.targetTranslationLang = lang;
 
         // ✅ 5. INICIALIZA WEBRTC
         window.rtcCore.initialize(myId);
         window.rtcCore.setupSocketHandlers();
 
-        // ✅ 6. CONFIGURA CALLBACKS
+        // ✅ 6. CONFIGURA CALLBACK PARA MENSAGENS RECEBIDAS
         window.rtcCore.setDataChannelCallback((mensagem) => {
             console.log('📩 Mensagem recebida:', mensagem);
 
@@ -160,6 +161,7 @@ window.onload = async () => {
             if (elemento) {
                 elemento.textContent = "";
                 elemento.style.opacity = '1';
+                elemento.style.transition = 'opacity 0.5s ease';
                 elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
                 elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
                 elemento.style.border = '2px solid #ff0000';
@@ -185,11 +187,11 @@ window.onload = async () => {
             }
         });
 
-        // ✅ 7. CONFIGURA CHAMADA RECEBIDA
+        // ✅ 7. CONFIGURA CALLBACK PARA CHAMADA RECEBIDA
         window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
             if (!localStream) return;
 
-            console.log('🎯 Caller fala:', idiomaDoCaller);
+            console.log('🎯 Chamada recebida do caller:', idiomaDoCaller);
 
             window.sourceTranslationLang = idiomaDoCaller;
             window.targetTranslationLang = lang;
@@ -197,6 +199,7 @@ window.onload = async () => {
             window.rtcCore.handleIncomingCall(offer, localStream, (remoteStream) => {
                 remoteStream.getAudioTracks().forEach(track => track.enabled = false);
 
+                // ✅ ESCONDE OVERLAY DE CONEXÃO
                 const overlay = document.querySelector('.info-overlay');
                 if (overlay) overlay.classList.add('hidden');
 
@@ -205,10 +208,11 @@ window.onload = async () => {
 
                 window.targetTranslationLang = idiomaDoCaller || lang;
 
-                // ✅ REMOVE STATUS DE CONEXÃO
-                const statusElement = document.getElementById('notification-status');
-                if (statusElement) statusElement.remove();
+                // ✅ ATUALIZA INTERFACE PARA "CONECTADO"
+                const translatorLabel = document.getElementById('translator-label');
+                if (translatorLabel) translatorLabel.textContent = 'Chamada Ativa';
 
+                // ✅ APLICA BANDEIRA DO CALLER
                 if (idiomaDoCaller) {
                     aplicarBandeiraRemota(idiomaDoCaller);
                 }
@@ -221,9 +225,11 @@ window.onload = async () => {
         aplicarBandeiraLocal(lang);
         if (callerLang) aplicarBandeiraRemota(callerLang);
 
-        // ✅ 9. TRADUZ TEXTOS FIXOS
+        // ✅ 9. TRADUZ TEXTOS DA INTERFACE
         const frasesParaTraduzir = {
-            "translator-label": "Real-time translation."
+            "translator-label": "Real-time translation.",
+            "connection-title": "Incoming Call",
+            "connection-description": "You received a call via notification."
         };
 
         for (const [id, texto] of Object.entries(frasesParaTraduzir)) {
@@ -234,25 +240,31 @@ window.onload = async () => {
             }
         }
 
-        // ✅ 10. INICIALIZA TRADUTOR
+        // ✅ 10. AVISA O TRADUTOR QUE O MICROFONE JÁ ESTÁ CONCEDIDO
         setTimeout(() => {
+            window.microphonePermissionGranted = true;
             if (typeof initializeTranslator === 'function') {
                 initializeTranslator();
             }
         }, 1000);
 
-        console.log('✅ receiver-notification.js PRONTO');
+        console.log('✅ MODO NOTIFICAÇÃO INDEPENDENTE PRONTO!');
 
     } catch (error) {
         console.error("❌ Erro no modo notificação:", error);
         
-        const statusElement = document.getElementById('notification-status');
-        if (statusElement) {
-            statusElement.innerHTML = `
-                <div style="background: #cc0000; color: white; padding: 15px; text-align: center;">
-                    ❌ Erro na conexão
+        // ✅ MOSTRA ERRO NA INTERFACE
+        const connectionStatus = document.getElementById('connection-status');
+        if (connectionStatus) {
+            connectionStatus.innerHTML = `
+                <div style="text-align: center; color: white; padding: 20px;">
+                    <div style="font-size: 48px; margin-bottom: 10px;">❌</div>
+                    <div>Erro na conexão</div>
+                    <div style="font-size: 12px; opacity: 0.8;">Tente novamente</div>
                 </div>
             `;
         }
+        
+        alert("Erro ao iniciar chamada. Verifique as permissões de câmera e microfone.");
     }
 };
