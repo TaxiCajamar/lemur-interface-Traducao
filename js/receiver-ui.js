@@ -1,25 +1,19 @@
 import { WebRTCCore } from '../core/webrtc-core.js';
 import { QRCodeGenerator } from './qr-code-utils.js';
 
-// 🎯 FUNÇÃO PARA OBTER IDIOMA COMPLETO (igual ao caller)
+// 🎯 FUNÇÃO PARA OBTER IDIOMA COMPLETO (CORRIGIDA)
 async function obterIdiomaCompleto(lang) {
   if (!lang) return 'pt-BR';
   if (lang.includes('-')) return lang;
 
-  try {
-    const response = await fetch('assets/bandeiras/language-flags.json');
-    const flags = await response.json();
-    const codigoCompleto = Object.keys(flags).find(key => key.startsWith(lang + '-'));
-    return codigoCompleto || `${lang}-${lang.toUpperCase()}`;
-  } catch (error) {
-    console.error('Erro ao carregar JSON de bandeiras:', error);
-    const fallback = {
-      'pt': 'pt-BR', 'es': 'es-ES', 'en': 'en-US',
-      'fr': 'fr-FR', 'de': 'de-DE', 'it': 'it-IT',
-      'ja': 'ja-JP', 'zh': 'zh-CN', 'ru': 'ru-RU'
-    };
-    return fallback[lang] || 'en-US';
-  }
+  // ✅ CORREÇÃO: Não espera pelo fetch, usa fallback imediato
+  const fallback = {
+    'pt': 'pt-BR', 'es': 'es-ES', 'en': 'en-US',
+    'fr': 'fr-FR', 'de': 'de-DE', 'it': 'it-IT',
+    'ja': 'ja-JP', 'zh': 'zh-CN', 'ru': 'ru-RU'
+  };
+  
+  return fallback[lang] || `${lang}-${lang.toUpperCase()}`;
 }
 
 // 🌐 Tradução apenas para texto (igual ao caller)
@@ -39,17 +33,17 @@ async function translateText(text, targetLang) {
   }
 }
 
-// 🔄 NOVA FUNÇÃO: Iniciar chamada reversa para o caller
+// 🔄 NOVA FUNÇÃO: Iniciar chamada reversa para o caller (CORRIGIDA)
 async function iniciarChamadaReversa(callerId, localStream, meuIdioma) {
   console.log('📞 Iniciando chamada reversa para caller:', callerId);
   
   if (window.rtcCore && localStream) {
     try {
-      // Usa a função existente startCall para iniciar a chamada
-      window.rtcCore.startCall(callerId, localStream, meuIdioma);
-      
-      // Mostra estado de "Conectando..."
-      mostrarEstadoConectando();
+      // ✅ CORREÇÃO: Pequeno delay para garantir que WebRTC está pronto
+      setTimeout(() => {
+        window.rtcCore.startCall(callerId, localStream, meuIdioma);
+        mostrarEstadoConectando();
+      }, 500);
       
     } catch (error) {
       console.error('❌ Erro na chamada reversa:', error);
@@ -59,7 +53,6 @@ async function iniciarChamadaReversa(callerId, localStream, meuIdioma) {
 
 // ⏳ NOVA FUNÇÃO: Mostrar estado "Conectando..."
 function mostrarEstadoConectando() {
-  // Remove estado anterior se existir
   const estadoAnterior = document.getElementById('estado-conexao');
   if (estadoAnterior) estadoAnterior.remove();
   
@@ -77,7 +70,6 @@ function mostrarEstadoConectando() {
   `;
   document.body.appendChild(statusElement);
   
-  // Remove após 5 segundos
   setTimeout(() => {
     if (statusElement.parentNode) {
       statusElement.remove();
@@ -87,11 +79,15 @@ function mostrarEstadoConectando() {
 
 window.onload = async () => {
     try {
+        console.log('🚀 Iniciando receiver-ui.js...'); // ✅ DEBUG
+
         // ✅ Solicita acesso à câmera (vídeo sem áudio)
         const stream = await navigator.mediaDevices.getUserMedia({
             video: true,
             audio: false
         });
+
+        console.log('📷 Câmera acessada com sucesso'); // ✅ DEBUG
 
         // ✅ Captura da câmera local
         let localStream = stream;
@@ -117,19 +113,29 @@ window.onload = async () => {
         }
 
         const myId = fakeRandomUUID(fixedId).substr(0, 8);
+        console.log('🆔 Meu ID:', myId); // ✅ DEBUG
 
         const params = new URLSearchParams(window.location.search);
         const token = params.get('token') || '';
         const lang = params.get('lang') || navigator.language || 'pt-BR';
-        const pendingCaller = params.get('pendingCaller'); // 🔄 NOVO: Verifica se tem caller aguardando
+        const pendingCaller = params.get('pendingCaller');
+
+        console.log('🔍 Parâmetros URL:', { token, lang, pendingCaller }); // ✅ DEBUG
 
         window.targetTranslationLang = lang;
 
         const callerUrl = `${window.location.origin}/caller.html?targetId=${myId}&token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
-        QRCodeGenerator.generate("qrcode", callerUrl);
+        
+        // ✅ CORREÇÃO: Pequeno delay antes de gerar QR Code
+        setTimeout(() => {
+            QRCodeGenerator.generate("qrcode", callerUrl);
+            console.log('📱 QR Code gerado'); // ✅ DEBUG
+        }, 100);
 
         window.rtcCore.initialize(myId);
         window.rtcCore.setupSocketHandlers();
+
+        console.log('🔌 WebRTC inicializado'); // ✅ DEBUG
 
         // ✅ CORRETO: Box SEMPRE visível e fixo, frase só aparece com a voz
         window.rtcCore.setDataChannelCallback((mensagem) => {
@@ -139,7 +145,6 @@ window.onload = async () => {
           if (elemento) {
             elemento.textContent = "";
             elemento.style.opacity = '1';
-            elemento.style.transition = 'opacity 0.5s ease';
             elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
             elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
             elemento.style.border = '2px solid #ff0000';
@@ -165,15 +170,16 @@ window.onload = async () => {
           }
         });
 
-        // 🔄 NOVO: Se foi aberto via notificação, inicia chamada reversa
+        // 🔄 NOVO: Se foi aberto via notificação, inicia chamada reversa (CORRIGIDO)
         if (pendingCaller) {
           console.log('🔔 Receiver acordado por notificação. Caller aguardando:', pendingCaller);
           
-          // Espera um pouco para garantir que tudo está carregado
+          // ✅ CORREÇÃO: Delay maior para garantir tudo carregado
           setTimeout(async () => {
+            console.log('📞 Iniciando chamada reversa...');
             const meuIdioma = await obterIdiomaCompleto(lang);
             await iniciarChamadaReversa(pendingCaller, localStream, meuIdioma);
-          }, 1000);
+          }, 2000); // ↑ Aumentei para 2 segundos
         }
 
         window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
@@ -210,29 +216,33 @@ window.onload = async () => {
             });
         };
 
-        // ✅ MANTIDO: Tradução dos títulos da interface (inglês → idioma local)
+        // ✅ MANTIDO: Tradução dos títulos da interface (MAS COM TRY/CATCH)
         const frasesParaTraduzir = {
             "translator-label": "Real-time translation.",
             "qr-modal-title": "This is your online key",
             "qr-modal-description": "You can ask to scan, share or print on your business card."
         };
 
-        (async () => {
-            for (const [id, texto] of Object.entries(frasesParaTraduzir)) {
-                const el = document.getElementById(id);
-                if (el) {
-                    const traduzido = await translateText(texto, lang);
-                    el.textContent = traduzido;
+        // ✅ CORREÇÃO: Não trava se a tradução falhar
+        setTimeout(async () => {
+            try {
+                for (const [id, texto] of Object.entries(frasesParaTraduzir)) {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        const traduzido = await translateText(texto, lang);
+                        el.textContent = traduzido;
+                    }
                 }
+            } catch (error) {
+                console.log('⚠️ Tradução de interface falhou, mas continuando...');
             }
-        })();
+        }, 3000); // ↑ Tradução acontece depois de tudo
 
-        // 🏳️ Aplica bandeira do idioma local (função renomeada para clareza)
+        // 🏳️ Aplica bandeira do idioma local (CORRIGIDA)
         async function aplicarBandeiraLocal(langCode) {
             try {
                 const response = await fetch('assets/bandeiras/language-flags.json');
                 const flags = await response.json();
-
                 const bandeira = flags[langCode] || flags[langCode.split('-')[0]] || '🔴';
 
                 const localLangElement = document.querySelector('.local-mic-Lang');
@@ -243,15 +253,18 @@ window.onload = async () => {
 
             } catch (error) {
                 console.error('Erro ao carregar bandeira local:', error);
+                // ✅ CORREÇÃO: Fallback imediato
+                const bandeira = '🏳️';
+                const localLangElement = document.querySelector('.local-mic-Lang');
+                if (localLangElement) localLangElement.textContent = bandeira;
             }
         }
 
-        // 🏳️ Aplica bandeira do idioma remoto
+        // 🏳️ Aplica bandeira do idioma remoto (CORRIGIDA)
         async function aplicarBandeiraRemota(langCode) {
             try {
                 const response = await fetch('assets/bandeiras/language-flags.json');
                 const flags = await response.json();
-
                 const bandeira = flags[langCode] || flags[langCode.split('-')[0]] || '🔴';
 
                 const remoteLangElement = document.querySelector('.remoter-Lang');
@@ -264,16 +277,15 @@ window.onload = async () => {
             }
         }
 
-        aplicarBandeiraLocal(lang);
-
+        // ✅ CORREÇÃO: Aplica bandeira com timeout
         setTimeout(() => {
-            if (typeof initializeTranslator === 'function') {
-                initializeTranslator();
-            }
+            aplicarBandeiraLocal(lang);
         }, 1000);
 
+        console.log('✅ Receiver-ui.js carregado com sucesso'); // ✅ DEBUG
+
     } catch (error) {
-        console.error("Erro ao solicitar acesso à câmera:", error);
+        console.error("❌ Erro ao solicitar acesso à câmera:", error);
         alert("Erro ao acessar a câmera. Verifique as permissões.");
         return;
     }
