@@ -50,16 +50,27 @@ async function translateText(text, targetLang) {
   }
 }
 
-// 🔔 FUNÇÃO: Enviar notificação FCM CORRIGIDA
+// 🔔 FUNÇÃO: Enviar notificação FCM CORRIGIDA (VERSÃO SEGURA)
 async function enviarNotificacaoWakeUp(receiverToken, receiverId, meuId, meuIdioma, targetLang) {
   try {
     console.log('🔔 Enviando notificação FCM para acordar receiver...');
     
-    // ✅✅✅ CORREÇÃO: URL aponta para receiver-notification.html e inclui receiverId
-    const notificationUrl = window.location.origin + '/receiver-notification.html?pendingCaller=' + meuId + 
-                           '&callerLang=' + meuIdioma + 
-                           '&targetLang=' + targetLang +
-                           '&receiverId=' + receiverId; // ✅ INCLUI ID FIXO DO RECEIVER
+    // ✅✅✅ CORREÇÃO FORÇADA: Garantir que usa receiver-notification.html
+    const baseUrl = window.location.origin;
+    
+    // ⚠️ VERIFICAÇÃO EXTRA: Garantir que não é receiver.html
+    let notificationUrl = baseUrl + '/receiver-notification.html?pendingCaller=' + meuId + 
+                         '&callerLang=' + meuIdioma + 
+                         '&targetLang=' + targetLang +
+                         '&receiverId=' + receiverId;
+    
+    // ⚠️ VERIFICAÇÃO DE SEGURANÇA: Se por acaso tiver receiver.html, substitui
+    if (notificationUrl.includes('receiver.html')) {
+      console.error('❌ ERRO CRÍTICO: URL contém receiver.html! Corrigindo...');
+      notificationUrl = notificationUrl.replace('receiver.html', 'receiver-notification.html');
+    }
+    
+    console.log('🔗 URL FINAL DA NOTIFICAÇÃO:', notificationUrl);
     
     const response = await fetch('https://serve-app-e9ia.onrender.com/send-notification', {
       method: 'POST',
@@ -73,16 +84,15 @@ async function enviarNotificacaoWakeUp(receiverToken, receiverId, meuId, meuIdio
           callerId: meuId,
           callerLang: meuIdioma,
           targetLang: targetLang,
-          receiverId: receiverId, // ✅ INCLUI ID FIXO DO RECEIVER
+          receiverId: receiverId,
           click_action: 'FLUTTER_NOTIFICATION_CLICK',
-          url: notificationUrl // ✅ USA NOVA URL
+          url: notificationUrl
         }
       })
     });
 
     const result = await response.json();
     console.log('✅ Notificação enviada:', result);
-    console.log('🔗 URL da notificação:', notificationUrl);
     return result.success;
   } catch (error) {
     console.error('❌ Erro ao enviar notificação:', error);
