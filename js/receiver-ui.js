@@ -84,46 +84,45 @@ window.onload = async () => {
         window.rtcCore.initialize(myId);
         window.rtcCore.setupSocketHandlers();
 
-        // ✅ CORRETO: Box pulsante igual ao caller-ui.js
-        window.rtcCore.setDataChannelCallback((mensagem) => {
-            console.log('📩 Mensagem recebida no receiver:', mensagem);
+       // ✅ CORRETO: Box SEMPRE visível e fixo, frase só aparece com a voz
+window.rtcCore.setDataChannelCallback((mensagem) => {
+  console.log('📩 Mensagem recebida:', mensagem);
 
-            const elemento = document.getElementById('texto-recebido');
-            if (elemento) {
-                // Box SEMPRE visível, mas texto vazio inicialmente (IGUAL AO CALLER)
-                elemento.textContent = ""; // ← TEXTO FICA VAZIO NO INÍCIO
-                elemento.style.opacity = '1'; // ← BOX SEMPRE VISÍVEL
-                elemento.style.transition = 'opacity 0.5s ease'; // ← Transição suave
-                
-                // ✅ PULSAÇÃO IDÊNTICA AO CALLER:
-                elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
-elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
-elemento.style.border = '2px solid #ff0000';
-            }
+  const elemento = document.getElementById('texto-recebido');
+  if (elemento) {
+    // Box SEMPRE visível, mas texto vazio inicialmente
+    elemento.textContent = ""; // ← TEXTO FICA VAZIO NO INÍCIO
+    elemento.style.opacity = '1'; // ← BOX SEMPRE VISÍVEL
+    elemento.style.transition = 'opacity 0.5s ease'; // ← Transição suave
+    
+    // ✅ PULSAÇÃO AO RECEBER MENSAGEM:
+    elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
+    elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
+    elemento.style.border = '2px solid #ff0000';
+  }
 
-            if (window.speechSynthesis) {
-                window.speechSynthesis.cancel();
+  if (window.SpeechSynthesis) {
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(mensagem);
+    utterance.lang = window.targetTranslationLang || 'pt-BR';
+    utterance.rate = 0.9;
+    utterance.volume = 0.8;
 
-                const utterance = new SpeechSynthesisUtterance(mensagem);
-                utterance.lang = window.targetTranslationLang || 'pt-BR';
-                utterance.rate = 0.9;
-                utterance.volume = 0.8;
+    utterance.onstart = () => {
+      if (elemento) {
+        // ✅ PARA A PULSAÇÃO E VOLTA AO NORMAL QUANDO A VOZ COMEÇA:
+        elemento.style.animation = 'none';
+        elemento.style.backgroundColor = ''; // Volta ao fundo original
+        elemento.style.border = ''; // Remove a borda vermelha
+        
+        // SÓ MOSTRA O TEXTO QUANDO A VOZ COMEÇA
+        elemento.textContent = mensagem;
+      }
+    };
 
-                utterance.onstart = () => {
-                    if (elemento) {
-                        // ✅ PARA A PULSAÇÃO QUANDO A VOZ COMEÇA (IGUAL AO CALLER):
-                        elemento.style.animation = 'none';
-                        elemento.style.backgroundColor = 'white'; // Volta ao branco original
-                        
-                        // SÓ MOSTRA O TEXTO QUANDO A VOZ COMEÇA
-                        elemento.textContent = mensagem;
-                    }
-                };
-
-                window.speechSynthesis.speak(utterance);
-            }
-        });
-
+    window.speechSynthesis.speak(utterance);
+  }
+});
         window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
             if (!localStream) return;
 
