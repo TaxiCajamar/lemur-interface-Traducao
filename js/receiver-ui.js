@@ -63,6 +63,39 @@ function mostrarEstadoConectando() {
     }, 10000);
 }
 
+// 🔄 FUNÇÃO: Mudar para modo WebRTC (tela de conversação)
+function mudarParaModoWebRTC() {
+    console.log('🔄 Mudando para modo WebRTC (tela de conversação)...');
+    
+    // ✅ ESCONDE elementos do QR Code
+    const qrModal = document.querySelector('.qr-modal');
+    if (qrModal) qrModal.style.display = 'none';
+    
+    const qrContainer = document.getElementById('qrcode');
+    if (qrContainer) qrContainer.style.display = 'none';
+    
+    // ✅ MOSTRA elementos da conversação WebRTC
+    const videoContainer = document.querySelector('.video-container');
+    if (videoContainer) videoContainer.style.display = 'block';
+    
+    const overlay = document.querySelector('.info-overlay');
+    if (overlay) overlay.classList.remove('hidden');
+    
+    // ✅ Atualiza interface para modo "em chamada"
+    const statusElement = document.createElement('div');
+    statusElement.innerHTML = `
+        <div style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); 
+                    background: rgba(0,100,0,0.8); color: white; padding: 10px 20px; 
+                    border-radius: 20px; text-align: center; z-index: 1000; font-size: 14px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span>📞</span>
+                <span>Conectando com caller...</span>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(statusElement);
+}
+
 // 🏳️ Aplica bandeira do idioma local (RESTAURADA)
 async function aplicarBandeiraLocal(langCode) {
     try {
@@ -147,20 +180,23 @@ function escutarPorOfferExistente(callerId, localStream, meuIdioma) {
                 });
             }
         };
-        
-        // 🔄 Tenta se conectar à sala do caller para receber o offer
-        setTimeout(() => {
-            if (window.rtcCore && window.rtcCore.socket) {
-                console.log('🔌 Conectando à sala do caller...');
-                // O simples fato de estar na mesma sala fará o offer ser recebido
-            }
-        }, 1000);
     });
 }
 
 window.onload = async () => {
     try {
         console.log('🚀 Iniciando receiver-ui.js...');
+
+        // ✅✅✅ CRÍTICO: Verificar MUITO ANTES se é notificação
+        const params = new URLSearchParams(window.location.search);
+        const pendingCaller = params.get('pendingCaller');
+        const callerLang = params.get('callerLang');
+
+        // 🔥🔥🔥 SE FOR NOTIFICAÇÃO: Muda para tela WebRTC IMEDIATAMENTE
+        if (pendingCaller) {
+            console.log('🔔🔔🔔 RECEIVER ABERTO VIA NOTIFICAÇÃO! Mudando para tela WebRTC...');
+            mudarParaModoWebRTC();
+        }
 
         // ✅ 1. Solicita acesso à câmera (vídeo sem áudio)
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -192,11 +228,8 @@ window.onload = async () => {
 
         const myId = fakeRandomUUID(fixedId).substr(0, 8);
 
-        const params = new URLSearchParams(window.location.search);
         const token = params.get('token') || '';
         const lang = params.get('lang') || navigator.language || 'pt-BR';
-        const pendingCaller = params.get('pendingCaller'); // 🔔 Parâmetro da notificação
-        const callerLang = params.get('callerLang'); // 🌎 Idioma do caller (da notificação)
 
         console.log('🔍 Parâmetros URL:', { 
             token: token ? '✅' : '❌', 
@@ -207,29 +240,11 @@ window.onload = async () => {
 
         window.targetTranslationLang = lang;
 
-        // ✅ 3. COMPORTAMENTO CRÍTICO: Verifica se foi aberto via notificação
+        // ✅ 3. COMPORTAMENTO CRÍTICO: Já verificamos acima, mas reforça
         if (pendingCaller) {
-            console.log('🔔🔔🔔 RECEIVER ABERTO VIA NOTIFICAÇÃO! Caller aguardando:', pendingCaller);
-            
-            // ✅ CORREÇÃO: NÃO MOSTRA QR CODE - MOSTRA "CONECTANDO"
-            const qrContainer = document.getElementById('qrcode');
-            if (qrContainer) {
-                qrContainer.innerHTML = `
-                    <div style="text-align: center; color: white; padding: 20px;">
-                        <div style="font-size: 24px; margin-bottom: 10px;">🔗</div>
-                        <div>Conectando com caller...</div>
-                        <div style="font-size: 12px; opacity: 0.8;">Aguarde alguns segundos</div>
-                    </div>
-                `;
-            }
+            console.log('🔔 Modo notificação ativado - Caller aguardando:', pendingCaller);
 
-            // ✅ CORREÇÃO: Esconde elementos do QR Code normal
-            const qrModal = document.querySelector('.qr-modal');
-            if (qrModal) {
-                qrModal.style.display = 'none';
-            }
-
-            // ✅ CORREÇÃO: Aplica bandeira do CALLER se veio na notificação
+            // ✅ Aplica bandeira do CALLER se veio na notificação
             if (callerLang) {
                 console.log('🎯 Aplicando bandeira do caller:', callerLang);
                 aplicarBandeiraRemota(callerLang);
@@ -345,7 +360,7 @@ window.onload = async () => {
             };
 
             // Inicia após breve delay para WebRTC inicializar
-            setTimeout(conectarViaNotificacao, 2000);
+            setTimeout(conectarViaNotificacao, 1000);
         }
 
         // ✅ 8. TRADUÇÃO DOS TEXTOS FIXOS (RESTAURADO)
