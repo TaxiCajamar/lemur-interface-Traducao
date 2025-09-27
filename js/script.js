@@ -239,7 +239,7 @@ function initializeTranslator() {
             const trimmedText = text.trim().slice(0, 500);
             if (!trimmedText) return "";
             
-            const response = await fetch('https://chat-tradutor.onrender.com/translate', {
+            const response = await fetch('https://chat-tradutor-bvvx.onrender.com/translate', {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
