@@ -1,4 +1,4 @@
-// js/receiver-notification.js - MODO NOTIFICAÇÃO APENAS (CORRIGIDO)
+// js/notificador/notificador-ui.js - MODO NOTIFICAÇÃO APENAS (CORRIGIDO)
 import { WebRTCCore } from '../../core/webrtc-core.js';
 
 // 🎯 FUNÇÃO PARA OBTER IDIOMA COMPLETO
@@ -27,7 +27,7 @@ async function translateText(text, targetLang) {
   try {
     const response = await fetch('https://chat-tradutor-bvvx.onrender.com/translate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type: application/json' },
       body: JSON.stringify({ text, targetLang })
     });
 
@@ -140,8 +140,8 @@ window.onload = async () => {
         window.rtcCore = new WebRTCCore();
 
         const params = new URLSearchParams(window.location.search);
-        const pendingCaller = params.get('pendingCaller');
-        const callerLang = params.get('callerLang');
+        const pendingCaller = params.get('pendingCaller') || params.get('callerId');
+        const callerLang = params.get('callerLang') || params.get('targetLang');
         const lang = params.get('lang') || navigator.language || 'pt-BR';
         const token = params.get('token') || '';
 
@@ -153,28 +153,27 @@ window.onload = async () => {
 
         if (!pendingCaller) {
             console.error('❌ ERRO: Modo notificação sem pendingCaller!');
+            
+            // Mostra erro para o usuário
+            const statusElement = document.getElementById('notification-status');
+            if (statusElement) {
+                statusElement.innerHTML = `
+                    <div style="background: #cc0000; color: white; padding: 15px; text-align: center;">
+                        ❌ Erro: Link inválido. Volte e tente novamente.
+                    </div>
+                `;
+            }
             return;
         }
 
-        // ✅✅✅ 4. CORREÇÃO CRÍTICA: USA ID FIXO (IGUAL AO ORIGINAL)
-        const url = window.location.href;
-        const fixedId = url.split('?')[1] || crypto.randomUUID().substr(0, 8);
+        // ✅✅✅ CORREÇÃO CRÍTICA: USA O pendingCaller COMO ID (NÃO CRIA UM NOVO)
+        const myId = pendingCaller;
+        console.log('🎯 ID DO RECEIVER (USANDO pendingCaller):', myId);
 
-        function fakeRandomUUID(fixedValue) {
-            return {
-                substr: function(start, length) {
-                    return fixedValue.substr(start, length);
-                }
-            };
-        }
-
-        const myId = fakeRandomUUID(fixedId).substr(0, 8);
-        console.log('🎯 ID FIXO DO RECEIVER:', myId);
-
-        // ✅ 5. INICIALIZA WEBRTC COM ID FIXO
+        // ✅ 5. INICIALIZA WEBRTC COM ID DO CALLER
         window.rtcCore.initialize(myId);
         window.rtcCore.setupSocketHandlers();
-        console.log('🔌 WebRTC inicializado com ID fixo');
+        console.log('🔌 WebRTC inicializado com ID do caller:', myId);
 
         // ✅ 6. CONFIGURA CALLBACKS (MESMO DO ORIGINAL)
         window.rtcCore.setDataChannelCallback((mensagem) => {
@@ -253,33 +252,37 @@ window.onload = async () => {
             "translator-label": "Real-time translation."
         };
 
-       (async () => {
-    for (const [id, texto] of Object.entries(frasesParaTraduzir)) {
-        const el = document.getElementById(id);
-        if (el) {
-            const traduzido = await translateText(texto, lang); // ✅ await dentro de async
-            el.textContent = traduzido;
+        for (const [id, texto] of Object.entries(frasesParaTraduzir)) {
+            const el = document.getElementById(id);
+            if (el) {
+                const traduzido = await translateText(texto, lang);
+                el.textContent = traduzido;
+            }
         }
-    }
-})();
 
         // ✅ 10. 🔥🔥🔥 CONEXÃO DIRETA - ESCUTA POR OFFER EXISTENTE
         console.log('📞🔔 INICIANDO CONEXÃO DIRETA VIA NOTIFICAÇÃO...');
+        console.log('🎯 Aguardando conexão do caller com ID:', myId);
         
         let offerRecebido = false;
         
         // ⏰ TIMEOUT DE 20 SEGUNDOS
         const timeout = setTimeout(() => {
             if (!offerRecebido) {
-                console.log('❌ Timeout: Tentando fallback...');
+                console.log('❌ Timeout: Nenhuma conexão recebida em 20 segundos');
                 
-                // FALLBACK: Tenta iniciar chamada
-                const meuIdioma = await obterIdiomaCompleto(lang);
-                window.rtcCore.startCall(pendingCaller, localStream, meuIdioma);
+                const statusElement = document.getElementById('notification-status');
+                if (statusElement) {
+                    statusElement.innerHTML = `
+                        <div style="background: #cc0000; color: white; padding: 15px; text-align: center;">
+                            ❌ Tempo esgotado. Chamador não conectou.
+                        </div>
+                    `;
+                }
             }
         }, 20000);
         
-        // ✅ CONFIGURA ESCUTA
+        // ✅ CONFIGURA ESCUTA PARA OFFER
         const callbackOriginal = window.rtcCore.onIncomingCall;
         
         window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
@@ -324,7 +327,7 @@ window.onload = async () => {
         if (statusElement) {
             statusElement.innerHTML = `
                 <div style="background: #cc0000; color: white; padding: 15px; text-align: center;">
-                    ❌ Erro na conexão. Tente novamente.
+                    ❌ Erro na conexão: ${error.message}
                 </div>
             `;
         }
