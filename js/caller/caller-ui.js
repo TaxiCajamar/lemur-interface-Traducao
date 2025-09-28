@@ -50,10 +50,10 @@ async function translateText(text, targetLang) {
   }
 }
 
-// 🔔🔔🔔 FUNÇÃO ATUALIZADA: Notificação SIMPLES igual ao servidor
-async function enviarNotificacaoWakeUp(receiverToken, receiverId, meuId) {
+// 🔔 FUNÇÃO: Notificação SIMPLES para acordar receiver
+async function enviarNotificacaoWakeUp(receiverToken, receiverId, meuId, meuIdioma) {
   try {
-    console.log('🔔 Enviando notificação SIMPLES para acordar receiver...');
+    console.log('🔔 Enviando notificação para acordar receiver...');
     
     const response = await fetch('https://serve-app-e9ia.onrender.com/send-notification', {
       method: 'POST',
@@ -61,17 +61,17 @@ async function enviarNotificacaoWakeUp(receiverToken, receiverId, meuId) {
       body: JSON.stringify({
         token: receiverToken,
         title: '📞 Nova Chamada',
-        body: `Toque para atender a chamada`, // ✅ CORPO SIMPLES IGUAL AO SERVIDOR
-        // ✅ DADOS SIMPLES: APENAS O NECESSÁRIO
+        body: `Toque para atender a chamada`,
         data: {
-          type: 'wake_up' // ✅ MESMO TIPO QUE O SERVIDOR ESPERA
-          // ❌ REMOVIDO: callerId, callerLang, targetLang, receiverId
+          type: 'wake_up',
+          callerId: meuId,
+          callerLang: meuIdioma
         }
       })
     });
 
     const result = await response.json();
-    console.log('✅ Notificação SIMPLES enviada:', result);
+    console.log('✅ Notificação enviada:', result);
     return result.success;
   } catch (error) {
     console.error('❌ Erro ao enviar notificação:', error);
@@ -79,7 +79,7 @@ async function enviarNotificacaoWakeUp(receiverToken, receiverId, meuId) {
   }
 }
 
-// ⏳ FUNÇÃO: Mostrar estado "Aguardando resposta" (SÓ PARA OFFLINE)
+// ⏳ FUNÇÃO: Mostrar estado "Aguardando resposta"
 function mostrarEstadoAguardando() {
   const statusElement = document.createElement('div');
   statusElement.id = 'aguardando-status';
@@ -88,8 +88,8 @@ function mostrarEstadoAguardando() {
                 background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 10px;
                 text-align: center; z-index: 1000;">
       <div style="font-size: 24px; margin-bottom: 10px;">📞</div>
-      <div>Chamando receptor...</div>
-      <div style="font-size: 12px; opacity: 0.8;">Aguardando atender</div>
+      <div>Conectando com receptor...</div>
+      <div style="font-size: 12px; opacity: 0.8;">Aguardando resposta</div>
       <div id="contador-tempo" style="margin-top: 10px;">30s</div>
     </div>
   `;
@@ -116,100 +116,115 @@ function mostrarEstadoAguardando() {
   }, 1000);
 }
 
-// 🔄 FUNÇÃO: Iniciar escuta para conexão reversa (SÓ PARA OFFLINE)
-function iniciarEscutaConexaoReversa(receiverId, meuId) {
-  console.log('👂 Escutando por conexão reversa do receiver...');
+// 🔄 FUNÇÃO UNIFICADA: Tentar conexão + notificação se necessário
+async function iniciarConexaoUnificada(receiverId, receiverToken, meuId, localStream, meuIdioma) {
+  console.log('🚀 Iniciando fluxo unificado de conexão...');
   
-  // Configura callback para quando receiver se conectar
-  window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
-    console.log('✅ Receiver conectou via notificação! Aceitando chamada...');
+  let conexaoEstabelecida = false;
+  let tentativasRestantes = 15; // 30 segundos no total
+  let notificacaoEnviada = false;
+  
+  mostrarEstadoAguardando();
+  
+  const tentarConexao = async () => {
+    if (conexaoEstabelecida) return;
+    
+    if (tentativasRestantes > 0) {
+      console.log(`🔄 Tentativa ${16 - tentativasRestantes} de conexão com: ${receiverId}`);
+      
+      // Tenta conexão direta
+      window.rtcCore.startCall(receiverId, localStream, meuIdioma);
+      
+      tentativasRestantes--;
+      
+      // Se é a 3ª tentativa e ainda não enviou notificação, ENVIA
+      if (tentativasRestantes === 12 && !notificacaoEnviada) {
+        console.log('📨 Enviando notificação wake-up...');
+        notificacaoEnviada = await enviarNotificacaoWakeUp(receiverToken, receiverId, meuId, meuIdioma);
+      }
+      
+      // Agenda próxima tentativa
+      setTimeout(tentarConexao, 2000);
+    } else {
+      console.log('❌ Timeout - Não foi possível conectar');
+      const statusElement = document.getElementById('aguardando-status');
+      if (statusElement) {
+        statusElement.innerHTML = `
+          <div style="text-align: center;">
+            <div style="font-size: 24px; margin-bottom: 10px;">❌</div>
+            <div>Não foi possível conectar</div>
+            <button onclick="this.parentElement.parentElement.remove()" 
+                    style="margin-top: 10px; padding: 5px 10px; background: #ff4444; color: white; border: none; border-radius: 5px;">
+              Fechar
+            </button>
+          </div>
+        `;
+      }
+    }
+  };
+  
+  // Inicia as tentativas
+  tentarConexao();
+  
+  // Callback quando conexão é estabelecida
+  window.rtcCore.setRemoteStreamCallback(stream => {
+    conexaoEstabelecida = true;
+    console.log('✅ Conexão estabelecida com sucesso!');
     
     // Remove tela de aguardando
     const statusElement = document.getElementById('aguardando-status');
     if (statusElement) statusElement.remove();
     
-    // Aceita a chamada normalmente
-    window.rtcCore.handleIncomingCall(offer, window.localStream, (remoteStream) => {
-      remoteStream.getAudioTracks().forEach(track => track.enabled = false);
-      const remoteVideo = document.getElementById('remoteVideo');
-      if (remoteVideo) remoteVideo.srcObject = remoteStream;
-      console.log('🎉 Conexão bidirecional estabelecida via notificação!');
-    });
-  };
-
-  // Timeout de 30 segundos
-  setTimeout(() => {
-    console.log('⏰ Timeout da escuta reversa');
-    window.rtcCore.onIncomingCall = null;
-  }, 30000);
-}
-
-// 🔄 FUNÇÃO ATUALIZADA: Tentar fluxo de notificação SIMPLES
-async function tentarFluxoNotificacaoSimples(receiverToken, receiverId, meuId) {
-  console.log('📞 Iniciando fluxo de notificação SIMPLES...');
-  
-  // ✅✅✅ ENVIA APENAS NOTIFICAÇÃO SIMPLES "ACORDAR" (IGUAL AO SERVIDOR)
-  const notificacaoEnviada = await enviarNotificacaoWakeUp(
-    receiverToken, 
-    receiverId, 
-    meuId
-  );
-  
-  if (notificacaoEnviada) {
-    mostrarEstadoAguardando();
-    iniciarEscutaConexaoReversa(receiverId, meuId);
-  } else {
-    alert('❌ Não foi possível notificar o receptor. Tente novamente.');
-  }
+    // Configura stream remoto
+    stream.getAudioTracks().forEach(track => track.enabled = false);
+    const remoteVideo = document.getElementById('remoteVideo');
+    if (remoteVideo) remoteVideo.srcObject = stream;
+  });
 }
 
 window.onload = async () => {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-   let localStream = stream;
-   document.getElementById('localVideo').srcObject = localStream;
+    let localStream = stream;
+    document.getElementById('localVideo').srcObject = localStream;
 
     window.rtcCore = new WebRTCCore();
 
-   // ✅ CORRETO: Box SEMPRE visível e fixo, frase só aparece com a voz
-window.rtcCore.setDataChannelCallback((mensagem) => {
-  console.log('📩 Mensagem recebida:', mensagem);
+    // ✅ CORRETO: Data Channel Callback
+    window.rtcCore.setDataChannelCallback((mensagem) => {
+      console.log('📩 Mensagem recebida:', mensagem);
 
-  const elemento = document.getElementById('texto-recebido');
-  if (elemento) {
-    // Box SEMPRE visível, mas texto vazio inicialmente
-    elemento.textContent = ""; // ← TEXTO FICA VAZIO NO INÍCIO
-    elemento.style.opacity = '1'; // ← BOX SEMPRE VISÍVEL
-    elemento.style.transition = 'opacity 0.5s ease'; // ← Transição suave
-    
-    // ✅ PULSAÇÃO AO RECEBER MENSAGEM:
-    elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
-    elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
-    elemento.style.border = '2px solid #ff0000';
-  }
-
-  if (window.SpeechSynthesis) {
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(mensagem);
-    utterance.lang = window.targetTranslationLang || 'pt-BR';
-    utterance.rate = 0.9;
-    utterance.volume = 0.8;
-
-    utterance.onstart = () => {
+      const elemento = document.getElementById('texto-recebido');
       if (elemento) {
-        // ✅ PARA A PULSAÇÃO E VOLTA AO NORMAL QUANDO A VOZ COMEÇA:
-        elemento.style.animation = 'none';
-        elemento.style.backgroundColor = ''; // Volta ao fundo original
-        elemento.style.border = ''; // Remove a borda vermelha
+        elemento.textContent = "";
+        elemento.style.opacity = '1';
+        elemento.style.transition = 'opacity 0.5s ease';
         
-        // SÓ MOSTRA O TEXTO QUANDO A VOZ COMEÇA
-        elemento.textContent = mensagem;
+        elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
+        elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
+        elemento.style.border = '2px solid #ff0000';
       }
-    };
 
-    window.speechSynthesis.speak(utterance);
-  }
-});
+      if (window.SpeechSynthesis) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(mensagem);
+        utterance.lang = window.targetTranslationLang || 'pt-BR';
+        utterance.rate = 0.9;
+        utterance.volume = 0.8;
+
+        utterance.onstart = () => {
+          if (elemento) {
+            elemento.style.animation = 'none';
+            elemento.style.backgroundColor = '';
+            elemento.style.border = '';
+            elemento.textContent = mensagem;
+          }
+        };
+
+        window.speechSynthesis.speak(utterance);
+      }
+    });
+
     const myId = crypto.randomUUID().substr(0, 8);
     document.getElementById('myId').textContent = myId;
 
@@ -227,37 +242,15 @@ window.rtcCore.setDataChannelCallback((mensagem) => {
       lang: receiverLang
     };
 
-    // ✅✅✅ FLUXO MELHORADO: Tenta conexão normal PRIMEIRO, depois notificação SIMPLES
+    // ✅✅✅ FLUXO UNIFICADO: Se tem receiverId, inicia conexão
     if (receiverId) {
       document.getElementById('callActionBtn').style.display = 'none';
       
       if (localStream) {
         const meuIdioma = await obterIdiomaCompleto(navigator.language);
-        console.log('🚀 Tentando conexão normal com receiver...');
         
-        // ⭐⭐ PRIMEIRO: Tenta conexão direta (MANTIDO 100%)
-        window.rtcCore.startCall(receiverId, localStream, meuIdioma);
-        
-        // 🔄 MONITOR: Se conexão falhar em 5 segundos, tenta notificação SIMPLES
-        let conexaoEstabelecida = false;
-        
-        const timeoutConexao = setTimeout(() => {
-          if (!conexaoEstabelecida) {
-            console.log('❌ Conexão normal falhou. Tentando notificação SIMPLES...');
-            tentarFluxoNotificacaoSimples(receiverToken, receiverId, myId);
-          }
-        }, 5000);
-        
-        // Se conectar com sucesso, cancela o timeout
-        window.rtcCore.setRemoteStreamCallback(stream => {
-          conexaoEstabelecida = true;
-          clearTimeout(timeoutConexao);
-          console.log('✅ Conexão normal estabelecida com sucesso!');
-          
-          stream.getAudioTracks().forEach(track => track.enabled = false);
-          const remoteVideo = document.getElementById('remoteVideo');
-          remoteVideo.srcObject = stream;
-        });
+        // ⭐⭐ INICIA FLUXO UNIFICADO
+        iniciarConexaoUnificada(receiverId, receiverToken, myId, localStream, meuIdioma);
       }
     }
 
