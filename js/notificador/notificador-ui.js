@@ -253,13 +253,15 @@ window.onload = async () => {
             "translator-label": "Real-time translation."
         };
 
-        for (const [id, texto] of Object.entries(frasesParaTraduzir)) {
-            const el = document.getElementById(id);
-            if (el) {
-                const traduzido = await translateText(texto, lang);
-                el.textContent = traduzido;
-            }
+       (async () => {
+    for (const [id, texto] of Object.entries(frasesParaTraduzir)) {
+        const el = document.getElementById(id);
+        if (el) {
+            const traduzido = await translateText(texto, lang); // ✅ await dentro de async
+            el.textContent = traduzido;
         }
+    }
+})();
 
         // ✅ 10. 🔥🔥🔥 CONEXÃO DIRETA - ESCUTA POR OFFER EXISTENTE
         console.log('📞🔔 INICIANDO CONEXÃO DIRETA VIA NOTIFICAÇÃO...');
