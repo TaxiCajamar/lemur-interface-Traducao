@@ -1,5 +1,5 @@
 import { WebRTCCore } from '../core/webrtc-core.js';
-import { QRCodeGenerator } from './qr-code-utils.js';
+import { QRCodeGenerator } from './QRcode/qr-code-utils.js';
 
 // 🎯 FUNÇÃO PARA OBTER IDIOMA COMPLETO (igual ao caller)
 async function obterIdiomaCompleto(lang) {
