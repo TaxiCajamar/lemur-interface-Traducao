@@ -139,34 +139,35 @@ window.onload = async () => {
         // ✅ 3. INICIALIZA WEBRTC
         window.rtcCore = new WebRTCCore();
 
+        // ✅✅✅ CORREÇÃO: Obtenção de parâmetros com fallbacks
         const params = new URLSearchParams(window.location.search);
         const pendingCaller = params.get('pendingCaller') || params.get('callerId');
-        const callerLang = params.get('callerLang') || params.get('targetLang');
-        const lang = params.get('lang') || navigator.language || 'pt-BR';
-        const token = params.get('token') || '';
+        const callerLang = params.get('callerLang') || params.get('targetLang') || 'pt-BR';
+        const lang = params.get('targetLang') || params.get('lang') || navigator.language || 'pt-BR';
 
-        console.log('🔔 Parâmetros Notificação:', { 
+        console.log('🔔 Parâmetros Notificação (CORRIGIDOS):', { 
             pendingCaller: pendingCaller || 'Nenhum',
-            callerLang: callerLang || 'Não informado',
+            callerLang: callerLang,
             lang: lang
         });
 
-        if (!pendingCaller) {
-            console.error('❌ ERRO: Modo notificação sem pendingCaller!');
+        // ✅✅✅ VALIDAÇÃO MELHORADA
+        if (!pendingCaller || pendingCaller === 'unknown') {
+            console.error('❌ ERRO: pendingCaller inválido:', pendingCaller);
             
-            // Mostra erro para o usuário
             const statusElement = document.getElementById('notification-status');
             if (statusElement) {
                 statusElement.innerHTML = `
                     <div style="background: #cc0000; color: white; padding: 15px; text-align: center;">
-                        ❌ Erro: Link inválido. Volte e tente novamente.
+                        ❌ Link inválido ou expirado. 
+                        <br>Peça para o chamador enviar novamente.
                     </div>
                 `;
             }
             return;
         }
 
-        // ✅✅✅ CORREÇÃO CRÍTICA: USA O pendingCaller COMO ID (NÃO CRIA UM NOVO)
+        // ✅✅✅ CORREÇÃO CRÍTICA: USA pendingCaller COMO ID
         const myId = pendingCaller;
         console.log('🎯 ID DO RECEIVER (USANDO pendingCaller):', myId);
 
