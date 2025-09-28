@@ -1,4 +1,4 @@
-// 📦 Importa o núcleo WebRTC (para comunicação)
+// 📦 Importa o núcleo WebRTC
 import { WebRTCCore } from '../../core/webrtc-core.js';
 
 // 🎯 FUNÇÃO PARA OBTER IDIOMA COMPLETO
@@ -19,6 +19,34 @@ async function obterIdiomaCompleto(lang) {
       'ja': 'ja-JP', 'zh': 'zh-CN', 'ru': 'ru-RU'
     };
     return fallback[lang] || 'en-US';
+  }
+}
+
+// ===== FUNÇÃO SIMPLES PARA ENVIAR TEXTO =====
+function enviarParaOutroCelular(texto) {
+  if (window.rtcDataChannel && window.rtcDataChannel.isOpen()) {
+    window.rtcDataChannel.send(texto);
+    console.log('✅ Texto enviado:', texto);
+  } else {
+    console.log('⏳ Canal não disponível ainda. Tentando novamente...');
+    setTimeout(() => enviarParaOutroCelular(texto), 1000);
+  }
+}
+
+// 🌐 Tradução apenas para texto
+async function translateText(text, targetLang) {
+  try {
+    const response = await fetch('https://chat-tradutor-bvvx.onrender.com/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, targetLang })
+    });
+
+    const result = await response.json();
+    return result.translatedText || text;
+  } catch (error) {
+    console.error('Erro na tradução:', error);
+    return text;
   }
 }
 
@@ -48,106 +76,165 @@ async function notificarServidorOnline(meuId, meuIdioma) {
   }
 }
 
-// 🎯 FUNÇÃO PRINCIPAL: Configurar interface simples de "aguardando"
-function configurarInterfaceAguardando(meuId, meuIdioma) {
-  // ✅ REMOVE qualquer elemento complexo existente
-  const elementosComplexos = document.querySelectorAll('#aguardando-status, .call-interface');
-  elementosComplexos.forEach(el => el.remove());
-  
-  // ✅ CRIA INTERFACE SIMPLES DE "AGUARDANDO"
+// ⏳ FUNÇÃO: Mostrar estado "Aguardando resposta"
+function mostrarEstadoAguardando() {
   const statusElement = document.createElement('div');
   statusElement.id = 'aguardando-status';
   statusElement.innerHTML = `
-    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                display: flex; flex-direction: column; align-items: center; 
-                justify-content: center; color: white; text-align: center;
-                font-family: Arial, sans-serif; z-index: 1000;">
-      
-      <div style="font-size: 80px; margin-bottom: 20px;">📞</div>
-      
-      <div style="font-size: 24px; font-weight: bold; margin-bottom: 10px;">
-        Aguardando Chamada
-      </div>
-      
-      <div style="font-size: 16px; opacity: 0.9; margin-bottom: 20px;">
-        ID: <strong>${meuId}</strong>
-      </div>
-      
-      <div style="font-size: 14px; opacity: 0.7; margin-bottom: 30px;">
-        Idioma: ${meuIdioma}
-      </div>
-      
-      <div class="pulsating-dot" style="
-        width: 20px; height: 20px; background: #4CAF50; border-radius: 50%;
-        animation: pulse 1.5s infinite; margin-top: 20px;
-      "></div>
-      
-      <div style="font-size: 12px; opacity: 0.6; margin-top: 10px;">
-        Disponível para receber chamadas
-      </div>
+    <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 10px;
+                text-align: center; z-index: 1000;">
+      <div style="font-size: 24px; margin-bottom: 10px;">📞</div>
+      <div>Aguardando chamada...</div>
+      <div style="font-size: 12px; opacity: 0.8;">Pronto para receber conexão</div>
     </div>
-    
-    <style>
-      @keyframes pulse {
-        0% { transform: scale(0.8); opacity: 0.7; }
-        50% { transform: scale(1.2); opacity: 1; }
-        100% { transform: scale(0.8); opacity: 0.7; }
-      }
-    </style>
   `;
-  
   document.body.appendChild(statusElement);
 }
 
-// 🚀 INICIALIZAÇÃO SIMPLIFICADA
 window.onload = async () => {
   try {
-    console.log('🚀 Iniciando Notificador - Modo Simples');
+    // ✅✅✅ MANTIDO: SOLICITAÇÃO DE CÂMERA (ESSENCIAL PARA WebRTC)
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    let localStream = stream;
     
-    // ✅ OBTÉM ID E IDIOMA DOS PARÂMETROS DA URL
+    // ✅✅✅ MANTIDO: CONFIGURAÇÃO DO VÍDEO LOCAL
+    const localVideo = document.getElementById('localVideo');
+    if (localVideo) localVideo.srcObject = localStream;
+
+    // ✅✅✅ MANTIDO: INICIALIZAÇÃO WebRTC
+    window.rtcCore = new WebRTCCore();
+
+    // ✅✅✅ MANTIDO: DATA CHANNEL CALLBACK
+    window.rtcCore.setDataChannelCallback((mensagem) => {
+      console.log('📩 Mensagem recebida:', mensagem);
+
+      const elemento = document.getElementById('texto-recebido');
+      if (elemento) {
+        elemento.textContent = "";
+        elemento.style.opacity = '1';
+        elemento.style.transition = 'opacity 0.5s ease';
+        
+        elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
+        elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
+        elemento.style.border = '2px solid #ff0000';
+      }
+
+      if (window.SpeechSynthesis) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(mensagem);
+        utterance.lang = window.targetTranslationLang || 'pt-BR';
+        utterance.rate = 0.9;
+        utterance.volume = 0.8;
+
+        utterance.onstart = () => {
+          if (elemento) {
+            elemento.style.animation = 'none';
+            elemento.style.backgroundColor = '';
+            elemento.style.border = '';
+            elemento.textContent = mensagem;
+          }
+        };
+
+        window.speechSynthesis.speak(utterance);
+      }
+    });
+
+    // ✅✅✅ MANTIDO: GERA ID (MAS USA DA URL SE EXISTIR)
     const urlParams = new URLSearchParams(window.location.search);
     const meuId = urlParams.get('id') || crypto.randomUUID().substr(0, 8);
-    const meuIdioma = await obterIdiomaCompleto(urlParams.get('lang') || navigator.language);
     
-    console.log('👤 Meu ID:', meuId);
-    console.log('🌐 Meu Idioma:', meuIdioma);
-    
-    // ✅ CONFIGURA INTERFACE SIMPLES
-    configurarInterfaceAguardando(meuId, meuIdioma);
-    
-    // ✅✅✅ CORREÇÃO CRÍTICA: AVISA SERVIDOR QUE ESTOU ONLINE!
-    await notificarServidorOnline(meuId, meuIdioma);
-    
-    // ✅ INICIALIZA WebRTC (APENAS PARA RECEBER)
-    window.rtcCore = new WebRTCCore();
+    // ✅✅✅ ATUALIZA O ID NA INTERFACE
+    const myIdElement = document.getElementById('myId');
+    if (myIdElement) myIdElement.textContent = meuId;
+
+    // ✅✅✅ MANTIDO: INICIALIZA WebRTC
     window.rtcCore.initialize(meuId);
     window.rtcCore.setupSocketHandlers();
-    
-    console.log('✅ Notificador inicializado e aguardando chamadas');
-    
-    // ✅ CONFIGURA CALLBACK PARA RECEBER MENSAGENS
-    window.rtcCore.setDataChannelCallback((mensagem) => {
-      console.log('📩 Mensagem recebida no notificador:', mensagem);
-      // O tradutor (notificador-trz.js) cuidará das mensagens
-    });
-    
-    // ✅ CONFIGURA CALLBACK PARA RECEBER CHAMADAS
+
+    // ✅✅✅ CORREÇÃO CRÍTICA: AVISA SERVIDOR QUE ESTOU ONLINE!
+    const meuIdioma = await obterIdiomaCompleto(urlParams.get('lang') || navigator.language);
+    await notificarServidorOnline(meuId, meuIdioma);
+
+    // ✅✅✅ MANTIDO: CONFIGURA RECEPÇÃO DE CHAMADAS
     window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
-      console.log('📞 Chamada recebida no notificador!');
-      console.log('🎯 Idioma do caller:', idiomaDoCaller);
+      console.log('📞 Chamada recebida! Aceitando automaticamente...');
       
-      // ✅ ACEITA CHAMADA AUTOMATICAMENTE
-      window.rtcCore.handleIncomingCall(offer, null, (remoteStream) => {
-        console.log('✅ Chamada atendida automaticamente');
-        // O stream será usado pelo tradutor
+      // Remove tela de aguardando se existir
+      const statusElement = document.getElementById('aguardando-status');
+      if (statusElement) statusElement.remove();
+      
+      // ✅✅✅ ACEITA CHAMADA AUTOMATICAMENTE
+      window.rtcCore.handleIncomingCall(offer, localStream, (remoteStream) => {
+        console.log('✅ Chamada atendida com sucesso!');
+        
+        // ✅✅✅ MANTIDO: CONFIGURA VÍDEO REMOTO
+        remoteStream.getAudioTracks().forEach(track => track.enabled = false);
+        const remoteVideo = document.getElementById('remoteVideo');
+        if (remoteVideo) remoteVideo.srcObject = remoteStream;
       });
     };
-    
+
+    // ✅✅✅ MANTIDO: TRADUÇÃO DA INTERFACE
+    const navegadorLang = await obterIdiomaCompleto(navigator.language);
+    const frasesParaTraduzir = {
+      "translator-label": "Real-time translation."
+    };
+
+    (async () => {
+      for (const [id, texto] of Object.entries(frasesParaTraduzir)) {
+        const el = document.getElementById(id);
+        if (el) {
+          const traduzido = await translateText(texto, navegadorLang);
+          el.textContent = traduzido;
+        }
+      }
+    })();
+
+    // ✅✅✅ MANTIDO: BANDEIRAS DE IDIOMA
+    async function aplicarBandeiraLocal(langCode) {
+      try {
+        const response = await fetch('assets/bandeiras/language-flags.json');
+        const flags = await response.json();
+        const bandeira = flags[langCode] || flags[langCode.split('-')[0]] || '🔴';
+
+        const localLangElement = document.querySelector('.local-mic-Lang');
+        if (localLangElement) localLangElement.textContent = bandeira;
+
+        const localLangDisplay = document.querySelector('.local-Lang');
+        if (localLangDisplay) localLangDisplay.textContent = bandeira;
+      } catch (error) {
+        console.error('Erro ao carregar bandeira local:', error);
+      }
+    }
+
+    async function aplicarBandeiraRemota(langCode) {
+      try {
+        const response = await fetch('assets/bandeiras/language-flags.json');
+        const flags = await response.json();
+        const bandeira = flags[langCode] || flags[langCode.split('-')[0]] || '🔴';
+
+        const remoteLangElement = document.querySelector('.remoter-Lang');
+        if (remoteLangElement) remoteLangElement.textContent = bandeira;
+      } catch (error) {
+        console.error('Erro ao carregar bandeira remota:', error);
+        const remoteLangElement = document.querySelector('.remoter-Lang');
+        if (remoteLangElement) remoteLangElement.textContent = '🔴';
+      }
+    }
+
+    aplicarBandeiraLocal(navegadorLang);
+    aplicarBandeiraRemota(meuIdioma);
+
+    // ✅✅✅ MOSTRA ESTADO "AGUARDANDO"
+    mostrarEstadoAguardando();
+
+    console.log('✅ Notificador inicializado - Aguardando chamadas');
+
   } catch (error) {
-    console.error('❌ Erro ao inicializar notificador:', error);
+    console.error("❌ Erro ao inicializar notificador:", error);
     
-    // ✅ FALLBACK SIMPLES EM CASO DE ERRO
+    // ✅✅✅ MANTIDO: TRATAMENTO DE ERRO
     const errorElement = document.createElement('div');
     errorElement.innerHTML = `
       <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
