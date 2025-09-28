@@ -50,30 +50,27 @@ async function translateText(text, targetLang) {
   }
 }
 
-// 🔔🔔🔔 FUNÇÃO MELHORADA: Enviar notificação FCM COM DADOS VISÍVEIS
-async function enviarNotificacaoWakeUp(receiverToken, receiverId, meuId, meuIdioma, targetLang) {
+// 🔔🔔🔔 FUNÇÃO ATUALIZADA: Notificação SIMPLES apenas para "acordar"
+async function enviarNotificacaoWakeUp(receiverToken, receiverId, meuId) {
   try {
-    console.log('🔔 Enviando notificação FCM para acordar receiver...');
+    console.log('🔔 Enviando notificação SIMPLES para acordar receiver...');
     
     const response = await fetch('https://serve-app-e9ia.onrender.com/send-notification', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         token: receiverToken,
-        title: '📞 Nova Chamada',  // ✅ TÍTULO MAIS CLARO
-        body: `ID ${meuId} quer conectar com ID ${receiverId} | Eu falo ${meuIdioma}`,  // ✅ CORPO COM DADOS REAIS
+        title: '📞 Nova Chamada',
+        body: `ID ${meuId} quer conectar`, // ✅ CORPO SIMPLES
         data: {
-          type: 'wake_up_call',
-          callerId: meuId,           // ID de QUEM está chamando
-          callerLang: meuIdioma,     // Idioma de QUEM está chamando
-          targetLang: targetLang,    // Idioma de destino
-          receiverId: receiverId     // SEU ID (quem recebe)
+          type: 'wake_up_call' // ✅ APENAS IDENTIFICA O TIPO
+          // ❌ REMOVIDO: callerId, callerLang, targetLang, receiverId
         }
       })
     });
 
     const result = await response.json();
-    console.log('✅ Notificação enviada:', result);
+    console.log('✅ Notificação SIMPLES enviada:', result);
     return result.success;
   } catch (error) {
     console.error('❌ Erro ao enviar notificação:', error);
@@ -210,7 +207,7 @@ window.rtcCore.setDataChannelCallback((mensagem) => {
       lang: receiverLang
     };
 
-    // ✅✅✅ FLUXO MELHORADO: Tenta conexão normal PRIMEIRO, depois notificação
+    // ✅✅✅ FLUXO MELHORADO: Tenta conexão normal PRIMEIRO, depois notificação SIMPLES
     if (receiverId) {
       document.getElementById('callActionBtn').style.display = 'none';
       
@@ -218,16 +215,16 @@ window.rtcCore.setDataChannelCallback((mensagem) => {
         const meuIdioma = await obterIdiomaCompleto(navigator.language);
         console.log('🚀 Tentando conexão normal com receiver...');
         
-        // ⭐⭐ PRIMEIRO: Tenta conexão direta
+        // ⭐⭐ PRIMEIRO: Tenta conexão direta (MANTIDO 100%)
         window.rtcCore.startCall(receiverId, localStream, meuIdioma);
         
-        // 🔄 MONITOR: Se conexão falhar em 5 segundos, tenta notificação
+        // 🔄 MONITOR: Se conexão falhar em 5 segundos, tenta notificação SIMPLES
         let conexaoEstabelecida = false;
         
         const timeoutConexao = setTimeout(() => {
           if (!conexaoEstabelecida) {
-            console.log('❌ Conexão normal falhou. Tentando notificação...');
-            tentarFluxoNotificacao(receiverToken, receiverId, myId, meuIdioma, receiverLang);
+            console.log('❌ Conexão normal falhou. Tentando notificação SIMPLES...');
+            tentarFluxoNotificacaoSimples(receiverToken, receiverId, myId);
           }
         }, 5000);
         
@@ -244,16 +241,16 @@ window.rtcCore.setDataChannelCallback((mensagem) => {
       }
     }
 
-    // 🔄 FUNÇÃO: Tentar fluxo de notificação apenas se conexão normal falhar
-    async function tentarFluxoNotificacao(receiverToken, receiverId, meuId, meuIdioma, targetLang) {
-      console.log('📞 Iniciando fluxo de notificação...');
+    // 🔄 FUNÇÃO ATUALIZADA: Tentar fluxo de notificação SIMPLES
+    async function tentarFluxoNotificacaoSimples(receiverToken, receiverId, meuId) {
+      console.log('📞 Iniciando fluxo de notificação SIMPLES...');
       
+      // ✅✅✅ ENVIA APENAS NOTIFICAÇÃO SIMPLES "ACORDAR"
       const notificacaoEnviada = await enviarNotificacaoWakeUp(
         receiverToken, 
         receiverId, 
-        meuId, 
-        meuIdioma, 
-        targetLang
+        meuId
+        // ❌ REMOVIDO: meuIdioma, targetLang (não são mais necessários)
       );
       
       if (notificacaoEnviada) {
