@@ -107,5 +107,32 @@
     <script src="https://lemur-signal-ings.onrender.com/socket.io/socket.io.js"></script>
     <script type="module" src="./js/notificador/notificador-ui.js"></script>
 <script src="./js/notificador/notificador-trz.js"></script>
+
+<!-- 🔍🔍🔍 DEBUG VISUAL - REMOVA DEPOIS DOS TESTES -->
+<div id="debug-info" style="position: fixed; top: 10px; left: 10px; background: red; color: white; padding: 10px; z-index: 9999; border-radius: 5px; font-size: 14px; max-width: 300px;">
+    🔍 Aguardando dados...
+</div>
+
+<script>
+// 🔍 DEBUG - Mostra os parâmetros que chegam da notificação
+setTimeout(() => {
+    const params = new URLSearchParams(window.location.search);
+    const pendingCaller = params.get('pendingCaller');
+    const callerLang = params.get('callerLang');
+    const targetLang = params.get('targetLang');
+    
+    const debugDiv = document.getElementById('debug-info');
+    if (debugDiv) {
+        if (pendingCaller && pendingCaller !== 'unknown') {
+            debugDiv.innerHTML = `✅ DADOS OK<br>Chamador: ${pendingCaller}<br>Idioma: ${callerLang}<br>Target: ${targetLang}`;
+            debugDiv.style.background = 'green';
+        } else {
+            debugDiv.innerHTML = '❌ SEM DADOS<br>Link inválido<br>pendingCaller: ' + (pendingCaller || 'NULO');
+            debugDiv.style.background = 'red';
+        }
+    }
+}, 1000);
+</script>
+
 </body>
 </html>
