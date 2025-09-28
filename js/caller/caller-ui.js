@@ -50,6 +50,102 @@ async function translateText(text, targetLang) {
   }
 }
 
+// 🔔🔔🔔 FUNÇÃO CORRIGIDA: Enviar notificação FCM (APENAS DADOS)
+async function enviarNotificacaoWakeUp(receiverToken, receiverId, meuId, meuIdioma, targetLang) {
+  try {
+    console.log('🔔 Enviando notificação FCM para acordar receiver...');
+    
+    const response = await fetch('https://serve-app-e9ia.onrender.com/send-notification', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token: receiverToken,
+        title: '📞 Chamada de Tradução',
+        body: 'Alguém quer conversar com você!',
+        data: {
+          type: 'wake_up_call',
+          callerId: meuId,
+          callerLang: meuIdioma,
+          targetLang: targetLang
+          // ✅ REMOVIDO: url e click_action (o Flutter cuida disso)
+        }
+      })
+    });
+
+    const result = await response.json();
+    console.log('✅ Notificação enviada:', result);
+    return result.success;
+  } catch (error) {
+    console.error('❌ Erro ao enviar notificação:', error);
+    return false;
+  }
+}
+
+// ⏳ FUNÇÃO: Mostrar estado "Aguardando resposta" (SÓ PARA OFFLINE)
+function mostrarEstadoAguardando() {
+  const statusElement = document.createElement('div');
+  statusElement.id = 'aguardando-status';
+  statusElement.innerHTML = `
+    <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 10px;
+                text-align: center; z-index: 1000;">
+      <div style="font-size: 24px; margin-bottom: 10px;">📞</div>
+      <div>Chamando receptor...</div>
+      <div style="font-size: 12px; opacity: 0.8;">Aguardando atender</div>
+      <div id="contador-tempo" style="margin-top: 10px;">30s</div>
+    </div>
+  `;
+  document.body.appendChild(statusElement);
+
+  let tempoRestante = 30;
+  const contador = setInterval(() => {
+    tempoRestante--;
+    document.getElementById('contador-tempo').textContent = tempoRestante + 's';
+    
+    if (tempoRestante <= 0) {
+      clearInterval(contador);
+      statusElement.innerHTML = `
+        <div style="text-align: center;">
+          <div style="font-size: 24px; margin-bottom: 10px;">❌</div>
+          <div>Receptor indisponível</div>
+          <button onclick="this.parentElement.parentElement.remove()" 
+                  style="margin-top: 10px; padding: 5px 10px; background: #ff4444; color: white; border: none; border-radius: 5px;">
+            Fechar
+          </button>
+        </div>
+      `;
+    }
+  }, 1000);
+}
+
+// 🔄 FUNÇÃO: Iniciar escuta para conexão reversa (SÓ PARA OFFLINE)
+function iniciarEscutaConexaoReversa(receiverId, meuId) {
+  console.log('👂 Escutando por conexão reversa do receiver...');
+  
+  // Configura callback para quando receiver se conectar
+  window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
+    console.log('✅ Receiver conectou via notificação! Aceitando chamada...');
+    
+    // Remove tela de aguardando
+    const statusElement = document.getElementById('aguardando-status');
+    if (statusElement) statusElement.remove();
+    
+    // Aceita a chamada normalmente
+    window.rtcCore.handleIncomingCall(offer, window.localStream, (remoteStream) => {
+      remoteStream.getAudioTracks().forEach(track => track.enabled = false);
+      const remoteVideo = document.getElementById('remoteVideo');
+      if (remoteVideo) remoteVideo.srcObject = remoteStream;
+      console.log('🎉 Conexão bidirecional estabelecida via notificação!');
+    });
+  };
+
+  // Timeout de 30 segundos
+  setTimeout(() => {
+    console.log('⏰ Timeout da escuta reversa');
+    window.rtcCore.onIncomingCall = null;
+  }, 30000);
+}
+
 window.onload = async () => {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
@@ -114,23 +210,59 @@ window.rtcCore.setDataChannelCallback((mensagem) => {
       lang: receiverLang
     };
 
-    // ✅ AUTOMATIZADO - inicia chamada automaticamente quando tem receiverId
+    // ✅✅✅ FLUXO MELHORADO: Tenta conexão normal PRIMEIRO, depois notificação
     if (receiverId) {
-      document.getElementById('callActionBtn').style.display = 'none'; // Esconde o botão
+      document.getElementById('callActionBtn').style.display = 'none';
       
-      // Inicia chamada automaticamente
       if (localStream) {
         const meuIdioma = await obterIdiomaCompleto(navigator.language);
-        console.log('🚀 Chamada automática iniciada. Idioma:', meuIdioma);
+        console.log('🚀 Tentando conexão normal com receiver...');
+        
+        // ⭐⭐ PRIMEIRO: Tenta conexão direta
         window.rtcCore.startCall(receiverId, localStream, meuIdioma);
+        
+        // 🔄 MONITOR: Se conexão falhar em 5 segundos, tenta notificação
+        let conexaoEstabelecida = false;
+        
+        const timeoutConexao = setTimeout(() => {
+          if (!conexaoEstabelecida) {
+            console.log('❌ Conexão normal falhou. Tentando notificação...');
+            tentarFluxoNotificacao(receiverToken, receiverId, myId, meuIdioma, receiverLang);
+          }
+        }, 5000);
+        
+        // Se conectar com sucesso, cancela o timeout
+        window.rtcCore.setRemoteStreamCallback(stream => {
+          conexaoEstabelecida = true;
+          clearTimeout(timeoutConexao);
+          console.log('✅ Conexão normal estabelecida com sucesso!');
+          
+          stream.getAudioTracks().forEach(track => track.enabled = false);
+          const remoteVideo = document.getElementById('remoteVideo');
+          remoteVideo.srcObject = stream;
+        });
       }
     }
 
-    window.rtcCore.setRemoteStreamCallback(stream => {
-      stream.getAudioTracks().forEach(track => track.enabled = false);
-      const remoteVideo = document.getElementById('remoteVideo');
-      remoteVideo.srcObject = stream;
-    });
+    // 🔄 FUNÇÃO: Tentar fluxo de notificação apenas se conexão normal falhar
+    async function tentarFluxoNotificacao(receiverToken, receiverId, meuId, meuIdioma, targetLang) {
+      console.log('📞 Iniciando fluxo de notificação...');
+      
+      const notificacaoEnviada = await enviarNotificacaoWakeUp(
+        receiverToken, 
+        receiverId, 
+        meuId, 
+        meuIdioma, 
+        targetLang
+      );
+      
+      if (notificacaoEnviada) {
+        mostrarEstadoAguardando();
+        iniciarEscutaConexaoReversa(receiverId, meuId);
+      } else {
+        alert('❌ Não foi possível notificar o receptor. Tente novamente.');
+      }
+    }
 
     const navegadorLang = await obterIdiomaCompleto(navigator.language);
 
