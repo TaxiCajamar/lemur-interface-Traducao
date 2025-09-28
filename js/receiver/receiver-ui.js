@@ -1,5 +1,5 @@
-import { WebRTCCore } from '../core/webrtc-core.js';
-import { QRCodeGenerator } from '../QRcode/qr-code-utils.js';
+import { WebRTCCore } from '../../core/webrtc-core.js';
+import { QRCodeGenerator } from '../../QRcode/qr-code-utils.js';
 
 // 🎯 FUNÇÃO PARA OBTER IDIOMA COMPLETO (igual ao caller)
 async function obterIdiomaCompleto(lang) {
@@ -7,7 +7,7 @@ async function obterIdiomaCompleto(lang) {
   if (lang.includes('-')) return lang;
 
   try {
-    const response = await fetch('assets/bandeiras/language-flags.json');
+    const response = await fetch('./assets/bandeiras/language-flags.json');
     const flags = await response.json();
     const codigoCompleto = Object.keys(flags).find(key => key.startsWith(lang + '-'));
     return codigoCompleto || `${lang}-${lang.toUpperCase()}`;
