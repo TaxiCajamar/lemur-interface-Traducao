@@ -1,4 +1,4 @@
-import { WebRTCCore } from './core/webrtc-core.js';
+import { WebRTCCore } from '../../core/webrtc-core.js';
 import { QRCodeGenerator } from '../qrcode/qr-code-utils.js';
 
 // 🎯 FUNÇÃO PARA OBTER IDIOMA COMPLETO (igual ao caller)
