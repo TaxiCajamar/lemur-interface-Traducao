@@ -39,7 +39,7 @@ function initializeTranslator() {
     // ===== FUNÇÃO PARA BUSCAR BANDEIRA DO JSON =====
     async function getBandeiraDoJson(langCode) {
         try {
-            const response = await fetch('assets/bandeiras/language-flags.json');
+            const response = await fetch('./assets/bandeiras/language-flags.json');
             const flags = await response.json();
             return flags[langCode] || flags[langCode.split('-')[0]] || '🎌';
         } catch (error) {
