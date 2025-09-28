@@ -50,12 +50,11 @@ async function translateText(text, targetLang) {
   }
 }
 
-// 🔔 FUNÇÃO SIMPLES: Notificar servidor que estou online
+// 🔔 FUNÇÃO: Notificar servidor que estou online
 async function notificarServidorOnline(meuId, meuIdioma) {
   try {
     console.log('📢 Notificando servidor que estou online:', meuId);
     
-    // ✅ ENVIA APENAS UMA MENSAGEM SIMPLES PARA O SERVIDOR
     const response = await fetch('https://serve-app-e9ia.onrender.com/user-online', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -76,7 +75,41 @@ async function notificarServidorOnline(meuId, meuIdioma) {
   }
 }
 
-// ⏳ FUNÇÃO: Mostrar estado "Aguardando resposta"
+// 🔥 FUNÇÃO: Iniciar chamada quando acordado por notificação
+async function iniciarChamadaQuandoAcordado(callerId, callerLang) {
+  console.log('🔥 Acordado por notificação! Iniciando chamada para:', callerId);
+  
+  // Remove tela de aguardando
+  const statusElement = document.getElementById('aguardando-status');
+  if (statusElement) statusElement.remove();
+  
+  // Mostra estado de conectando
+  const conectandoElement = document.createElement('div');
+  conectandoElement.id = 'conectando-status';
+  conectandoElement.innerHTML = `
+    <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 10px;
+                text-align: center; z-index: 1000;">
+      <div style="font-size: 24px; margin-bottom: 10px;">🔥</div>
+      <div>Conectando com caller...</div>
+      <div style="font-size: 12px; opacity: 0.8;">Iniciando chamada</div>
+    </div>
+  `;
+  document.body.appendChild(conectandoElement);
+  
+  try {
+    // ⭐⭐ RECEIVER toma iniciativa de conectar com CALLER
+    if (window.rtcCore && window.localStream) {
+      window.rtcCore.startCall(callerId, window.localStream, callerLang);
+      console.log('✅ Chamada iniciada pelo receiver para o caller');
+    }
+  } catch (error) {
+    console.error('❌ Erro ao iniciar chamada:', error);
+    if (conectandoElement) conectandoElement.remove();
+  }
+}
+
+// ⏳ FUNÇÃO: Mostrar estado "Aguardando chamadas"
 function mostrarEstadoAguardando() {
   const statusElement = document.createElement('div');
   statusElement.id = 'aguardando-status';
@@ -94,18 +127,19 @@ function mostrarEstadoAguardando() {
 
 window.onload = async () => {
   try {
-    // ✅✅✅ MANTIDO: SOLICITAÇÃO DE CÂMERA (ESSENCIAL PARA WebRTC)
+    // ✅✅✅ SOLICITAÇÃO DE CÂMERA
     const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
     let localStream = stream;
+    window.localStream = localStream; // Disponibiliza globalmente
     
-    // ✅✅✅ MANTIDO: CONFIGURAÇÃO DO VÍDEO LOCAL
+    // ✅✅✅ CONFIGURAÇÃO DO VÍDEO LOCAL
     const localVideo = document.getElementById('localVideo');
     if (localVideo) localVideo.srcObject = localStream;
 
-    // ✅✅✅ MANTIDO: INICIALIZAÇÃO WebRTC
+    // ✅✅✅ INICIALIZAÇÃO WebRTC
     window.rtcCore = new WebRTCCore();
 
-    // ✅✅✅ MANTIDO: DATA CHANNEL CALLBACK
+    // ✅✅✅ DATA CHANNEL CALLBACK
     window.rtcCore.setDataChannelCallback((mensagem) => {
       console.log('📩 Mensagem recebida:', mensagem);
 
@@ -140,7 +174,7 @@ window.onload = async () => {
       }
     });
 
-    // ✅✅✅ MANTIDO: GERA ID (MAS USA DA URL SE EXISTIR)
+    // ✅✅✅ GERA ID (USA DA URL SE EXISTIR)
     const urlParams = new URLSearchParams(window.location.search);
     const meuId = urlParams.get('id') || crypto.randomUUID().substr(0, 8);
     
@@ -148,34 +182,53 @@ window.onload = async () => {
     const myIdElement = document.getElementById('myId');
     if (myIdElement) myIdElement.textContent = meuId;
 
-    // ✅✅✅ MANTIDO: INICIALIZA WebRTC
+    // ✅✅✅ INICIALIZA WebRTC
     window.rtcCore.initialize(meuId);
     window.rtcCore.setupSocketHandlers();
 
-    // ✅✅✅ CORREÇÃO CRÍTICA: AVISA SERVIDOR QUE ESTOU ONLINE!
+    // ✅✅✅ AVISA SERVIDOR QUE ESTOU ONLINE!
     const meuIdioma = await obterIdiomaCompleto(urlParams.get('lang') || navigator.language);
     await notificarServidorOnline(meuId, meuIdioma);
 
-    // ✅✅✅ MANTIDO: CONFIGURA RECEPÇÃO DE CHAMADAS
-    window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
-      console.log('📞 Chamada recebida! Aceitando automaticamente...');
+    // ✅✅✅ CONFIGURA RECEPÇÃO DE CHAMADAS
+    window.rtcCore.onIncomingCall = (offer, idiomaDoCaller, callerId) => {
+      console.log('📞 Chamada recebida de:', callerId);
       
       // Remove tela de aguardando se existir
       const statusElement = document.getElementById('aguardando-status');
       if (statusElement) statusElement.remove();
       
+      const conectandoElement = document.getElementById('conectando-status');
+      if (conectandoElement) conectandoElement.remove();
+      
       // ✅✅✅ ACEITA CHAMADA AUTOMATICAMENTE
       window.rtcCore.handleIncomingCall(offer, localStream, (remoteStream) => {
         console.log('✅ Chamada atendida com sucesso!');
         
-        // ✅✅✅ MANTIDO: CONFIGURA VÍDEO REMOTO
+        // ✅✅✅ CONFIGURA VÍDEO REMOTO
         remoteStream.getAudioTracks().forEach(track => track.enabled = false);
         const remoteVideo = document.getElementById('remoteVideo');
         if (remoteVideo) remoteVideo.srcObject = remoteStream;
       });
     };
 
-    // ✅✅✅ MANTIDO: TRADUÇÃO DA INTERFACE
+    // ✅✅✅ VERIFICA SE FOI ACORDADO POR NOTIFICAÇÃO
+    const urlParams = new URLSearchParams(window.location.search);
+    const wakeupCallerId = urlParams.get('callerId');
+    const wakeupCallerLang = urlParams.get('callerLang');
+    
+    if (wakeupCallerId) {
+      console.log('🔥🔥🔥 ACORDADO POR NOTIFICAÇÃO - Iniciando chamada reversa');
+      // Pequeno delay para garantir que tudo está inicializado
+      setTimeout(() => {
+        iniciarChamadaQuandoAcordado(wakeupCallerId, wakeupCallerLang);
+      }, 1000);
+    } else {
+      // ✅✅✅ SE NÃO FOI ACORDADO, MOSTRA ESTADO NORMAL
+      mostrarEstadoAguardando();
+    }
+
+    // ✅✅✅ TRADUÇÃO DA INTERFACE
     const navegadorLang = await obterIdiomaCompleto(navigator.language);
     const frasesParaTraduzir = {
       "translator-label": "Real-time translation."
@@ -191,7 +244,7 @@ window.onload = async () => {
       }
     })();
 
-    // ✅✅✅ MANTIDO: BANDEIRAS DE IDIOMA
+    // ✅✅✅ BANDEIRAS DE IDIOMA
     async function aplicarBandeiraLocal(langCode) {
       try {
         const response = await fetch('assets/bandeiras/language-flags.json');
@@ -226,15 +279,12 @@ window.onload = async () => {
     aplicarBandeiraLocal(navegadorLang);
     aplicarBandeiraRemota(meuIdioma);
 
-    // ✅✅✅ MOSTRA ESTADO "AGUARDANDO"
-    mostrarEstadoAguardando();
-
     console.log('✅ Notificador inicializado - Aguardando chamadas');
 
   } catch (error) {
     console.error("❌ Erro ao inicializar notificador:", error);
     
-    // ✅✅✅ MANTIDO: TRATAMENTO DE ERRO
+    // ✅✅✅ TRATAMENTO DE ERRO
     const errorElement = document.createElement('div');
     errorElement.innerHTML = `
       <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
