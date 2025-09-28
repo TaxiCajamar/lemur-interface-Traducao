@@ -1,5 +1,5 @@
 // 📦 Importa o núcleo WebRTC
-import { WebRTCCore } from '../../core/webrtc-core.js';
+import { WebRTCCore } from '../core/webrtc-core.js';
 
 // 🎯 FUNÇÃO PARA OBTER IDIOMA COMPLETO
 async function obterIdiomaCompleto(lang) {
@@ -169,7 +169,7 @@ window.rtcCore.setDataChannelCallback((mensagem) => {
     // 🏳️ Aplica bandeira do idioma remoto
     async function aplicarBandeiraRemota(langCode) {
       try {
-        const response = await fetch('./assets/bandeiras/language-flags.json');
+        const response = await fetch('assets/bandeiras/language-flags.json');
         const flags = await response.json();
         const bandeira = flags[langCode] || flags[langCode.split('-')[0]] || '🔴';
 
