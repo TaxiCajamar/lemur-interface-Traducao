@@ -1,5 +1,5 @@
 // 📦 Importa o núcleo WebRTC
-import { WebRTCCore } from '../core/webrtc-core.js';
+import { WebRTCCore } from '../../core/webrtc-core.js';
 
 // 🎯 FUNÇÃO PARA OBTER IDIOMA COMPLETO
 async function obterIdiomaCompleto(lang) {
