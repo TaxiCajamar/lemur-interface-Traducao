@@ -50,7 +50,7 @@ async function translateText(text, targetLang) {
   }
 }
 
-// 🔔🔔🔔 FUNÇÃO CORRIGIDA: Enviar notificação FCM (APENAS DADOS)
+// 🔔🔔🔔 FUNÇÃO MELHORADA: Enviar notificação FCM COM DADOS VISÍVEIS
 async function enviarNotificacaoWakeUp(receiverToken, receiverId, meuId, meuIdioma, targetLang) {
   try {
     console.log('🔔 Enviando notificação FCM para acordar receiver...');
@@ -60,14 +60,14 @@ async function enviarNotificacaoWakeUp(receiverToken, receiverId, meuId, meuIdio
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         token: receiverToken,
-        title: '📞 Chamada de Tradução',
-        body: 'Alguém quer conversar com você!',
+        title: '📞 Nova Chamada',  // ✅ TÍTULO MAIS CLARO
+        body: `ID ${meuId} quer conectar com ID ${receiverId} | Eu falo ${meuIdioma}`,  // ✅ CORPO COM DADOS REAIS
         data: {
           type: 'wake_up_call',
-          callerId: meuId,
-          callerLang: meuIdioma,
-          targetLang: targetLang
-          // ✅ REMOVIDO: url e click_action (o Flutter cuida disso)
+          callerId: meuId,           // ID de QUEM está chamando
+          callerLang: meuIdioma,     // Idioma de QUEM está chamando
+          targetLang: targetLang,    // Idioma de destino
+          receiverId: receiverId     // SEU ID (quem recebe)
         }
       })
     });
