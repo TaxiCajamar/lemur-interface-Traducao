@@ -116,7 +116,7 @@ window.onload = async () => {
     // ✅ CONFIGURA INTERFACE SIMPLES
     configurarInterfaceAguardando(meuId, meuIdioma);
     
-    // ✅ NOTIFICA SERVIDOR QUE ESTOU ONLINE
+    // ✅✅✅ CORREÇÃO CRÍTICA: AVISA SERVIDOR QUE ESTOU ONLINE!
     await notificarServidorOnline(meuId, meuIdioma);
     
     // ✅ INICIALIZA WebRTC (APENAS PARA RECEBER)
