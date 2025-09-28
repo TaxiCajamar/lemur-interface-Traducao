@@ -1,3 +1,4 @@
+
 // ✅ SOLUÇÃO COMPLETA E CORRIGIDA - PROCESSO SILENCIOSO
 function initializeTranslator() {
     // ===== CONFIGURAÇÃO =====
