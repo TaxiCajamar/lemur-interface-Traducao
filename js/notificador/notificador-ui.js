@@ -27,7 +27,7 @@ async function translateText(text, targetLang) {
   try {
     const response = await fetch('https://chat-tradutor-bvvx.onrender.com/translate', {
       method: 'POST',
-      headers: { 'Content-Type: application/json' },
+      headers: { 'Content-Type: 'application/json' },
       body: JSON.stringify({ text, targetLang })
     });
 
@@ -124,17 +124,37 @@ window.onload = async () => {
         // ✅ 1. CONFIGURA TELA IMEDIATAMENTE
         configurarTelaChamada();
         
-        // ✅ 2. SOLICITA ACESSO À CÂMERA
+        // ✅✅✅ CORREÇÃO CRÍTICA: SOLICITA CÂMERA E MICROFONE JUNTOS
+        console.log('🎥🎤 Solicitando câmera E microfone...');
         const stream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: false
+            video: {
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                facingMode: 'user'
+            },
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true,
+                sampleRate: 44100
+            }
         });
 
-        console.log('📷 Câmera acessada com sucesso');
+        console.log('✅✅✅ Câmera e microfone acessados com sucesso!');
+        console.log('📹 Video tracks:', stream.getVideoTracks().length);
+        console.log('🎤 Audio tracks:', stream.getAudioTracks().length);
+
+        // ✅✅✅ SALVA O STREAM GLOBALMENTE PARA O TRADUTOR USAR
+        window.localStream = stream;
+        window.microphonePermissionGranted = true;
 
         let localStream = stream;
         const localVideo = document.getElementById('localVideo');
-        if (localVideo) localVideo.srcObject = localStream;
+        if (localVideo) {
+            localVideo.srcObject = localStream;
+            // ✅ GARANTE que o vídeo local vai tocar
+            localVideo.play().catch(e => console.log('Erro ao tocar vídeo local:', e));
+        }
 
         // ✅ 3. INICIALIZA WEBRTC
         window.rtcCore = new WebRTCCore();
@@ -219,13 +239,21 @@ window.onload = async () => {
             window.targetTranslationLang = lang;
 
             window.rtcCore.handleIncomingCall(offer, localStream, (remoteStream) => {
-                remoteStream.getAudioTracks().forEach(track => track.enabled = false);
+                // ✅✅✅ MANTÉM O ÁUDIO REMOTO ATIVO PARA OUVIR O CHAMADOR
+                remoteStream.getAudioTracks().forEach(track => {
+                    console.log('🔊 Áudio remoto:', track.kind, track.enabled);
+                    track.enabled = true; // ✅ PERMITE OUVIR O CHAMADOR
+                });
 
                 const overlay = document.querySelector('.info-overlay');
                 if (overlay) overlay.classList.add('hidden');
 
                 const remoteVideo = document.getElementById('remoteVideo');
-                if (remoteVideo) remoteVideo.srcObject = remoteStream;
+                if (remoteVideo) {
+                    remoteVideo.srcObject = remoteStream;
+                    // ✅ GARANTE que o vídeo remoto vai tocar
+                    remoteVideo.play().catch(e => console.log('Erro ao tocar vídeo remoto:', e));
+                }
 
                 window.targetTranslationLang = idiomaDoCaller || lang;
 
@@ -295,13 +323,20 @@ window.onload = async () => {
                 window.rtcCore.onIncomingCall = callbackOriginal;
                 
                 window.rtcCore.handleIncomingCall(offer, localStream, (remoteStream) => {
-                    remoteStream.getAudioTracks().forEach(track => track.enabled = false);
+                    // ✅✅✅ MANTÉM O ÁUDIO REMOTO ATIVO
+                    remoteStream.getAudioTracks().forEach(track => {
+                        console.log('🔊 Áudio remoto conectado:', track.kind, track.enabled);
+                        track.enabled = true; // ✅ PERMITE OUVIR O CHAMADOR
+                    });
 
                     const overlay = document.querySelector('.info-overlay');
                     if (overlay) overlay.classList.add('hidden');
 
                     const remoteVideo = document.getElementById('remoteVideo');
-                    if (remoteVideo) remoteVideo.srcObject = remoteStream;
+                    if (remoteVideo) {
+                        remoteVideo.srcObject = remoteStream;
+                        remoteVideo.play().catch(e => console.log('Erro ao tocar vídeo remoto:', e));
+                    }
 
                     // ✅ REMOVE STATUS
                     const statusElement = document.getElementById('notification-status');
