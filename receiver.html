@@ -1,106 +1,106 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Lemur-EchoMeP2P-Receiver</title>
-    <link rel="stylesheet" href="mobile-style.css" />
-    <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
-</head>
-<body>
-    
-    <div class="box-principal">
-                      
-        <!-- Logo --> 
-        <img src="assets/images/Lemur2P2.png" alt="Lemur Logo" class="logo">
-        <img src="assets/images/Bridg.png" alt="ponte" class="ponte">
-        <img id="logo-traduz" src="assets/images/TradGlobo.png" alt="logo-traduz">
-        
-        <!-- Sub Titulo --> 
-        <div class="translator-label" id="translator-label">
-            Real-time translation.
-        </div>
-           
-      <!-- Remoto & Local -->
-    <div class="remoter-Lang">🏳️</div>
-    <div class="local-Lang">🏳️</div>
-    
-    <!-- 🎥 Vídeo remoto (já existente) -->
-<div class="video-wrapper">
-  <video id="remoteVideo" autoplay playsinline></video>
+// js/preflight-module.js - MÓDULO INTELIGENTE
+class WebRTCPreflight {
+    constructor() {
+        this.isPreheated = false;
+        this.mediaStream = null;
+    }
 
-  <!-- 🎥 Vídeo local em PiP -->
-  <div class="pip-local-wrapper">
-    <video id="localVideo" autoplay muted playsinline></video>
-  </div>
-</div>
-
-        <!-- 🧾 Overlay com QR Code -->
-        <div class="info-overlay"> 
-            <h2 id="qr-modal-title">This is your online key</h2>
-            <div id="qrcode" class="qrcode-container"></div>
-            <p class="qr-modal-description" id="qr-modal-description">
-                You can ask to scan, share or print on your business card.
-            </p>
-        </div>
-        
-        <!-- ===== TRADUTOR POR VOZ ===== -->
-        
-        <!-- Caixa de Texto -->
-        <div class="text-box">
-            <div class="text-display">
-                <div class="text-title">
-                    🌐
-                    <button class="speaker-btn" id="speakerButton" disabled>🔊</button>
-                </div>
-                <div id="translatedText" class="text-content">🎤</div>
+    // 1. Tela inicial com SUA imagem
+    showInitialScreen() {
+        const preflightHTML = `
+            <div id="preflight-screen" style="
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: #000; display: flex; justify-content: center;
+                align-items: center; z-index: 9999; flex-direction: column;
+            ">
+                <img src="assets/images/telalemur.png" alt="Lemur Interface" 
+                     style="max-width: 90%; max-height: 70%; object-fit: contain;">
+                <p style="color: white; margin-top: 20px; font-size: 18px;">
+                    Preparando tradução em tempo real...
+                </p>
             </div>
-        </div>
+        `;
+        document.body.insertAdjacentHTML('afterbegin', preflightHTML);
+    }
 
-        <div id="texto-recebido"></div>
+    // 2. Remove tela inicial
+    hideInitialScreen() {
+        const element = document.getElementById('preflight-screen');
+        if (element) {
+            element.style.opacity = '0';
+            element.style.transition = 'opacity 0.5s ease';
+            setTimeout(() => element.remove(), 500);
+        }
+    }
 
-<!-- 🏳️ Bandeira +  Microfone-->
+    // 3. Pré-aquecimento do narrador
+    preheatSpeechSynthesis() {
+        if (this.isPreheated) return;
         
-       <!-- 🏳️ Bandeira -->
-<div class="language-flag" id="currentLanguageFlag">🇧🇷</div>
+        const language = navigator.language || 'pt-BR';
+        const ghostText = 'Sistema de tradução pronto';
 
-<!-- 🎤 Microfone -->
-<button class="record-btn" id="recordButton" disabled>🎤</button>
+        const utterance = new SpeechSynthesisUtterance(ghostText);
+        utterance.volume = 0;
+        utterance.lang = language;
 
+        const speak = () => {
+            const voices = speechSynthesis.getVoices();
+            const preferredVoice = voices.find(v => v.lang === language) || voices[0];
+            if (preferredVoice) {
+                utterance.voice = preferredVoice;
+                speechSynthesis.speak(utterance);
+                this.isPreheated = true;
+                console.log('✅ Narrador pré-aquecido');
+            }
+        };
 
-<!-- 🌍 Mundinho + Dropdown juntos - CORRIGIDO -->
+        if (speechSynthesis.getVoices().length > 0) {
+            speak();
+        } else {
+            speechSynthesis.onvoiceschanged = speak;
+        }
+    }
 
-<div class="world-wrapper">
-  <button class="world-btn" id="worldButton">
-    <img src="assets/images/GloboLang.png" alt="Idioma" class="world-image">
-  </button>
+    // 4. Solicitação de mídia
+    async requestMediaWithDelay(delay = 5000) { // 5 segundos para teste
+        return new Promise((resolve) => {
+            setTimeout(async () => {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: true,
+                        audio: true
+                    });
+                    this.mediaStream = stream;
+                    console.log('✅ Câmera e microfone autorizados');
+                    resolve(stream);
+                } catch (error) {
+                    console.log('⚠️ Mídia não autorizada, continuando sem...');
+                    resolve(null);
+                }
+            }, delay);
+        });
+    }
 
-  <div class="language-dropdown" id="languageDropdown">
-    <div class="language-option" data-lang="pt-BR">🇧🇷</div>
-    <div class="language-option" data-lang="en">🇺🇸</div>
-    <div class="language-option" data-lang="es">🇪🇸</div>
-    <div class="language-option" data-lang="fr">🇫🇷</div>
-    <div class="language-option" data-lang="de">🇩🇪</div>
-    <div class="language-option" data-lang="it">🇮🇹</div>
-    <div class="language-option" data-lang="ja">🇯🇵</div>
-  </div>
-</div>
-             
-    </div>
-
-    <!-- Modal de gravação -->
-    <div class="recording-modal" id="recordingModal">
-        <div class="recording-indicator">
-            <div class="recording-dot"></div>
-            <div class="recording-text">●</div>
-            <div class="recording-timer" id="recordingTimer">0:00</div>
-        </div>
-        <button class="send-button" id="sendButton">📤</button>
-    </div>
-
-    <!-- 🔌 Scripts -->
-    <script src="https://lemur-signal-ings.onrender.com/socket.io/socket.io.js"></script>
-    <script type="module" src="./js/receiver/receiver-ui.js"></script>
-    <script src="./js/receiver/receiver-trz.js"></script>
-</body>
-</html>
+    // 5. Inicialização completa
+    async initialize() {
+        console.log('🚀 Iniciando pré-carregamento inteligente...');
+        
+        // Mostra tela inicial (AZUL)
+        this.showInitialScreen();
+        
+        // Pré-aquecimento paralelo
+        this.preheatSpeechSynthesis();
+        
+        // Aguarda tempo E permissões
+        const mediaStream = await this.requestMediaWithDelay(5000);
+        
+        // Remove tela inicial (volta para VERDE)
+        this.hideInitialScreen();
+        
+        return {
+            mediaStream: mediaStream,
+            isSpeechReady: this.isPreheated
+        };
+    }
+}
