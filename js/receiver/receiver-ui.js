@@ -1,3 +1,4 @@
+
 import { WebRTCCore } from '../../core/webrtc-core.js';
 import { QRCodeGenerator } from '../qrcode/qr-code-utils.js';
 
@@ -41,20 +42,14 @@ async function translateText(text, targetLang) {
 
 window.onload = async () => {
     try {
-        // ✅ VERIFICA SE O MÓDULO PRINCIPAL JÁ AUTORIZOU A CÂMERA
-        let localStream;
-        
-        if (window.preflightMediaStream) {
-            console.log('🎥 Usando câmera já autorizada pelo Módulo Principal');
-            localStream = window.preflightMediaStream;
-        } else {
-            console.log('⚠️ Módulo principal não autorizou câmera, solicitando...');
-            // 🔴 ESTA PARTE SÓ RODA SE SEU MÓDULO FALHAR
-            localStream = await navigator.mediaDevices.getUserMedia({
-                video: true,
-                audio: false
-            });
-        }
+        // ✅ Solicita acesso à câmera (vídeo sem áudio)
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false
+        });
+
+        // ✅ Captura da câmera local
+        let localStream = stream;
 
         // ✅ Exibe vídeo local no PiP azul
         const localVideo = document.getElementById('localVideo');
@@ -226,7 +221,8 @@ window.rtcCore.setDataChannelCallback((mensagem) => {
         }, 1000);
 
     } catch (error) {
-        console.error("Erro ao acessar câmera:", error);
-        // Mesmo com erro, tenta continuar sem câmera
+        console.error("Erro ao solicitar acesso à câmera:", error);
+        alert("Erro ao acessar a câmera. Verifique as permissões.");
+        return;
     }
 };
