@@ -1,3 +1,4 @@
+
 // ===== FUNÇÃO SIMPLES PARA ENVIAR TEXTO =====
 function enviarParaOutroCelular(texto) {
     if (window.rtcDataChannel && window.rtcDataChannel.isOpen()) {
@@ -244,20 +245,8 @@ function initializeTranslator() {
         };
     }
     
-    // 🔽 MODIFIQUE APENAS ESTA FUNÇÃO:
     async function requestMicrophonePermission() {
         try {
-            // ✅ PRIMEIRO VERIFICA SE O MÓDULO PRINCIPAL JÁ AUTORIZOU
-            if (window.preflightMediaStream) {
-                console.log('🎤 Usando microfone já autorizado pelo Módulo Principal');
-                microphonePermissionGranted = true;
-                recordButton.disabled = false;
-                translatedText.textContent = "🎤";
-                setupRecognitionEvents();
-                return;
-            }
-            
-            // 🔴 ESTA PARTE SÓ RODA SE SEU MÓDULO FALHAR
             const devices = await navigator.mediaDevices.enumerateDevices();
             const hasMicrophonePermission = devices.some(device => 
                 device.kind === 'audioinput' && device.deviceId !== ''
