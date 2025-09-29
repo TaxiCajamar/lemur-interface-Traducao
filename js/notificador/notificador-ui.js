@@ -75,40 +75,6 @@ async function notificarServidorOnline(meuId, meuIdioma) {
   }
 }
 
-// 🔥 FUNÇÃO: Iniciar chamada quando acordado por notificação
-async function iniciarChamadaQuandoAcordado(callerId, callerLang) {
-  console.log('🔥 Acordado por notificação! Iniciando chamada para:', callerId);
-  
-  // Remove tela de aguardando
-  const statusElement = document.getElementById('aguardando-status');
-  if (statusElement) statusElement.remove();
-  
-  // Mostra estado de conectando
-  const conectandoElement = document.createElement('div');
-  conectandoElement.id = 'conectando-status';
-  conectandoElement.innerHTML = `
-    <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-                background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 10px;
-                text-align: center; z-index: 1000;">
-      <div style="font-size: 24px; margin-bottom: 10px;">🔥</div>
-      <div>Conectando com caller...</div>
-      <div style="font-size: 12px; opacity: 0.8;">Iniciando chamada</div>
-    </div>
-  `;
-  document.body.appendChild(conectandoElement);
-  
-  try {
-    // ⭐⭐ RECEIVER toma iniciativa de conectar com CALLER
-    if (window.rtcCore && window.localStream) {
-      window.rtcCore.startCall(callerId, window.localStream, callerLang);
-      console.log('✅ Chamada iniciada pelo receiver para o caller');
-    }
-  } catch (error) {
-    console.error('❌ Erro ao iniciar chamada:', error);
-    if (conectandoElement) conectandoElement.remove();
-  }
-}
-
 // ⏳ FUNÇÃO: Mostrar estado "Aguardando chamadas"
 function mostrarEstadoAguardando() {
   const statusElement = document.createElement('div');
@@ -127,12 +93,12 @@ function mostrarEstadoAguardando() {
 
 window.onload = async () => {
   try {
-    // ✅✅✅ SOLICITAÇÃO DE CÂMERA
+    // ✅✅✅ SOLICITAÇÃO DE CÂMERA (CRÍTICO)
     const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
     let localStream = stream;
-    window.localStream = localStream; // Disponibiliza globalmente
+    window.localStream = localStream;
     
-    // ✅✅✅ CONFIGURAÇÃO DO VÍDEO LOCAL
+    // ✅✅✅ CONFIGURAÇÃO DO VÍDEO LOCAL (CRÍTICO)
     const localVideo = document.getElementById('localVideo');
     if (localVideo) localVideo.srcObject = localStream;
 
@@ -174,15 +140,21 @@ window.onload = async () => {
       }
     });
 
-    // ✅✅✅ GERA ID (USA DA URL SE EXISTIR)
+    // ✅✅✅ CORREÇÃO CRÍTICA: USA APENAS ID DA URL (não gera novo)
     const urlParams = new URLSearchParams(window.location.search);
-    const meuId = urlParams.get('id') || crypto.randomUUID().substr(0, 8);
+    const meuId = urlParams.get('id'); // ← USA SÓ DA URL, SEM FALLBACK
+    
+    if (!meuId) {
+      console.error('❌ ERRO: ID não encontrado na URL');
+      alert('Link inválido: ID não encontrado');
+      return;
+    }
     
     // ✅✅✅ ATUALIZA O ID NA INTERFACE
     const myIdElement = document.getElementById('myId');
     if (myIdElement) myIdElement.textContent = meuId;
 
-    // ✅✅✅ INICIALIZA WebRTC
+    // ✅✅✅ INICIALIZA WebRTC COM ID DA URL
     window.rtcCore.initialize(meuId);
     window.rtcCore.setupSocketHandlers();
 
@@ -213,18 +185,39 @@ window.onload = async () => {
     };
 
     // ✅✅✅ VERIFICA SE FOI ACORDADO POR NOTIFICAÇÃO
-    const urlParams = new URLSearchParams(window.location.search);
     const wakeupCallerId = urlParams.get('callerId');
     const wakeupCallerLang = urlParams.get('callerLang');
     
     if (wakeupCallerId) {
-      console.log('🔥🔥🔥 ACORDADO POR NOTIFICAÇÃO - Iniciando chamada reversa');
-      // Pequeno delay para garantir que tudo está inicializado
+      console.log('🔥🔥🔥 ACORDADO POR NOTIFICAÇÃO - Iniciando chamada para caller:', wakeupCallerId);
+      
+      // Remove tela de aguardando
+      const statusElement = document.getElementById('aguardando-status');
+      if (statusElement) statusElement.remove();
+      
+      // Mostra estado de conectando
+      const conectandoElement = document.createElement('div');
+      conectandoElement.id = 'conectando-status';
+      conectandoElement.innerHTML = `
+        <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                    background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 10px;
+                    text-align: center; z-index: 1000;">
+          <div style="font-size: 24px; margin-bottom: 10px;">🔥</div>
+          <div>Conectando com caller...</div>
+          <div style="font-size: 12px; opacity: 0.8;">Iniciando chamada</div>
+        </div>
+      `;
+      document.body.appendChild(conectandoElement);
+      
+      // ⭐⭐ RECEIVER INICIA CHAMADA PARA O CALLER
       setTimeout(() => {
-        iniciarChamadaQuandoAcordado(wakeupCallerId, wakeupCallerLang);
+        if (window.rtcCore && window.localStream) {
+          window.rtcCore.startCall(wakeupCallerId, window.localStream, wakeupCallerLang);
+          console.log('✅ Chamada iniciada pelo receiver para o caller');
+        }
       }, 1000);
     } else {
-      // ✅✅✅ SE NÃO FOI ACORDADO, MOSTRA ESTADO NORMAL
+      // ✅✅✅ SE NÃO FOI ACORDADO, SÓ ESPERA
       mostrarEstadoAguardando();
     }
 
