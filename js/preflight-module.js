@@ -1,4 +1,4 @@
-// js/preflight-module.js - MÓDULO INTELIGENTE
+// js/preflight-module.js - MÓDULO INTELIGENTE CORRIGIDO
 class WebRTCPreflight {
     constructor() {
         this.isPreheated = false;
@@ -7,6 +7,7 @@ class WebRTCPreflight {
 
     // 1. Tela inicial com SUA imagem
     showInitialScreen() {
+        console.log('🖼️ Mostrando tela inicial...');
         const preflightHTML = `
             <div id="preflight-screen" style="
                 position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -25,82 +26,97 @@ class WebRTCPreflight {
 
     // 2. Remove tela inicial
     hideInitialScreen() {
+        console.log('🔄 Removendo tela inicial...');
         const element = document.getElementById('preflight-screen');
         if (element) {
             element.style.opacity = '0';
             element.style.transition = 'opacity 0.5s ease';
-            setTimeout(() => element.remove(), 500);
+            setTimeout(() => {
+                element.remove();
+                console.log('✅ Tela inicial removida!');
+            }, 500);
         }
     }
 
-    // 3. Pré-aquecimento do narrador
+    // 3. Pré-aquecimento do narrador (SIMPLIFICADO)
     preheatSpeechSynthesis() {
-        if (this.isPreheated) return;
-        
-        const language = navigator.language || 'pt-BR';
-        const ghostText = 'Sistema de tradução pronto';
-
-        const utterance = new SpeechSynthesisUtterance(ghostText);
-        utterance.volume = 0;
-        utterance.lang = language;
-
-        const speak = () => {
-            const voices = speechSynthesis.getVoices();
-            const preferredVoice = voices.find(v => v.lang === language) || voices[0];
-            if (preferredVoice) {
-                utterance.voice = preferredVoice;
-                speechSynthesis.speak(utterance);
+        console.log('🎙️ Pré-aquecendo narrador...');
+        try {
+            // Apenas tenta carregar as vozes, sem falar
+            if (speechSynthesis.getVoices().length === 0) {
+                speechSynthesis.onvoiceschanged = () => {
+                    console.log('✅ Vozes carregadas');
+                    this.isPreheated = true;
+                };
+            } else {
+                console.log('✅ Vozes já disponíveis');
                 this.isPreheated = true;
-                console.log('✅ Narrador pré-aquecido');
             }
-        };
-
-        if (speechSynthesis.getVoices().length > 0) {
-            speak();
-        } else {
-            speechSynthesis.onvoiceschanged = speak;
+        } catch (error) {
+            console.log('⚠️ Narrador não disponível, continuando...');
+            this.isPreheated = true; // Continua mesmo sem narrador
         }
     }
 
-    // 4. Solicitação de mídia
-    async requestMediaWithDelay(delay = 5000) { // 5 segundos para teste
+    // 4. Solicitação de mídia (SIMPLIFICADA)
+    async requestMediaWithDelay(delay = 3000) { // REDUZIDO para 3 segundos
         return new Promise((resolve) => {
-            setTimeout(async () => {
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({
-                        video: true,
-                        audio: true
+            console.log(`⏳ Aguardando ${delay}ms antes de solicitar mídia...`);
+            
+            setTimeout(() => {
+                console.log('🎥 Solicitando câmera e microfone...');
+                
+                // Tenta rapidamente, mas não trava se der erro
+                navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+                    .then(stream => {
+                        console.log('✅ Mídia autorizada');
+                        this.mediaStream = stream;
+                        resolve(stream);
+                    })
+                    .catch(error => {
+                        console.log('⚠️ Mídia não autorizada, continuando...');
+                        resolve(null); // Não trava - continua sem mídia
                     });
-                    this.mediaStream = stream;
-                    console.log('✅ Câmera e microfone autorizados');
-                    resolve(stream);
-                } catch (error) {
-                    console.log('⚠️ Mídia não autorizada, continuando sem...');
-                    resolve(null);
-                }
+                    
             }, delay);
         });
     }
 
-    // 5. Inicialização completa
+    // 5. Inicialização completa (CORRIGIDA)
     async initialize() {
-        console.log('🚀 Iniciando pré-carregamento inteligente...');
+        console.log('🚀 INICIANDO PRÉ-CARREGAMENTO...');
         
-        // Mostra tela inicial (AZUL)
-        this.showInitialScreen();
-        
-        // Pré-aquecimento paralelo
-        this.preheatSpeechSynthesis();
-        
-        // Aguarda tempo E permissões
-        const mediaStream = await this.requestMediaWithDelay(5000);
-        
-        // Remove tela inicial (volta para VERDE)
-        this.hideInitialScreen();
-        
-        return {
-            mediaStream: mediaStream,
-            isSpeechReady: this.isPreheated
-        };
+        try {
+            // Mostra tela inicial IMEDIATAMENTE
+            this.showInitialScreen();
+            
+            // FAZ TUDO EM PARALELO - não espera uma coisa terminar para começar outra
+            const promises = [
+                this.requestMediaWithDelay(3000), // 3 segundos
+                this.preheatSpeechSynthesis()
+            ];
+
+            // AGUARDA APENAS A MÍDIA (narrador é independente)
+            await Promise.race([
+                promises[0], // Espera principalmente pela mídia
+                new Promise(resolve => setTimeout(resolve, 4000)) // Timeout de segurança
+            ]);
+
+            console.log('✅ PRÉ-CARREGAMENTO CONCLUÍDO! Removendo tela...');
+            
+            // Remove tela inicial INDEPENDENTE do resultado
+            this.hideInitialScreen();
+            
+            return {
+                mediaStream: this.mediaStream,
+                isSpeechReady: this.isPreheated
+            };
+            
+        } catch (error) {
+            console.error('❌ Erro no pré-carregamento:', error);
+            // MESMO COM ERRO, REMOVE A TELA INICIAL
+            this.hideInitialScreen();
+            return { mediaStream: null, isSpeechReady: false };
+        }
     }
 }
