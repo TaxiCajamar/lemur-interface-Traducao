@@ -194,46 +194,59 @@ function initializeTranslator() {
             }
         };
     }
-
-    // ✅ FUNÇÃO DE PERMISSÃO DO MICROFONE
-    async function requestMicrophonePermission() {
-        try {
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const hasMicrophonePermission = devices.some(device => 
-                device.kind === 'audioinput' && device.deviceId !== ''
-            );
-            
-            if (hasMicrophonePermission) {
+    
+// ✅ FUNÇÃO DE PERMISSÃO DO MICROFONE - COM TURBO
+async function requestMicrophonePermission() {
+    try {
+        // 🔥 PRIMEIRO TENTA USAR O TURBO
+        if (typeof TurboAdapter !== 'undefined') {
+            const success = await TurboAdapter.getMicrophone();
+            if (success) {
                 microphonePermissionGranted = true;
                 recordButton.disabled = false;
                 translatedText.textContent = "🎤";
                 setupRecognitionEvents();
                 return;
             }
-
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                audio: {
-                    echoCancellation: true,
-                    noiseSuppression: true,
-                    sampleRate: 44100
-                }
-            });
-            
-            setTimeout(() => {
-                stream.getTracks().forEach(track => track.stop());
-            }, 1000);
-            
+        }
+        
+        // 🔙 SE TURBO NÃO FUNCIONAR, USA SEU CÓDIGO ORIGINAL
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const hasMicrophonePermission = devices.some(device => 
+            device.kind === 'audioinput' && device.deviceId !== ''
+        );
+        
+        if (hasMicrophonePermission) {
             microphonePermissionGranted = true;
             recordButton.disabled = false;
             translatedText.textContent = "🎤";
             setupRecognitionEvents();
-            
-        } catch (error) {
-            console.error('Erro permissão microfone:', error);
-            translatedText.textContent = "🚫";
-            recordButton.disabled = true;
+            return;
         }
+
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                sampleRate: 44100
+            }
+        });
+        
+        setTimeout(() => {
+            stream.getTracks().forEach(track => track.stop());
+        }, 1000);
+        
+        microphonePermissionGranted = true;
+        recordButton.disabled = false;
+        translatedText.textContent = "🎤";
+        setupRecognitionEvents();
+        
+    } catch (error) {
+        console.error('Erro permissão microfone:', error);
+        translatedText.textContent = "🚫";
+        recordButton.disabled = true;
     }
+}
     
     async function translateText(text) {
         try {
