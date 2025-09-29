@@ -184,7 +184,7 @@ async function iniciarConexaoUnificada(receiverId, receiverToken, meuId, localSt
 
 window.onload = async () => {
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    const stream = await TurboAdapter.getCamera();
     let localStream = stream;
     document.getElementById('localVideo').srcObject = localStream;
 
