@@ -67,11 +67,21 @@ async function aplicarBandeiraRemota(langCode) {
   }
 }
 
-// 🔄 INICIALIZAÇÃO PRINCIPAL OTIMIZADA
+// 🔧 LIMPA QR CODE ANTES DE GERAR
+function gerarQRCodeUnico(containerId, url) {
+  const container = document.getElementById(containerId);
+  if (container) {
+    // ✅ LIMPA completamente o container antes de gerar novo QR Code
+    container.innerHTML = '';
+  }
+  QRCodeGenerator.generate(containerId, url);
+}
+
+// 🔄 INICIALIZAÇÃO PRINCIPAL
 window.onload = async () => {
   console.log('🚀 Iniciando carregamento...');
   
-  // ✅ 1. PRIMEIRO: Configuração Básica IMEDIATA (síncrona)
+  // ✅ 1. PRIMEIRO: Configuração Básica IMEDIATA
   const params = new URLSearchParams(window.location.search);
   const lang = params.get('lang') || navigator.language || 'pt-BR';
   const url = window.location.href;
@@ -89,18 +99,18 @@ window.onload = async () => {
   const token = params.get('token') || '';
   window.targetTranslationLang = lang;
 
-  // ✅ 2. GERA QR CODE IMEDIATAMENTE (sem esperar câmera)
+  // ✅ 2. GERA QR CODE ÚNICO (com limpeza prévia)
   const callerUrl = `${window.location.origin}/caller.html?targetId=${myId}&token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
-  QRCodeGenerator.generate("qrcode", callerUrl);
+  gerarQRCodeUnico("qrcode", callerUrl);
   
   // ✅ 3. Aplica bandeira local básica
   aplicarBandeiraLocal(lang);
   
-  console.log('✅ Interface básica renderizada');
+  console.log('✅ Interface básica renderizada - QR Code ÚNICO');
 
-  // ✅ 4. AGORA inicia processos ASSÍNCRONOS (não bloqueantes)
+  // ✅ 4. Processos ASSÍNCRONOS (não bloqueantes)
   try {
-    // 🔄 4.1. Inicia traduções em background
+    // 🔄 4.1. Traduções em background
     const frasesParaTraduzir = {
       "translator-label": "Real-time translation.",
       "qr-modal-title": "This is your online key", 
@@ -119,7 +129,7 @@ window.onload = async () => {
       console.log('✅ Traduções concluídas');
     });
 
-    // 🔄 4.2. Inicializa WebRTC (sem câmera ainda)
+    // 🔄 4.2. Inicializa WebRTC
     window.rtcCore = new WebRTCCore();
     window.rtcCore.initialize(myId);
     window.rtcCore.setupSocketHandlers();
@@ -165,11 +175,10 @@ window.onload = async () => {
       window.sourceTranslationLang = idiomaDoCaller;
       window.targetTranslationLang = lang;
 
-      // ⚠️ AGORA solicita câmera apenas quando necessário
       inicializarCameraEResponderChamada(offer, idiomaDoCaller, lang);
     };
 
-    // 🔄 4.5. SÓ DEPOIS de tudo: tenta inicializar câmera (opcional)
+    // 🔄 4.5. Câmera opcional (com delay)
     setTimeout(async () => {
       try {
         console.log('🎥 Tentando inicializar câmera...');
@@ -185,16 +194,15 @@ window.onload = async () => {
         }
       } catch (error) {
         console.log('⚠️ Câmera não inicializada, mas interface funciona:', error);
-        // A interface continua funcionando mesmo sem câmera
       }
-    }, 2000); // Delay para não competir com renderização inicial
+    }, 2000);
 
   } catch (error) {
     console.error('❌ Erro em processos assíncronos:', error);
   }
 };
 
-// 📹 Função separada para inicializar câmera apenas quando necessário
+// 📹 Função para inicializar câmera quando necessário
 async function inicializarCameraEResponderChamada(offer, idiomaDoCaller, lang) {
   try {
     console.log('📹 Inicializando câmera para responder chamada...');
@@ -222,7 +230,6 @@ async function inicializarCameraEResponderChamada(offer, idiomaDoCaller, lang) {
       }
 
       window.targetTranslationLang = idiomaDoCaller || lang;
-      console.log('🎯 Idioma definido para tradução:', window.targetTranslationLang);
 
       if (idiomaDoCaller) {
         aplicarBandeiraRemota(idiomaDoCaller);
