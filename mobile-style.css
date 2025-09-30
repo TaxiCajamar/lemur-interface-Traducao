@@ -199,6 +199,17 @@ receiver.html #texto-recebido {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
   border: 0.3vw solid #4CAF50;
   z-index: 5;
+  /* 🖼️ ADICIONE ESTAS 4 LINhas: */
+  background-image: url('assets/images/telalemur.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* 🖼️ ADICIONE ESTE BLOCO COMPLETO: */
+/* Remove a imagem quando o vídeo estiver carregado */
+.video-wrapper:has(video[src]) {
+  background-image: none;
 }
 
 .video-wrapper video {
