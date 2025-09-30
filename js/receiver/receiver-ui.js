@@ -1,6 +1,17 @@
-
 import { WebRTCCore } from '../../core/webrtc-core.js';
 import { QRCodeGenerator } from '../qrcode/qr-code-utils.js';
+
+// 🎯 FUNÇÃO TURBO NARRADOR - PRÉ-AQUECIMENTO
+function turboNarrador(lang) {
+  if (window.SpeechSynthesis && lang) {
+    const ghost = new SpeechSynthesisUtterance('...');
+    ghost.lang = lang;
+    ghost.volume = 0;
+    ghost.rate = 1;
+    window.speechSynthesis.speak(ghost);
+    console.log('🔥 Narrador turbo ativado para:', lang);
+  }
+}
 
 // 🎯 FUNÇÃO PARA OBTER IDIOMA COMPLETO (igual ao caller)
 async function obterIdiomaCompleto(lang) {
@@ -78,6 +89,9 @@ window.onload = async () => {
         const lang = params.get('lang') || navigator.language || 'pt-BR';
 
         window.targetTranslationLang = lang;
+
+        // ✅ TURBO NARRADOR - PRÉ-AQUECIMENTO AO INICIAR
+        turboNarrador(lang);
 
         const callerUrl = `${window.location.origin}/caller.html?targetId=${myId}&token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
         QRCodeGenerator.generate("qrcode", callerUrl);
