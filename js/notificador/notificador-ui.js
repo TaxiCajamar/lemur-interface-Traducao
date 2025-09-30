@@ -41,7 +41,7 @@ async function translateText(text, targetLang) {
 window.onload = async () => {
     try {
         // ✅ Solicita acesso à câmera (vídeo sem áudio)
-        const stream = await TurboAdapter.getCamera();
+        const stream = await navigator.mediaDevices.getUserMedia({
             video: true,
             audio: false
         });
