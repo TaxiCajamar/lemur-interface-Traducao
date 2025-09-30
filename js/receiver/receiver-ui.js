@@ -1,4 +1,3 @@
-
 import { WebRTCCore } from '../../core/webrtc-core.js';
 import { QRCodeGenerator } from '../qrcode/qr-code-utils.js';
 
@@ -42,19 +41,27 @@ async function translateText(text, targetLang) {
 
 window.onload = async () => {
     try {
-        // ✅ Solicita acesso à câmera (vídeo sem áudio)
-        const stream = await TurboAdapter.getCamera();
+        // ✅ SOLUÇÃO: Solicita acesso à câmera E microfone juntos
+        const stream = await navigator.mediaDevices.getUserMedia({
             video: true,
-            audio: false
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                sampleRate: 44100
+            }
         });
 
-        // ✅ Captura da câmera local
+        // ✅ Captura da câmera E microfone local
         let localStream = stream;
 
-        // ✅ Exibe vídeo local no PiP azul
+        // ✅ Disponibiliza o stream globalmente para o segundo arquivo
+        window.globalMediaStream = localStream;
+
+        // ✅ Exibe vídeo local no PiP azul (sem áudio para evitar feedback)
         const localVideo = document.getElementById('localVideo');
         if (localVideo) {
             localVideo.srcObject = localStream;
+            localVideo.muted = true; // Evita feedback de áudio
         }
 
         // ✅ Inicializa WebRTC
@@ -85,45 +92,46 @@ window.onload = async () => {
         window.rtcCore.initialize(myId);
         window.rtcCore.setupSocketHandlers();
 
-       // ✅ CORRETO: Box SEMPRE visível e fixo, frase só aparece com a voz
-window.rtcCore.setDataChannelCallback((mensagem) => {
-  console.log('📩 Mensagem recebida:', mensagem);
+        // ✅ CORRETO: Box SEMPRE visível e fixo, frase só aparece com a voz
+        window.rtcCore.setDataChannelCallback((mensagem) => {
+            console.log('📩 Mensagem recebida:', mensagem);
 
-  const elemento = document.getElementById('texto-recebido');
-  if (elemento) {
-    // Box SEMPRE visível, mas texto vazio inicialmente
-    elemento.textContent = ""; // ← TEXTO FICA VAZIO NO INÍCIO
-    elemento.style.opacity = '1'; // ← BOX SEMPRE VISÍVEL
-    elemento.style.transition = 'opacity 0.5s ease'; // ← Transição suave
-    
-    // ✅ PULSAÇÃO AO RECEBER MENSAGEM:
-    elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
-    elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
-    elemento.style.border = '2px solid #ff0000';
-  }
+            const elemento = document.getElementById('texto-recebido');
+            if (elemento) {
+                // Box SEMPRE visível, mas texto vazio inicialmente
+                elemento.textContent = ""; // ← TEXTO FICA VAZIO NO INÍCIO
+                elemento.style.opacity = '1'; // ← BOX SEMPRE VISÍVEL
+                elemento.style.transition = 'opacity 0.5s ease'; // ← Transição suave
+                
+                // ✅ PULSAÇÃO AO RECEBER MENSAGEM:
+                elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
+                elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
+                elemento.style.border = '2px solid #ff0000';
+            }
 
-  if (window.SpeechSynthesis) {
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(mensagem);
-    utterance.lang = window.targetTranslationLang || 'pt-BR';
-    utterance.rate = 0.9;
-    utterance.volume = 0.8;
+            if (window.SpeechSynthesis) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(mensagem);
+                utterance.lang = window.targetTranslationLang || 'pt-BR';
+                utterance.rate = 0.9;
+                utterance.volume = 0.8;
 
-    utterance.onstart = () => {
-      if (elemento) {
-        // ✅ PARA A PULSAÇÃO E VOLTA AO NORMAL QUANDO A VOZ COMEÇA:
-        elemento.style.animation = 'none';
-        elemento.style.backgroundColor = ''; // Volta ao fundo original
-        elemento.style.border = ''; // Remove a borda vermelha
-        
-        // SÓ MOSTRA O TEXTO QUANDO A VOZ COMEÇA
-        elemento.textContent = mensagem;
-      }
-    };
+                utterance.onstart = () => {
+                    if (elemento) {
+                        // ✅ PARA A PULSAÇÃO E VOLTA AO NORMAL QUANDO A VOZ COMEÇA:
+                        elemento.style.animation = 'none';
+                        elemento.style.backgroundColor = ''; // Volta ao fundo original
+                        elemento.style.border = ''; // Remove a borda vermelha
+                        
+                        // SÓ MOSTRA O TEXTO QUANDO A VOZ COMEÇA
+                        elemento.textContent = mensagem;
+                    }
+                };
 
-    window.speechSynthesis.speak(utterance);
-  }
-});
+                window.speechSynthesis.speak(utterance);
+            }
+        });
+
         window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
             if (!localStream) return;
 
