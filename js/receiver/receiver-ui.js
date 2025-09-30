@@ -1,7 +1,7 @@
 import { WebRTCCore } from '../../core/webrtc-core.js';
 import { QRCodeGenerator } from '../qrcode/qr-code-utils.js';
 
-// 🎯 FUNÇÃO TURBO NARRADOR - PRÉ-AQUECIMENTO
+// 🎯 FUNÇÃO TURBO NARRADOR - PRÉ-AQUECIMENTO (ADICIONADA)
 function turboNarrador(lang) {
   if (window.SpeechSynthesis && lang) {
     const ghost = new SpeechSynthesisUtterance('...');
@@ -90,7 +90,7 @@ window.onload = async () => {
 
         window.targetTranslationLang = lang;
 
-        // ✅ TURBO NARRADOR - PRÉ-AQUECIMENTO AO INICIAR
+        // ✅ TURBO NARRADOR ATIVADO - MOMENTO CORRETO (ADICIONADO)
         turboNarrador(lang);
 
         const callerUrl = `${window.location.origin}/caller.html?targetId=${myId}&token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
