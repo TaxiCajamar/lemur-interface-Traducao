@@ -1,4 +1,3 @@
-
 // ===== FUNÇÃO SIMPLES PARA ENVIAR TEXTO =====
 function enviarParaOutroCelular(texto) {
     if (window.rtcDataChannel && window.rtcDataChannel.isOpen()) {
@@ -245,58 +244,61 @@ function initializeTranslator() {
         };
     }
     
-   // ✅ FUNÇÃO DE PERMISSÃO DO MICROFONE - COM TURBO
-async function requestMicrophonePermission() {
-    try {
-        // 🔥 PRIMEIRO TENTA USAR O TURBO
-        if (typeof TurboAdapter !== 'undefined') {
-            const success = await TurboAdapter.getMicrophone();
-            if (success) {
+    // ✅ SOLUÇÃO MODIFICADA: Verifica se o microfone já foi autorizado pelo primeiro arquivo
+    async function requestMicrophonePermission() {
+        try {
+            // ✅ PRIMEIRO: Verifica se já temos permissão do receiver-ui.js
+            if (window.globalMediaStream) {
                 microphonePermissionGranted = true;
                 recordButton.disabled = false;
                 translatedText.textContent = "🎤";
                 setupRecognitionEvents();
+                console.log('✅ Microfone já autorizado pelo primeiro arquivo (receiver-ui.js)');
                 return;
             }
-        }
-        
-        // 🔙 SE TURBO NÃO FUNCIONAR, USA SEU CÓDIGO ORIGINAL
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const hasMicrophonePermission = devices.some(device => 
-            device.kind === 'audioinput' && device.deviceId !== ''
-        );
-        
-        if (hasMicrophonePermission) {
+            
+            // ✅ FALLBACK: Se não tiver permissão global, verifica dispositivos
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const hasMicrophonePermission = devices.some(device => 
+                device.kind === 'audioinput' && device.deviceId !== ''
+            );
+            
+            if (hasMicrophonePermission) {
+                microphonePermissionGranted = true;
+                recordButton.disabled = false;
+                translatedText.textContent = "🎤";
+                setupRecognitionEvents();
+                console.log('✅ Microfone já autorizado anteriormente');
+                return;
+            }
+            
+            // ✅ ÚLTIMO RECURSO: Solicita permissão explicitamente
+            console.log('⏳ Solicitando permissão de microfone...');
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    sampleRate: 44100
+                }
+            });
+            
+            // Libera o stream após a verificação
+            setTimeout(() => {
+                stream.getTracks().forEach(track => track.stop());
+            }, 1000);
+            
             microphonePermissionGranted = true;
             recordButton.disabled = false;
             translatedText.textContent = "🎤";
             setupRecognitionEvents();
-            return;
+            console.log('✅ Permissão de microfone concedida');
+            
+        } catch (error) {
+            console.error('❌ Erro permissão microfone:', error);
+            translatedText.textContent = "🚫";
+            recordButton.disabled = true;
         }
-
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-            audio: {
-                echoCancellation: true,
-                noiseSuppression: true,
-                sampleRate: 44100
-            }
-        });
-        
-        setTimeout(() => {
-            stream.getTracks().forEach(track => track.stop());
-        }, 1000);
-        
-        microphonePermissionGranted = true;
-        recordButton.disabled = false;
-        translatedText.textContent = "🎤";
-        setupRecognitionEvents();
-        
-    } catch (error) {
-        console.error('Erro permissão microfone:', error);
-        translatedText.textContent = "🚫";
-        recordButton.disabled = true;
     }
-}
     
     function speakText(text) {
         if (!SpeechSynthesis || !text) return;
