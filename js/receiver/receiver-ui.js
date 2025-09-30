@@ -71,17 +71,34 @@ async function aplicarBandeiraRemota(langCode) {
 function gerarQRCodeUnico(containerId, url) {
   const container = document.getElementById(containerId);
   if (container) {
-    // ✅ LIMPA completamente o container antes de gerar novo QR Code
     container.innerHTML = '';
   }
   QRCodeGenerator.generate(containerId, url);
+}
+
+// 🎭 ESCONDE TELA DE LOADING E MOSTRA CONTEÚDO PRINCIPAL
+function mostrarInterfacePrincipal() {
+  const loadingScreen = document.getElementById('loadingScreen');
+  const boxPrincipal = document.querySelector('.box-principal');
+  
+  if (loadingScreen) {
+    loadingScreen.classList.add('hidden');
+  }
+  
+  if (boxPrincipal) {
+    boxPrincipal.style.display = 'block';
+  }
+  
+  console.log('✅ Transição: Loading → Interface Principal');
 }
 
 // 🔄 INICIALIZAÇÃO PRINCIPAL
 window.onload = async () => {
   console.log('🚀 Iniciando carregamento...');
   
-  // ✅ 1. PRIMEIRO: Configuração Básica IMEDIATA
+  // ✅ A imagem de loading já está visível instantaneamente
+  
+  // ✅ 1. Configuração Básica IMEDIATA (nos bastidores)
   const params = new URLSearchParams(window.location.search);
   const lang = params.get('lang') || navigator.language || 'pt-BR';
   const url = window.location.href;
@@ -99,18 +116,42 @@ window.onload = async () => {
   const token = params.get('token') || '';
   window.targetTranslationLang = lang;
 
-  // ✅ 2. GERA QR CODE ÚNICO (com limpeza prévia)
+  // ✅ 2. GERA QR CODE ÚNICO (nos bastidores)
   const callerUrl = `${window.location.origin}/caller.html?targetId=${myId}&token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
   gerarQRCodeUnico("qrcode", callerUrl);
   
   // ✅ 3. Aplica bandeira local básica
   aplicarBandeiraLocal(lang);
   
-  console.log('✅ Interface básica renderizada - QR Code ÚNICO');
+  console.log('✅ Processos em background concluídos');
 
-  // ✅ 4. Processos ASSÍNCRONOS (não bloqueantes)
+  // ✅ 4. AGORA solicita câmera (sobre a imagem de loading)
   try {
-    // 🔄 4.1. Traduções em background
+    console.log('🎥 Solicitando permissão da câmera...');
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: false
+    });
+    
+    // ✅ 5. CÂMERA AUTORIZADA - Esconde loading e mostra interface
+    const localVideo = document.getElementById('localVideo');
+    if (localVideo) {
+      localVideo.srcObject = stream;
+    }
+    
+    console.log('✅ Câmera autorizada - Mostrando interface principal');
+    mostrarInterfacePrincipal();
+    
+  } catch (error) {
+    console.error('❌ Erro ao acessar câmera:', error);
+    // ⚠️ Mesmo sem câmera, mostra a interface
+    mostrarInterfacePrincipal();
+    alert("Câmera não autorizada, mas você pode usar o QR Code.");
+  }
+
+  // ✅ 6. Processos ASSÍNCRONOS continuam em background
+  try {
+    // 🔄 6.1. Traduções em background
     const frasesParaTraduzir = {
       "translator-label": "Real-time translation.",
       "qr-modal-title": "This is your online key", 
@@ -129,12 +170,12 @@ window.onload = async () => {
       console.log('✅ Traduções concluídas');
     });
 
-    // 🔄 4.2. Inicializa WebRTC
+    // 🔄 6.2. Inicializa WebRTC
     window.rtcCore = new WebRTCCore();
     window.rtcCore.initialize(myId);
     window.rtcCore.setupSocketHandlers();
 
-    // 🔄 4.3. Configura callback do data channel
+    // 🔄 6.3. Configura callback do data channel
     window.rtcCore.setDataChannelCallback((mensagem) => {
       console.log('📩 Mensagem recebida:', mensagem);
       const elemento = document.getElementById('texto-recebido');
@@ -167,83 +208,34 @@ window.onload = async () => {
       }
     });
 
-    // 🔄 4.4. Configura handler de chamada recebida
+    // 🔄 6.4. Configura handler de chamada recebida
     window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
       console.log('🎯 Caller fala:', idiomaDoCaller);
-      console.log('🎯 Eu (receiver) entendo:', lang);
-
       window.sourceTranslationLang = idiomaDoCaller;
       window.targetTranslationLang = lang;
 
-      inicializarCameraEResponderChamada(offer, idiomaDoCaller, lang);
-    };
+      // Reutiliza a câmera já autorizada
+      window.rtcCore.handleIncomingCall(offer, stream, (remoteStream) => {
+        remoteStream.getAudioTracks().forEach(track => track.enabled = false);
 
-    // 🔄 4.5. Câmera opcional (com delay)
-    setTimeout(async () => {
-      try {
-        console.log('🎥 Tentando inicializar câmera...');
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: false
-        });
-        
-        const localVideo = document.getElementById('localVideo');
-        if (localVideo) {
-          localVideo.srcObject = stream;
-          console.log('✅ Câmera inicializada com sucesso');
+        const overlay = document.querySelector('.info-overlay');
+        if (overlay) overlay.classList.add('hidden');
+
+        const remoteVideo = document.getElementById('remoteVideo');
+        if (remoteVideo) {
+          remoteVideo.srcObject = remoteStream;
         }
-      } catch (error) {
-        console.log('⚠️ Câmera não inicializada, mas interface funciona:', error);
-      }
-    }, 2000);
+
+        if (idiomaDoCaller) {
+          aplicarBandeiraRemota(idiomaDoCaller);
+        }
+      });
+    };
 
   } catch (error) {
     console.error('❌ Erro em processos assíncronos:', error);
   }
 };
-
-// 📹 Função para inicializar câmera quando necessário
-async function inicializarCameraEResponderChamada(offer, idiomaDoCaller, lang) {
-  try {
-    console.log('📹 Inicializando câmera para responder chamada...');
-    
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: false
-    });
-
-    const localStream = stream;
-    const localVideo = document.getElementById('localVideo');
-    if (localVideo) {
-      localVideo.srcObject = localStream;
-    }
-
-    window.rtcCore.handleIncomingCall(offer, localStream, (remoteStream) => {
-      remoteStream.getAudioTracks().forEach(track => track.enabled = false);
-
-      const overlay = document.querySelector('.info-overlay');
-      if (overlay) overlay.classList.add('hidden');
-
-      const remoteVideo = document.getElementById('remoteVideo');
-      if (remoteVideo) {
-        remoteVideo.srcObject = remoteStream;
-      }
-
-      window.targetTranslationLang = idiomaDoCaller || lang;
-
-      if (idiomaDoCaller) {
-        aplicarBandeiraRemota(idiomaDoCaller);
-      } else {
-        const remoteLangElement = document.querySelector('.remoter-Lang');
-        if (remoteLangElement) remoteLangElement.textContent = '🔴';
-      }
-    });
-
-  } catch (error) {
-    console.error('❌ Erro ao inicializar câmera para chamada:', error);
-    alert('Não foi possível acessar a câmera para atender a chamada.');
-  }
-}
 
 // 🔧 Inicializa tradutor se existir
 setTimeout(() => {
