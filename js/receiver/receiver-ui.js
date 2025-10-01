@@ -1,80 +1,6 @@
 import { WebRTCCore } from '../../core/webrtc-core.js';
 import { QRCodeGenerator } from '../qrcode/qr-code-utils.js';
 
-// 🐒 LEMUR LOADER DENTRO DO BOX PRINCIPAL - VERSÃO CORRIGIDA
-class LemurLoader {
-    constructor() {
-        this.intervalId = null;
-    }
-
-    start() {
-        if (this.intervalId) return;
-        
-        console.log('🐒 Iniciando Lemur Loader...');
-        
-        // Remove loader existente
-        this.stop();
-        
-        // Encontra o box principal
-        const boxPrincipal = document.querySelector('.box-principal');
-        if (!boxPrincipal) return;
-        
-        // Cria o loader DENTRO do box principal - CORRIGIDO
-        const loader = document.createElement('div');
-        loader.id = 'lemur-loader';
-        loader.className = 'lemur-loader'; // Usa a classe CSS
-
-        // Cria container para as imagens
-        const imageContainer = document.createElement('div');
-        imageContainer.style.position = 'relative';
-        imageContainer.style.width = '100%';
-        imageContainer.style.height = '100%';
-
-        // Cria as imagens com classes CSS
-        const impaciente = document.createElement('img');
-        impaciente.src = 'assets/images/lemurImpaciente.png';
-        impaciente.className = 'lemur-image';
-        impaciente.style.opacity = '1'; // Começa visível
-
-        const olhosFechados = document.createElement('img');
-        olhosFechados.src = 'assets/images/lemurOlhos.png';
-        olhosFechados.className = 'lemur-image';
-        olhosFechados.style.opacity = '0'; // Começa invisível
-
-        imageContainer.appendChild(impaciente);
-        imageContainer.appendChild(olhosFechados);
-        loader.appendChild(imageContainer);
-        boxPrincipal.appendChild(loader);
-
-        // Alterna as imagens - CORRIGIDO
-        let mostrarImpatiente = true;
-        this.intervalId = setInterval(() => {
-            if (mostrarImpatiente) {
-                impaciente.style.opacity = '0';
-                olhosFechados.style.opacity = '1';
-            } else {
-                impaciente.style.opacity = '1';
-                olhosFechados.style.opacity = '0';
-            }
-            mostrarImpatiente = !mostrarImpatiente;
-        }, 3000); // 3 segundos para cada imagem
-    }
-
-    stop() {
-        console.log('🐒 Parando Lemur Loader...');
-        
-        if (this.intervalId) {
-            clearInterval(this.intervalId);
-            this.intervalId = null;
-        }
-        
-        const loader = document.getElementById('lemur-loader');
-        if (loader) {
-            loader.remove();
-        }
-    }
-}
-
 // 🎯 FUNÇÃO PARA OBTER IDIOMA COMPLETO
 async function obterIdiomaCompleto(lang) {
   if (!lang) return 'pt-BR';
@@ -115,9 +41,6 @@ async function translateText(text, targetLang) {
 
 window.onload = async () => {
     try {
-        // ✅ Inicializa o Lemur Loader
-        window.lemurLoader = new LemurLoader();
-
         // ✅ Solicita acesso à câmera (vídeo sem áudio)
         const stream = await navigator.mediaDevices.getUserMedia({
             video: true,
@@ -161,13 +84,14 @@ window.onload = async () => {
         window.rtcCore.initialize(myId);
         window.rtcCore.setupSocketHandlers();
 
-        // ✅ CONFIGURAÇÃO DO CANAL DE DADOS COM LEMUR LOADER
+        // ✅ CONFIGURAÇÃO DO CANAL DE DADOS SIMPLIFICADA
         window.rtcCore.setDataChannelCallback((mensagem) => {
             console.log('📩 Mensagem recebida:', mensagem);
 
-            // 🐒 INICIA O LEMUR LOADER (imagem animada)
-            if (window.lemurLoader) {
-                window.lemurLoader.start();
+            // 🐒 ESCONDE A IMAGEM FIXA
+            const lemurFixed = document.getElementById('lemurFixed');
+            if (lemurFixed) {
+                lemurFixed.classList.add('hidden');
             }
 
             const elemento = document.getElementById('texto-recebido');
@@ -189,12 +113,7 @@ window.onload = async () => {
                 utterance.volume = 0.8;
 
                 utterance.onstart = () => {
-                    console.log('🗣️ Voz iniciada - parando loader e cintilação');
-                    
-                    // 🐒 PARA O LEMUR LOADER quando a voz começa
-                    if (window.lemurLoader) {
-                        window.lemurLoader.stop();
-                    }
+                    console.log('🗣️ Voz iniciada - parando cintilação');
 
                     if (elemento) {
                         // ✅ PARA A CINTILAÇÃO e volta ao normal
@@ -209,16 +128,17 @@ window.onload = async () => {
 
                 utterance.onend = () => {
                     console.log('🔚 Voz terminada');
-                    // Garante que o loader pare mesmo se houver algum erro
-                    if (window.lemurLoader) {
-                        window.lemurLoader.stop();
+                    // 🐒 MOSTRA A IMAGEM NOVAMENTE quando a voz termina
+                    if (lemurFixed) {
+                        lemurFixed.classList.remove('hidden');
                     }
                 };
 
                 utterance.onerror = () => {
-                    console.log('❌ Erro na voz - parando loader');
-                    if (window.lemurLoader) {
-                        window.lemurLoader.stop();
+                    console.log('❌ Erro na voz');
+                    // 🐒 MOSTRA A IMAGEM NOVAMENTE mesmo com erro
+                    if (lemurFixed) {
+                        lemurFixed.classList.remove('hidden');
                     }
                 };
 
