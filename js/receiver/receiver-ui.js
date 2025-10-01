@@ -170,6 +170,24 @@ window.rtcCore.setDataChannelCallback((mensagem) => {
                 if (el) {
                     const traduzido = await translateText(texto, lang);
                     el.textContent = traduzido;
+                    
+                    // ✅ AQUI: PRÉ-AQUECIMENTO SIMPLES E DIRETO!
+                    if (id === "translator-label" && window.SpeechSynthesis) {
+                        console.log('🎯 Aquecendo narrador com frase traduzida:', traduzido);
+                        
+                        const utterance = new SpeechSynthesisUtterance(traduzido);
+                        utterance.lang = lang;
+                        utterance.volume = 0;  // ✅ ZERO VOLUME - SÓ PREPARAÇÃO
+                        utterance.rate = 0.9;
+                        
+                        window.speechSynthesis.speak(utterance);
+                        
+                        // ✅ CANCELA DEPOIS DE PREPARAR
+                        setTimeout(() => {
+                            window.speechSynthesis.cancel();
+                            console.log('✅ Narrador aquecido e pronto!');
+                        }, 100);
+                    }
                 }
             }
         })();
