@@ -1,3 +1,14 @@
+// ===== VERIFICAÇÃO DE PERMISSÕES =====
+function verificarPermissoesMicrofone() {
+    if (window.permissoesConcedidas) {
+        console.log('✅ Microfone já autorizado anteriormente');
+        return Promise.resolve(true);
+    } else {
+        // Se não foi autorizado, solicita normalmente
+        return navigator.mediaDevices.getUserMedia({ audio: true });
+    }
+}
+
 // ===== FUNÇÃO SIMPLES PARA ENVIAR TEXTO =====
 function enviarParaOutroCelular(texto) {
     if (window.rtcDataChannel && window.rtcDataChannel.isOpen()) {
@@ -246,6 +257,10 @@ function initializeTranslator() {
     
     async function requestMicrophonePermission() {
         try {
+            // ✅ CORREÇÃO: Usa a nova função de verificação
+            await verificarPermissoesMicrofone();
+            
+            // Verifica se as permissões já foram concedidas
             const devices = await navigator.mediaDevices.enumerateDevices();
             const hasMicrophonePermission = devices.some(device => 
                 device.kind === 'audioinput' && device.deviceId !== ''
@@ -256,9 +271,11 @@ function initializeTranslator() {
                 recordButton.disabled = false;
                 translatedText.textContent = "🎤";
                 setupRecognitionEvents();
+                console.log('✅ Microfone já autorizado - usando permissão existente');
                 return;
             }
             
+            // Se chegou aqui, precisa solicitar permissão
             const stream = await navigator.mediaDevices.getUserMedia({ 
                 audio: {
                     echoCancellation: true,
@@ -275,6 +292,7 @@ function initializeTranslator() {
             recordButton.disabled = false;
             translatedText.textContent = "🎤";
             setupRecognitionEvents();
+            console.log('✅ Nova permissão de microfone concedida');
             
         } catch (error) {
             console.error('Erro permissão microfone:', error);
