@@ -29,6 +29,30 @@ body {
 
 /* ESTILO PARA O ELEMENTO QUE EXIBE MENSAGENS RECEBIDAS */
 
+.lemur-loader {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10000;
+    pointer-events: none;
+}
+
+.lemur-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+    width: 200px; /* Ajuste conforme necessário */
+    height: auto;
+}
+
+.lemur-image.active {
+    opacity: 1;
+}
+
+
 #texto-recebido {
   position: absolute;
   top:65%;
