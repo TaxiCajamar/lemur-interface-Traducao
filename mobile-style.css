@@ -45,9 +45,6 @@ body {
 .lemur-fixed.hidden {
     opacity: 0; /* Some suavemente */
 }
-.lemur-fixed {
-  display: none !important; /* ✅ FORÇA ficar escondida */
-}
 
 #texto-recebido {
   position: absolute;
