@@ -30,12 +30,14 @@ body {
 /* ESTILO PARA O ELEMENTO QUE EXIBE MENSAGENS RECEBIDAS */
 
 .lemur-loader {
-    position: fixed;
+    position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 9999;
     pointer-events: none;
+    width: 120px; /* Largura fixa para o container */
+    height: 120px; /* Altura fixa para o container */
 }
 
 .lemur-image {
@@ -44,8 +46,9 @@ body {
     left: 0;
     opacity: 0;
     transition: opacity 0.3s ease-in-out;
-    width: 150px;
-    height: auto;
+    width: 100%; /* Ocupa 100% do container */
+    height: 100%; /* Ocupa 100% do container */
+    object-fit: contain; /* Mantém proporção da imagem */
 }
 
 .lemur-image.active {
