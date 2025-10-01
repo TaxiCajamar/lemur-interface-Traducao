@@ -84,53 +84,56 @@ window.onload = async () => {
         window.rtcCore.initialize(myId);
         window.rtcCore.setupSocketHandlers();
 
-       // ✅ CONFIGURAÇÃO DO CANAL DE DADOS CORRIGIDA - SINCRONIZADA
-window.rtcCore.setDataChannelCallback((mensagem) => {
-    console.log('📩 Mensagem recebida:', mensagem);
+      window.rtcCore.setDataChannelCallback((mensagem) => {
+  console.log('📩 Mensagem recebida:', mensagem);
 
-    const lemurSync = document.getElementById('lemurSync');
-    const elemento = document.getElementById('texto-recebido');
+  const elemento = document.getElementById('texto-recebido');
+  const imagemImpaciente = document.getElementById('imagem-impaciente'); // ✅ Nova linha
+  
+  if (elemento) {
+    // Box SEMPRE visível, mas texto vazio inicialmente
+    elemento.textContent = ""; // ← TEXTO FICA VAZIO NO INÍCIO
+    elemento.style.opacity = '1'; // ← BOX SEMPRE VISÍVEL
+    elemento.style.transition = 'opacity 0.5s ease'; // ← Transição suave
     
-    // 🐒 MOSTRA IMAGEM E REQUADRO JUNTOS
-    if (elemento && lemurSync) {
-        // ✅ AMBOS APARECEM SIMULTANEAMENTE
-        elemento.textContent = "";
-        elemento.style.opacity = '1';
-        elemento.style.transition = 'opacity 0.5s ease';
-        elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
-        elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
-        elemento.style.border = '2px solid #ff0000';
+    // ✅ PULSAÇÃO AO RECEBER MENSAGEM:
+    elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
+    elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
+    elemento.style.border = '2px solid #ff0000';
+  }
+
+  // ✅ MOSTRA IMAGEM IMPACIENTE ESTÁTICA DURANTE O PREPARO (SEM ANIMAÇÃO)
+  if (imagemImpaciente) {
+    imagemImpaciente.style.display = 'block'; // ← APENAS APARECE, SEM ANIMAÇÃO
+  }
+
+  if (window.SpeechSynthesis) {
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(mensagem);
+    utterance.lang = window.targetTranslationLang || 'pt-BR';
+    utterance.rate = 0.9;
+    utterance.volume = 0.8;
+
+    utterance.onstart = () => {
+      if (elemento) {
+        // ✅ PARA A PULSAÇÃO E VOLTA AO NORMAL QUANDO A VOZ COMEÇA:
+        elemento.style.animation = 'none';
+        elemento.style.backgroundColor = ''; // Volta ao fundo original
+        elemento.style.border = ''; // Remove a borda vermelha
         
-        // APENAS APARECE A IMAGEM - SEM ANIMAÇÃO
-        lemurSync.style.display = 'block';
-        lemurSync.style.opacity = '1';
-    }
+        // SÓ MOSTRA O TEXTO QUANDO A VOZ COMEÇA
+        elemento.textContent = mensagem;
+      }
 
-    if (window.SpeechSynthesis) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(mensagem);
-        utterance.lang = window.targetTranslationLang || 'pt-BR';
-        utterance.rate = 0.9;
-        utterance.volume = 0.8;
+      // ✅ ESCONDE IMAGEM IMPACIENTE QUANDO A VOZ COMEÇA
+      if (imagemImpaciente) {
+        imagemImpaciente.style.display = 'none'; // ← SIMPLESMENTE DESAPARECE
+      }
+    };
 
-        utterance.onstart = () => {
-            console.log('🗣️ Voz iniciada - parando cintilação E imagem JUNTOS');
-
-            // ✅ AMBOS DESAPARECEM SIMULTANEAMENTE
-            if (elemento) {
-                elemento.style.animation = 'none';
-                elemento.style.backgroundColor = '';
-                elemento.style.border = '';
-                elemento.textContent = mensagem;
-            }
-            
-            // APENAS ESCONDE A IMAGEM
-            if (lemurSync) {
-                lemurSync.style.display = 'none';
-                lemurSync.style.opacity = '0';
-            }
-        };
-
+    window.speechSynthesis.speak(utterance);
+  }
+});
         utterance.onend = () => {
             console.log('🔚 Voz terminada');
             // Garante que ambos desapareçam completamente
