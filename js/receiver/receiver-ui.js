@@ -165,219 +165,231 @@ async function aplicarBandeiraRemota(langCode) {
     }
 }
 
+// ✅ FUNÇÃO SEPARADA PARA INICIAR CÂMERA
+async function iniciarCamera() {
+    try {
+        // Solicita acesso à câmera (vídeo sem áudio)
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false
+        });
+
+        // ✅ Captura da câmera local
+        let localStream = stream;
+
+        // ✅ Exibe vídeo local no PiP azul
+        const localVideo = document.getElementById('localVideo');
+        if (localVideo) {
+            localVideo.srcObject = localStream;
+        }
+
+        // ✅ Inicializa WebRTC
+        window.rtcCore = new WebRTCCore();
+
+        const url = window.location.href;
+        const fixedId = url.split('?')[1] || crypto.randomUUID().substr(0, 8);
+
+        function fakeRandomUUID(fixedValue) {
+            return {
+                substr: function(start, length) {
+                    return fixedValue.substr(start, length);
+                }
+            };
+        }
+
+        const myId = fakeRandomUUID(fixedId).substr(0, 8);
+
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get('token') || '';
+        const lang = params.get('lang') || navigator.language || 'pt-BR';
+
+        window.targetTranslationLang = lang;
+
+        const callerUrl = `${window.location.origin}/caller.html?targetId=${myId}&token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
+        QRCodeGenerator.generate("qrcode", callerUrl);
+
+        window.rtcCore.initialize(myId);
+        window.rtcCore.setupSocketHandlers();
+
+        // ✅ CALLBACK COM CONTROLE DE SOM
+        window.rtcCore.setDataChannelCallback((mensagem) => {
+            // 🎵 INICIA SOM DE DIGITAÇÃO (LOOP)
+            iniciarSomDigitacao();
+
+            console.log('📩 Mensagem recebida:', mensagem);
+
+            const elemento = document.getElementById('texto-recebido');
+            const imagemImpaciente = document.getElementById('lemurFixed');
+            
+            if (elemento) {
+                elemento.textContent = "";
+                elemento.style.opacity = '1';
+                elemento.style.transition = 'opacity 0.5s ease';
+                
+                elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
+                elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
+                elemento.style.border = '2px solid #ff0000';
+            }
+
+            if (imagemImpaciente) {
+                imagemImpaciente.style.display = 'block';
+            }
+
+            if (window.SpeechSynthesis) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(mensagem);
+                utterance.lang = window.targetTranslationLang || 'pt-BR';
+                utterance.rate = 0.9;
+                utterance.volume = 0.8;
+
+                utterance.onstart = () => {
+                    // 🎵 PARA SOM DE DIGITAÇÃO QUANDO A VOZ COMEÇA
+                    pararSomDigitacao();
+                    
+                    if (elemento) {
+                        elemento.style.animation = 'none';
+                        elemento.style.backgroundColor = '';
+                        elemento.style.border = '';
+                        elemento.textContent = mensagem;
+                    }
+                    if (imagemImpaciente) {
+                        imagemImpaciente.style.display = 'none';
+                    }
+                };
+
+                utterance.onend = () => {
+                    console.log('🔚 Voz terminada');
+                    if (imagemImpaciente) {
+                        imagemImpaciente.style.display = 'none';
+                    }
+                };
+
+                utterance.onerror = () => {
+                    // 🎵 PARA SOM EM CASO DE ERRO TAMBÉM
+                    pararSomDigitacao();
+                    
+                    console.log('❌ Erro na voz');
+                    if (elemento) {
+                        elemento.style.animation = 'none';
+                        elemento.style.backgroundColor = '';
+                        elemento.style.border = '';
+                    }
+                    if (imagemImpaciente) {
+                        imagemImpaciente.style.display = 'none';
+                    }
+                };
+
+                window.speechSynthesis.speak(utterance);
+            }
+        });
+
+        window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
+            if (!localStream) return;
+
+            console.log('🎯 Caller fala:', idiomaDoCaller);
+            console.log('🎯 Eu (receiver) entendo:', lang);
+
+            window.sourceTranslationLang = idiomaDoCaller;
+            window.targetTranslationLang = lang;
+
+            console.log('🎯 Vou traduzir:', idiomaDoCaller, '→', lang);
+
+            window.rtcCore.handleIncomingCall(offer, localStream, (remoteStream) => {
+                remoteStream.getAudioTracks().forEach(track => track.enabled = false);
+
+                const overlay = document.querySelector('.info-overlay');
+                if (overlay) overlay.classList.add('hidden');
+
+                const remoteVideo = document.getElementById('remoteVideo');
+                if (remoteVideo) {
+                    remoteVideo.srcObject = remoteStream;
+                }
+
+                window.targetTranslationLang = idiomaDoCaller || lang;
+                console.log('🎯 Idioma definido para tradução:', window.targetTranslationLang);
+
+                if (idiomaDoCaller) {
+                    aplicarBandeiraRemota(idiomaDoCaller);
+                } else {
+                    const remoteLangElement = document.querySelector('.remoter-Lang');
+                    if (remoteLangElement) remoteLangElement.textContent = '🔴';
+                }
+            });
+        };
+
+        // ✅ Tradução dos títulos da interface
+        const frasesParaTraduzir = {
+            "translator-label": "Real-time translation.",
+            "qr-modal-title": "This is your online key",
+            "qr-modal-description": "You can ask to scan, share or print on your business card."
+        };
+
+        (async () => {
+            for (const [id, texto] of Object.entries(frasesParaTraduzir)) {
+                const el = document.getElementById(id);
+                if (el) {
+                    const traduzido = await translateText(texto, lang);
+                    el.textContent = traduzido;
+                }
+            }
+        })();
+
+        aplicarBandeiraLocal(lang);
+
+        setTimeout(() => {
+            if (typeof initializeTranslator === 'function') {
+                initializeTranslator();
+            }
+        }, 1000);
+
+    } catch (error) {
+        console.error("Erro ao iniciar câmera:", error);
+        throw error;
+    }
+}
+
 window.onload = async () => {
     try {
-        // ✅ BOTÃO CENTRALIZADO PARA ATIVAR ÁUDIO
-const audioButton = document.createElement('button');
-audioButton.innerHTML = '<span style="font-size: 32px;">👉🎧</span>'; // ⬅️ Emojis maiores
-audioButton.style.position = 'fixed';
-audioButton.style.top = '50%';
-audioButton.style.left = '50%';
-audioButton.style.transform = 'translate(-50%, -50%)';
-audioButton.style.zIndex = '10000';
-audioButton.style.padding = '20px 30px';
-audioButton.style.background = '#4CAF50';
-audioButton.style.color = 'white';
-audioButton.style.border = 'none';
-audioButton.style.borderRadius = '15px';
-audioButton.style.cursor = 'pointer';
-audioButton.style.fontSize = '16px'; // ⬅️ Mantém o texto pequeno, só os emojis aumentam
-audioButton.style.fontWeight = 'bold';
-audioButton.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
-
+        // ✅ BOTÃO CENTRALIZADO PARA ATIVAR ÁUDIO E CÂMERA
+        const audioButton = document.createElement('button');
+        audioButton.innerHTML = '<span style="font-size: 32px;">👉🎧</span><br><span style="font-size: 14px;">Clique para ativar áudio e câmera</span>';
+        audioButton.style.position = 'fixed';
+        audioButton.style.top = '50%';
+        audioButton.style.left = '50%';
+        audioButton.style.transform = 'translate(-50%, -50%)';
+        audioButton.style.zIndex = '10000';
+        audioButton.style.padding = '20px 30px';
+        audioButton.style.background = '#4CAF50';
+        audioButton.style.color = 'white';
+        audioButton.style.border = 'none';
+        audioButton.style.borderRadius = '15px';
+        audioButton.style.cursor = 'pointer';
+        audioButton.style.fontSize = '16px';
+        audioButton.style.fontWeight = 'bold';
+        audioButton.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
+        audioButton.style.textAlign = 'center';
+        audioButton.style.lineHeight = '1.4';
         
         audioButton.onclick = async () => {
-            // Inicia o áudio
-            iniciarAudio();
-            // Carrega o som de digitação
-            await carregarSomDigitacao();
-            // Remove o botão
-            audioButton.remove();
-            // Continua com a câmera
-            iniciarCamera();
+            try {
+                // Primeiro: inicia o áudio
+                iniciarAudio();
+                // Segundo: carrega o som de digitação
+                await carregarSomDigitacao();
+                // Terceiro: remove o botão
+                audioButton.remove();
+                // Quarto: inicia a câmera (que agora vai pedir permissões)
+                await iniciarCamera();
+            } catch (error) {
+                console.error('Erro ao inicializar:', error);
+                alert('Erro ao ativar áudio e câmera. Por favor, recarregue a página e tente novamente.');
+            }
         };
         
         document.body.appendChild(audioButton);
 
-        // ✅ FUNÇÃO SEPARADA PARA INICIAR CÂMERA
-        async function iniciarCamera() {
-            // Solicita acesso à câmera (vídeo sem áudio)
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: true,
-                audio: false
-            });
-
-            // ✅ Captura da câmera local
-            let localStream = stream;
-
-            // ✅ Exibe vídeo local no PiP azul
-            const localVideo = document.getElementById('localVideo');
-            if (localVideo) {
-                localVideo.srcObject = localStream;
-            }
-
-            // ✅ Inicializa WebRTC
-            window.rtcCore = new WebRTCCore();
-
-            const url = window.location.href;
-            const fixedId = url.split('?')[1] || crypto.randomUUID().substr(0, 8);
-
-            function fakeRandomUUID(fixedValue) {
-                return {
-                    substr: function(start, length) {
-                        return fixedValue.substr(start, length);
-                    }
-                };
-            }
-
-            const myId = fakeRandomUUID(fixedId).substr(0, 8);
-
-            const params = new URLSearchParams(window.location.search);
-            const token = params.get('token') || '';
-            const lang = params.get('lang') || navigator.language || 'pt-BR';
-
-            window.targetTranslationLang = lang;
-
-            const callerUrl = `${window.location.origin}/caller.html?targetId=${myId}&token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
-            QRCodeGenerator.generate("qrcode", callerUrl);
-
-            window.rtcCore.initialize(myId);
-            window.rtcCore.setupSocketHandlers();
-
-            // ✅ CALLBACK COM CONTROLE DE SOM
-            window.rtcCore.setDataChannelCallback((mensagem) => {
-                // 🎵 INICIA SOM DE DIGITAÇÃO (LOOP)
-                iniciarSomDigitacao();
-
-                console.log('📩 Mensagem recebida:', mensagem);
-
-                const elemento = document.getElementById('texto-recebido');
-                const imagemImpaciente = document.getElementById('lemurFixed');
-                
-                if (elemento) {
-                    elemento.textContent = "";
-                    elemento.style.opacity = '1';
-                    elemento.style.transition = 'opacity 0.5s ease';
-                    
-                    elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
-                    elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
-                    elemento.style.border = '2px solid #ff0000';
-                }
-
-                if (imagemImpaciente) {
-                    imagemImpaciente.style.display = 'block';
-                }
-
-                if (window.SpeechSynthesis) {
-                    window.speechSynthesis.cancel();
-                    const utterance = new SpeechSynthesisUtterance(mensagem);
-                    utterance.lang = window.targetTranslationLang || 'pt-BR';
-                    utterance.rate = 0.9;
-                    utterance.volume = 0.8;
-
-                    utterance.onstart = () => {
-                        // 🎵 PARA SOM DE DIGITAÇÃO QUANDO A VOZ COMEÇA
-                        pararSomDigitacao();
-                        
-                        if (elemento) {
-                            elemento.style.animation = 'none';
-                            elemento.style.backgroundColor = '';
-                            elemento.style.border = '';
-                            elemento.textContent = mensagem;
-                        }
-                        if (imagemImpaciente) {
-                            imagemImpaciente.style.display = 'none';
-                        }
-                    };
-
-                    utterance.onend = () => {
-                        console.log('🔚 Voz terminada');
-                        if (imagemImpaciente) {
-                            imagemImpaciente.style.display = 'none';
-                        }
-                    };
-
-                    utterance.onerror = () => {
-                        // 🎵 PARA SOM EM CASO DE ERRO TAMBÉM
-                        pararSomDigitacao();
-                        
-                        console.log('❌ Erro na voz');
-                        if (elemento) {
-                            elemento.style.animation = 'none';
-                            elemento.style.backgroundColor = '';
-                            elemento.style.border = '';
-                        }
-                        if (imagemImpaciente) {
-                            imagemImpaciente.style.display = 'none';
-                        }
-                    };
-
-                    window.speechSynthesis.speak(utterance);
-                }
-            });
-
-            window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
-                if (!localStream) return;
-
-                console.log('🎯 Caller fala:', idiomaDoCaller);
-                console.log('🎯 Eu (receiver) entendo:', lang);
-
-                window.sourceTranslationLang = idiomaDoCaller;
-                window.targetTranslationLang = lang;
-
-                console.log('🎯 Vou traduzir:', idiomaDoCaller, '→', lang);
-
-                window.rtcCore.handleIncomingCall(offer, localStream, (remoteStream) => {
-                    remoteStream.getAudioTracks().forEach(track => track.enabled = false);
-
-                    const overlay = document.querySelector('.info-overlay');
-                    if (overlay) overlay.classList.add('hidden');
-
-                    const remoteVideo = document.getElementById('remoteVideo');
-                    if (remoteVideo) {
-                        remoteVideo.srcObject = remoteStream;
-                    }
-
-                    window.targetTranslationLang = idiomaDoCaller || lang;
-                    console.log('🎯 Idioma definido para tradução:', window.targetTranslationLang);
-
-                    if (idiomaDoCaller) {
-                        aplicarBandeiraRemota(idiomaDoCaller);
-                    } else {
-                        const remoteLangElement = document.querySelector('.remoter-Lang');
-                        if (remoteLangElement) remoteLangElement.textContent = '🔴';
-                    }
-                });
-            };
-
-            // ✅ Tradução dos títulos da interface
-            const frasesParaTraduzir = {
-                "translator-label": "Real-time translation.",
-                "qr-modal-title": "This is your online key",
-                "qr-modal-description": "You can ask to scan, share or print on your business card."
-            };
-
-            (async () => {
-                for (const [id, texto] of Object.entries(frasesParaTraduzir)) {
-                    const el = document.getElementById(id);
-                    if (el) {
-                        const traduzido = await translateText(texto, lang);
-                        el.textContent = traduzido;
-                    }
-                }
-            })();
-
-            aplicarBandeiraLocal(lang);
-
-            setTimeout(() => {
-                if (typeof initializeTranslator === 'function') {
-                    initializeTranslator();
-                }
-            }, 1000);
-        }
-
     } catch (error) {
-        console.error("Erro ao inicializar:", error);
+        console.error("Erro ao inicializar aplicação:", error);
         alert("Erro ao inicializar a aplicação.");
         return;
     }
