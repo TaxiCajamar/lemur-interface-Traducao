@@ -1,7 +1,7 @@
 import { WebRTCCore } from '../../core/webrtc-core.js';
 import { QRCodeGenerator } from '../qrcode/qr-code-utils.js';
 
-// 🐒 LEMUR LOADER SIMPLES
+// 🐒 LEMUR LOADER DENTRO DO BOX PRINCIPAL
 class LemurLoader {
     constructor() {
         this.intervalId = null;
@@ -15,10 +15,14 @@ class LemurLoader {
         // Remove loader existente
         this.stop();
         
-        // Cria o loader
+        // Encontra o box principal
+        const boxPrincipal = document.querySelector('.box-principal');
+        if (!boxPrincipal) return;
+        
+        // Cria o loader DENTRO do box principal
         const loader = document.createElement('div');
         loader.id = 'lemur-loader';
-        loader.style.position = 'fixed';
+        loader.style.position = 'absolute';
         loader.style.top = '50%';
         loader.style.left = '50%';
         loader.style.transform = 'translate(-50%, -50%)';
@@ -27,13 +31,13 @@ class LemurLoader {
 
         const impaciente = document.createElement('img');
         impaciente.src = 'assets/images/lemurImpaciente.png';
-        impaciente.style.width = '150px';
+        impaciente.style.width = '120px';
         impaciente.style.height = 'auto';
         impaciente.style.display = 'block';
 
         const olhosFechados = document.createElement('img');
         olhosFechados.src = 'assets/images/lemurOlhos.png';
-        olhosFechados.style.width = '150px';
+        olhosFechados.style.width = '120px';
         olhosFechados.style.height = 'auto';
         olhosFechados.style.display = 'none';
         olhosFechados.style.position = 'absolute';
@@ -42,7 +46,7 @@ class LemurLoader {
 
         loader.appendChild(impaciente);
         loader.appendChild(olhosFechados);
-        document.body.appendChild(loader);
+        boxPrincipal.appendChild(loader);
 
         // Alterna as imagens
         let mostrarImpatiente = true;
