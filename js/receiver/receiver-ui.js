@@ -1,7 +1,7 @@
 import { WebRTCCore } from '../../core/webrtc-core.js';
 import { QRCodeGenerator } from '../qrcode/qr-code-utils.js';
 
-// 🐒 LEMUR LOADER DENTRO DO BOX PRINCIPAL
+// 🐒 LEMUR LOADER DENTRO DO BOX PRINCIPAL - VERSÃO CORRIGIDA
 class LemurLoader {
     constructor() {
         this.intervalId = null;
@@ -19,47 +19,45 @@ class LemurLoader {
         const boxPrincipal = document.querySelector('.box-principal');
         if (!boxPrincipal) return;
         
-        // Cria o loader DENTRO do box principal
+        // Cria o loader DENTRO do box principal - CORRIGIDO
         const loader = document.createElement('div');
         loader.id = 'lemur-loader';
-        loader.style.position = 'absolute';
-        loader.style.top = '50%';
-        loader.style.left = '50%';
-        loader.style.transform = 'translate(-50%, -50%)';
-        loader.style.zIndex = '9999';
-        loader.style.pointerEvents = 'none';
+        loader.className = 'lemur-loader'; // Usa a classe CSS
 
+        // Cria container para as imagens
+        const imageContainer = document.createElement('div');
+        imageContainer.style.position = 'relative';
+        imageContainer.style.width = '100%';
+        imageContainer.style.height = '100%';
+
+        // Cria as imagens com classes CSS
         const impaciente = document.createElement('img');
         impaciente.src = 'assets/images/lemurImpaciente.png';
-        impaciente.style.width = '120px';
-        impaciente.style.height = 'auto';
-        impaciente.style.display = 'block';
+        impaciente.className = 'lemur-image';
+        impaciente.style.opacity = '1'; // Começa visível
 
         const olhosFechados = document.createElement('img');
         olhosFechados.src = 'assets/images/lemurOlhos.png';
-        olhosFechados.style.width = '120px';
-        olhosFechados.style.height = 'auto';
-        olhosFechados.style.display = 'none';
-        olhosFechados.style.position = 'absolute';
-        olhosFechados.style.top = '0';
-        olhosFechados.style.left = '0';
+        olhosFechados.className = 'lemur-image';
+        olhosFechados.style.opacity = '0'; // Começa invisível
 
-        loader.appendChild(impaciente);
-        loader.appendChild(olhosFechados);
+        imageContainer.appendChild(impaciente);
+        imageContainer.appendChild(olhosFechados);
+        loader.appendChild(imageContainer);
         boxPrincipal.appendChild(loader);
 
-        // Alterna as imagens
+        // Alterna as imagens - CORRIGIDO
         let mostrarImpatiente = true;
         this.intervalId = setInterval(() => {
             if (mostrarImpatiente) {
-                impaciente.style.display = 'none';
-                olhosFechados.style.display = 'block';
+                impaciente.style.opacity = '0';
+                olhosFechados.style.opacity = '1';
             } else {
-                impaciente.style.display = 'block';
-                olhosFechados.style.display = 'none';
+                impaciente.style.opacity = '1';
+                olhosFechados.style.opacity = '0';
             }
             mostrarImpatiente = !mostrarImpatiente;
-        }, 2000);
+        }, 3000); // 3 segundos para cada imagem
     }
 
     stop() {
