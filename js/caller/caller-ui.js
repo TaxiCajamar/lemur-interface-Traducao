@@ -167,121 +167,126 @@ async function enviarNotificacaoWakeUp(receiverToken, receiverId, meuId, meuIdio
   }
 }
 
-// ⏳ FUNÇÃO: Mostrar estado "Aguardando resposta" COM ATRASO
-function mostrarEstadoAguardando() {
-  const statusElement = document.createElement('div');
-  statusElement.id = 'aguardando-status';
-  statusElement.innerHTML = `
-    <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-                background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 10px;
-                text-align: center; z-index: 1000;">
-      <div style="font-size: 24px; margin-bottom: 10px;">⏳</div>
-      <div>Preparando conexão...</div>
-      <div style="font-size: 12px; opacity: 0.8;">Iniciando em 3 segundos</div>
-    </div>
+// 📞 FUNÇÃO: Criar tela de chamada visual (sem textos)
+function criarTelaChamando() {
+  const telaChamada = document.createElement('div');
+  telaChamada.id = 'tela-chamando';
+  telaChamada.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
   `;
-  document.body.appendChild(statusElement);
 
-  return statusElement;
+  telaChamada.innerHTML = `
+    <div style="text-align: center; animation: pulse 2s infinite;">
+      <div style="font-size: 80px; margin-bottom: 20px;">📞</div>
+      <div style="font-size: 24px; margin-bottom: 40px; opacity: 0.9;">•••</div>
+    </div>
+    
+    <div id="botao-cancelar" style="
+      position: absolute;
+      bottom: 60px;
+      background: #ff4444;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 24px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      transition: transform 0.2s;
+    ">
+      ✕
+    </div>
+
+    <style>
+      @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+      }
+    </style>
+  `;
+
+  document.body.appendChild(telaChamada);
+
+  // Adiciona evento para cancelar
+  document.getElementById('botao-cancelar').addEventListener('click', function() {
+    telaChamada.remove();
+    // Para todas as tentativas de conexão
+    window.conexaoCancelada = true;
+    console.log('❌ Chamada cancelada pelo usuário');
+  });
+
+  return telaChamada;
 }
 
-// 🔄 FUNÇÃO UNIFICADA: Tentar conexão + notificação se necessário COM ATRASO
-async function iniciarConexaoUnificada(receiverId, receiverToken, meuId, localStream, meuIdioma) {
-  console.log('🚀 Agendando fluxo unificado de conexão em 3 segundos...');
+// 🔄 FUNÇÃO UNIFICADA: Tentar conexão visual
+async function iniciarConexaoVisual(receiverId, receiverToken, meuId, localStream, meuIdioma) {
+  console.log('🚀 Iniciando fluxo visual de conexão...');
   
   let conexaoEstabelecida = false;
-  let tentativasRestantes = 15; // 30 segundos no total
   let notificacaoEnviada = false;
+  window.conexaoCancelada = false;
   
-  // ✅ MOSTRA ESTADO INICIAL COM ATRASO
-  const statusElement = mostrarEstadoAguardando();
+  // ✅ FASE 1: Tentativas silenciosas (10 segundos)
+  console.log('🔇 Fase 1: Tentativas silenciosas (10s)');
   
-  // ⏰ ATRASO DE 3 SEGUNDOS ANTES DE COMEÇAR AS TENTATIVAS
-  setTimeout(() => {
+  let tentativasFase1 = 5; // 5 tentativas em 10 segundos
+  const tentarConexaoSilenciosa = async () => {
+    if (conexaoEstabelecida || window.conexaoCancelada) return;
     
-    // ATUALIZA A INTERFACE PARA "CONECTANDO"
-    statusElement.innerHTML = `
-      <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-                  background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 10px;
-                  text-align: center; z-index: 1000;">
-        <div style="font-size: 24px; margin-bottom: 10px;">📞</div>
-        <div>Conectando com receptor...</div>
-        <div style="font-size: 12px; opacity: 0.8;">Aguardando resposta</div>
-        <div id="contador-tempo" style="margin-top: 10px;">30s</div>
-      </div>
-    `;
-
-    let tempoRestante = 30;
-    const contador = setInterval(() => {
-      tempoRestante--;
-      const contadorElement = document.getElementById('contador-tempo');
-      if (contadorElement) contadorElement.textContent = tempoRestante + 's';
+    if (tentativasFase1 > 0) {
+      console.log(`🔄 Tentativa silenciosa ${6 - tentativasFase1}`);
+      window.rtcCore.startCall(receiverId, localStream, meuIdioma);
+      tentativasFase1--;
+      setTimeout(tentarConexaoSilenciosa, 2000);
+    } else {
+      // ✅ FASE 2: Mostrar tela de chamada e enviar notificação
+      console.log('📞 Fase 2: Mostrando tela de chamada');
+      const telaChamada = criarTelaChamando();
       
-      if (tempoRestante <= 0) {
-        clearInterval(contador);
-        if (!conexaoEstabelecida) {
-          statusElement.innerHTML = `
-            <div style="text-align: center;">
-              <div style="font-size: 24px; margin-bottom: 10px;">❌</div>
-              <div>Receptor indisponível</div>
-              <button onclick="this.parentElement.parentElement.remove()" 
-                      style="margin-top: 10px; padding: 5px 10px; background: #ff4444; color: white; border: none; border-radius: 5px;">
-                Fechar
-              </button>
-            </div>
-          `;
-        }
+      // Envia notificação
+      if (!notificacaoEnviada) {
+        console.log('📨 Enviando notificação wake-up...');
+        notificacaoEnviada = await enviarNotificacaoWakeUp(receiverToken, receiverId, meuId, meuIdioma);
       }
-    }, 1000);
-
-    const tentarConexao = async () => {
-      if (conexaoEstabelecida) return;
       
-      if (tentativasRestantes > 0) {
-        console.log(`🔄 Tentativa ${16 - tentativasRestantes} de conexão com: ${receiverId}`);
+      // Continua tentando indefinidamente até conectar ou usuário cancelar
+      const tentarConexaoContinuamente = async () => {
+        if (conexaoEstabelecida || window.conexaoCancelada) return;
         
-        // Tenta conexão direta
+        console.log('🔄 Tentando conexão...');
         window.rtcCore.startCall(receiverId, localStream, meuIdioma);
-        
-        tentativasRestantes--;
-        
-        // Se é a 3ª tentativa e ainda não enviou notificação, ENVIA
-        if (tentativasRestantes === 12 && !notificacaoEnviada) {
-          console.log('📨 Enviando notificação wake-up...');
-          notificacaoEnviada = await enviarNotificacaoWakeUp(receiverToken, receiverId, meuId, meuIdioma);
-        }
-        
-        // Agenda próxima tentativa
-        setTimeout(tentarConexao, 2000);
-      } else {
-        console.log('❌ Timeout - Não foi possível conectar');
-        if (!conexaoEstabelecida) {
-          statusElement.innerHTML = `
-            <div style="text-align: center;">
-              <div style="font-size: 24px; margin-bottom: 10px;">❌</div>
-              <div>Não foi possível conectar</div>
-              <button onclick="this.parentElement.parentElement.remove()" 
-                      style="margin-top: 10px; padding: 5px 10px; background: #ff4444; color: white; border: none; border-radius: 5px;">
-                Fechar
-              </button>
-            </div>
-          `;
-        }
-      }
-    };
-    
-    // ✅ INICIA AS TENTATIVAS APÓS O ATRASO
-    tentarConexao();
-    
-  }, 3000); // ⏰ ATRASO DE 3 SEGUNDOS
+        setTimeout(tentarConexaoContinuamente, 3000);
+      };
+      
+      tentarConexaoContinuamente();
+    }
+  };
+  
+  // ✅ INICIA AS TENTATIVAS
+  tentarConexaoSilenciosa();
   
   // Callback quando conexão é estabelecida
   window.rtcCore.setRemoteStreamCallback(stream => {
     conexaoEstabelecida = true;
     console.log('✅ Conexão estabelecida com sucesso!');
     
-    // Remove tela de aguardando
-    if (statusElement) statusElement.remove();
+    // Remove tela de chamada se existir
+    const telaChamada = document.getElementById('tela-chamando');
+    if (telaChamada) telaChamada.remove();
     
     // Configura stream remoto
     stream.getAudioTracks().forEach(track => track.enabled = false);
@@ -423,15 +428,15 @@ window.onload = async () => {
           lang: receiverLang
         };
 
-        // ✅✅✅ FLUXO UNIFICADO: Se tem receiverId, inicia conexão COM ATRASO
+        // ✅✅✅ FLUXO VISUAL: Se tem receiverId, inicia conexão
         if (receiverId) {
           document.getElementById('callActionBtn').style.display = 'none';
           
           if (localStream) {
             const meuIdioma = await obterIdiomaCompleto(navigator.language);
             
-            // ⭐⭐ INICIA FLUXO UNIFICADO COM ATRASO
-            iniciarConexaoUnificada(receiverId, receiverToken, myId, localStream, meuIdioma);
+            // ⭐⭐ INICIA FLUXO VISUAL
+            iniciarConexaoVisual(receiverId, receiverToken, myId, localStream, meuIdioma);
           }
         }
 
