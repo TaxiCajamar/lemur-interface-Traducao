@@ -1,3 +1,4 @@
+// js/receiver/receiver-ui.js 
 import { WebRTCCore } from '../../core/webrtc-core.js';
 import { QRCodeGenerator } from '../qrcode/qr-code-utils.js';
 
@@ -415,6 +416,7 @@ window.onload = async () => {
             permissaoButton.style.boxShadow = '0 8px 25px rgba(0,0,0,0.3)';
         };
         
+        // Dentro do onClick do botão de permissões, APÓS as permissões serem concedidas:
         permissaoButton.onclick = async () => {
             try {
                 permissaoButton.innerHTML = '<span style="font-size: 24px;">⏳</span><br><span style="font-size: 12px;">Solicitando permissões...</span>';
@@ -430,8 +432,9 @@ window.onload = async () => {
                 // 3. Terceiro: Solicita TODAS as permissões (câmera + microfone)
                 await solicitarTodasPermissoes();
                 
-                // 4. Quarto: Remove botão
+                // 4. Quarto: Remove botão E LIBERA INTERFACE
                 permissaoButton.remove();
+                window.liberarInterface(); // ✅ NOVA LINHA
                 
                 // 5. Quinto: Inicia câmera e WebRTC
                 await iniciarCameraAposPermissoes();
@@ -440,6 +443,8 @@ window.onload = async () => {
                 
             } catch (error) {
                 console.error('❌ Erro no fluxo:', error);
+                window.mostrarErroCarregamento('Erro ao solicitar permissões de câmera e microfone');
+                // ... resto do código de erro
                 permissaoButton.innerHTML = `
                     <span style="font-size: 32px;">❌</span><br>
                     <span style="font-size: 12px;">Erro nas permissões<br>Clique para tentar novamente</span>
