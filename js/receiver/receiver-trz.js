@@ -9,15 +9,37 @@ function enviarParaOutroCelular(texto) {
     }
 }
 
+// ⭐⭐ NOVA FUNÇÃO: Atualizar bandeira local na interface principal
+async function atualizarBandeiraLocal(novoIdioma) {
+    try {
+        const response = await fetch('assets/bandeiras/language-flags.json');
+        const flags = await response.json();
+        const bandeira = flags[novoIdioma] || flags[novoIdioma.split('-')[0]] || '🔴';
+
+        // Atualizar TODOS os elementos de bandeira local
+        const localLangElements = document.querySelectorAll('.local-mic-Lang, .local-Lang');
+        localLangElements.forEach(element => {
+            element.textContent = bandeira;
+        });
+        
+        console.log('🏳️ Bandeira local atualizada para:', bandeira);
+    } catch (error) {
+        console.error('Erro ao atualizar bandeira local:', error);
+    }
+}
+
 async function translateText(text) {
     try {
+        // ⭐⭐ NOVO: Usar o idioma selecionado no mundo como DESTINO
+        const userSelectedLang = window.currentSourceLang || window.targetTranslationLang || 'en';
+        
         const response = await fetch('https://chat-tradutor-bvvx.onrender.com/translate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 text: text,
                 sourceLang: window.sourceTranslationLang || 'auto',
-                targetLang: window.targetTranslationLang || 'en'
+                targetLang: userSelectedLang // ⬅️ AGORA USA O IDIOMA DO MUNDO
             })
         });
 
@@ -86,6 +108,9 @@ function initializeWorldButton() {
             
             const bandeira = await getBandeiraDoJson(novoIdioma);
             currentLanguageFlag.textContent = bandeira;
+            
+            // ⭐⭐ NOVO: Atualizar também a bandeira local na interface principal
+            await atualizarBandeiraLocal(novoIdioma);
             
             languageDropdown.classList.remove('show');
             
