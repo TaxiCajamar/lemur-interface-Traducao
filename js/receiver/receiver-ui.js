@@ -90,12 +90,9 @@ window.rtcCore.setDataChannelCallback((mensagem) => {
 
   const elemento = document.getElementById('texto-recebido');
   if (elemento) {
-    // Box SEMPRE visível, mas texto vazio inicialmente
-    elemento.textContent = ""; // ← TEXTO FICA VAZIO NO INÍCIO
-    elemento.style.opacity = '1'; // ← BOX SEMPRE VISÍVEL
-    elemento.style.transition = 'opacity 0.5s ease'; // ← Transição suave
-    
-    // ✅ PULSAÇÃO AO RECEBER MENSAGEM:
+    elemento.textContent = "";
+    elemento.style.opacity = '1';
+    elemento.style.transition = 'opacity 0.5s ease';
     elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
     elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
     elemento.style.border = '2px solid #ff0000';
@@ -103,6 +100,17 @@ window.rtcCore.setDataChannelCallback((mensagem) => {
 
   if (window.SpeechSynthesis) {
     window.speechSynthesis.cancel();
+    
+    // ✅ NOVO: PRÉ-AQUECIMENTO com a frase do subtítulo
+    const frasePreAquecimento = document.getElementById('translator-label');
+    if (frasePreAquecimento && frasePreAquecimento.textContent) {
+      const utterancePre = new SpeechSynthesisUtterance(frasePreAquecimento.textContent);
+      utterancePre.lang = window.targetTranslationLang || 'pt-BR';
+      utterancePre.volume = 0; // 🔊 SILENCIOSO - só para pré-aquecer
+      window.speechSynthesis.speak(utterancePre);
+    }
+
+    // ✅ AGORA SIM: Ler a mensagem real (já com TTS pré-aquecido)
     const utterance = new SpeechSynthesisUtterance(mensagem);
     utterance.lang = window.targetTranslationLang || 'pt-BR';
     utterance.rate = 0.9;
@@ -110,12 +118,9 @@ window.rtcCore.setDataChannelCallback((mensagem) => {
 
     utterance.onstart = () => {
       if (elemento) {
-        // ✅ PARA A PULSAÇÃO E VOLTA AO NORMAL QUANDO A VOZ COMEÇA:
         elemento.style.animation = 'none';
-        elemento.style.backgroundColor = ''; // Volta ao fundo original
-        elemento.style.border = ''; // Remove a borda vermelha
-        
-        // SÓ MOSTRA O TEXTO QUANDO A VOZ COMEÇA
+        elemento.style.backgroundColor = '';
+        elemento.style.border = '';
         elemento.textContent = mensagem;
       }
     };
@@ -169,19 +174,7 @@ const frasesParaTraduzir = {
         const el = document.getElementById(id);
         if (el) {
             const traduzido = await translateText(texto, lang);
-            el.textContent = traduzido;
-            
-            // ✅ NOVO: Sintetizar voz apenas para a frase "Real-time translation."
-            if (id === "translator-label" && window.SpeechSynthesis) {
-                // Pequeno delay para garantir que a tradução foi aplicada
-                setTimeout(() => {
-                    const utterance = new SpeechSynthesisUtterance(traduzido);
-                    utterance.lang = lang;
-                    utterance.rate = 0.9;
-                    utterance.volume = 0.7;
-                    window.speechSynthesis.speak(utterance);
-                }, 1000);
-            }
+            el.textContent = traduzido;                    
         }
     }
 })();
