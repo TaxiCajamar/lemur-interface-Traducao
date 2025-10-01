@@ -1,79 +1,104 @@
 import { WebRTCCore } from '../../core/webrtc-core.js';
 import { QRCodeGenerator } from '../qrcode/qr-code-utils.js';
 
+// 🎵 SONS PERSONALIZADOS - SOM DE DIGITAÇÃO
+function criarSomDigitacao() {
+    try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        // Som curto e agudo como teclado mecânico
+        oscillator.type = 'square';
+        oscillator.frequency.value = 1200; // Mais agudo
+        gainNode.gain.value = 0.2; // Volume baixo
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        // Som muito curto - 0.1 segundos
+        oscillator.start();
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
+        oscillator.stop(audioContext.currentTime + 0.1);
+
+    } catch (error) {
+        console.log('🔇 Áudio não suportado');
+    }
+}
+
 // 🎯 FUNÇÃO PARA OBTER IDIOMA COMPLETO
 async function obterIdiomaCompleto(lang) {
-  if (!lang) return 'pt-BR';
-  if (lang.includes('-')) return lang;
+    if (!lang) return 'pt-BR';
+    if (lang.includes('-')) return lang;
 
-  try {
-    const response = await fetch('assets/bandeiras/language-flags.json');
-    const flags = await response.json();
-    const codigoCompleto = Object.keys(flags).find(key => key.startsWith(lang + '-'));
-    return codigoCompleto || `${lang}-${lang.toUpperCase()}`;
-  } catch (error) {
-    console.error('Erro ao carregar JSON de bandeiras:', error);
-    const fallback = {
-      'pt': 'pt-BR', 'es': 'es-ES', 'en': 'en-US',
-      'fr': 'fr-FR', 'de': 'de-DE', 'it': 'it-IT',
-      'ja': 'ja-JP', 'zh': 'zh-CN', 'ru': 'ru-RU'
-    };
-    return fallback[lang] || 'en-US';
-  }
+    try {
+        const response = await fetch('assets/bandeiras/language-flags.json');
+        const flags = await response.json();
+        const codigoCompleto = Object.keys(flags).find(key => key.startsWith(lang + '-'));
+        return codigoCompleto || `${lang}-${lang.toUpperCase()}`;
+    } catch (error) {
+        console.error('Erro ao carregar JSON de bandeiras:', error);
+        const fallback = {
+            'pt': 'pt-BR', 'es': 'es-ES', 'en': 'en-US',
+            'fr': 'fr-FR', 'de': 'de-DE', 'it': 'it-IT',
+            'ja': 'ja-JP', 'zh': 'zh-CN', 'ru': 'ru-RU'
+        };
+        return fallback[lang] || 'en-US';
+    }
 }
 
 // 🌐 Tradução apenas para texto
 async function translateText(text, targetLang) {
-  try {
-    const response = await fetch('https://chat-tradutor-bvvx.onrender.com/translate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, targetLang })
-    });
+    try {
+        const response = await fetch('https://chat-tradutor-bvvx.onrender.com/translate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text, targetLang })
+        });
 
-    const result = await response.json();
-    return result.translatedText || text;
-  } catch (error) {
-    console.error('Erro na tradução:', error);
-    return text;
-  }
+        const result = await response.json();
+        return result.translatedText || text;
+    } catch (error) {
+        console.error('Erro na tradução:', error);
+        return text;
+    }
 }
 
 // 🏳️ Aplica bandeira do idioma local
 async function aplicarBandeiraLocal(langCode) {
-  try {
-    const response = await fetch('assets/bandeiras/language-flags.json');
-    const flags = await response.json();
+    try {
+        const response = await fetch('assets/bandeiras/language-flags.json');
+        const flags = await response.json();
 
-    const bandeira = flags[langCode] || flags[langCode.split('-')[0]] || '🔴';
+        const bandeira = flags[langCode] || flags[langCode.split('-')[0]] || '🔴';
 
-    const localLangElement = document.querySelector('.local-mic-Lang');
-    if (localLangElement) localLangElement.textContent = bandeira;
+        const localLangElement = document.querySelector('.local-mic-Lang');
+        if (localLangElement) localLangElement.textContent = bandeira;
 
-    const localLangDisplay = document.querySelector('.local-Lang');
-    if (localLangDisplay) localLangDisplay.textContent = bandeira;
+        const localLangDisplay = document.querySelector('.local-Lang');
+        if (localLangDisplay) localLangDisplay.textContent = bandeira;
 
-  } catch (error) {
-    console.error('Erro ao carregar bandeira local:', error);
-  }
+    } catch (error) {
+        console.error('Erro ao carregar bandeira local:', error);
+    }
 }
 
 // 🏳️ Aplica bandeira do idioma remoto
 async function aplicarBandeiraRemota(langCode) {
-  try {
-    const response = await fetch('assets/bandeiras/language-flags.json');
-    const flags = await response.json();
+    try {
+        const response = await fetch('assets/bandeiras/language-flags.json');
+        const flags = await response.json();
 
-    const bandeira = flags[langCode] || flags[langCode.split('-')[0]] || '🔴';
+        const bandeira = flags[langCode] || flags[langCode.split('-')[0]] || '🔴';
 
-    const remoteLangElement = document.querySelector('.remoter-Lang');
-    if (remoteLangElement) remoteLangElement.textContent = bandeira;
+        const remoteLangElement = document.querySelector('.remoter-Lang');
+        if (remoteLangElement) remoteLangElement.textContent = bandeira;
 
-  } catch (error) {
-    console.error('Erro ao carregar bandeira remota:', error);
-    const remoteLangElement = document.querySelector('.remoter-Lang');
-    if (remoteLangElement) remoteLangElement.textContent = '🔴';
-  }
+    } catch (error) {
+        console.error('Erro ao carregar bandeira remota:', error);
+        const remoteLangElement = document.querySelector('.remoter-Lang');
+        if (remoteLangElement) remoteLangElement.textContent = '🔴';
+    }
 }
 
 window.onload = async () => {
@@ -121,18 +146,21 @@ window.onload = async () => {
         window.rtcCore.initialize(myId);
         window.rtcCore.setupSocketHandlers();
 
-        // ✅ CORRIGIDO: Bloco do setDataChannelCallback fechado corretamente
+        // ✅ CORRIGIDO: Bloco do setDataChannelCallback com SOM DE DIGITAÇÃO
         window.rtcCore.setDataChannelCallback((mensagem) => {
+            // 🎵 TOCA SOM DE DIGITAÇÃO IMEDIATAMENTE
+            criarSomDigitacao();
+
             console.log('📩 Mensagem recebida:', mensagem);
 
             const elemento = document.getElementById('texto-recebido');
-            const imagemImpaciente = document.getElementById('lemurFixed'); // ✅ ID CORRETO
+            const imagemImpaciente = document.getElementById('lemurFixed');
             
             if (elemento) {
                 // Box SEMPRE visível, mas texto vazio inicialmente
-                elemento.textContent = ""; // ← TEXTO FICA VAZIO NO INÍCIO
-                elemento.style.opacity = '1'; // ← BOX SEMPRE VISÍVEL
-                elemento.style.transition = 'opacity 0.5s ease'; // ← Transição suave
+                elemento.textContent = "";
+                elemento.style.opacity = '1';
+                elemento.style.transition = 'opacity 0.5s ease';
                 
                 // ✅ PULSAÇÃO AO RECEBER MENSAGEM:
                 elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
@@ -140,9 +168,9 @@ window.onload = async () => {
                 elemento.style.border = '2px solid #ff0000';
             }
 
-            // ✅ MOSTRA IMAGEM IMPACIENTE ESTÁTICA DURANTE O PREPARO (SEM ANIMAÇÃO)
+            // ✅ MOSTRA IMAGEM IMPACIENTE ESTÁTICA DURANTE O PREPARO
             if (imagemImpaciente) {
-                imagemImpaciente.style.display = 'block'; // ← APENAS APARECE, SEM ANIMAÇÃO
+                imagemImpaciente.style.display = 'block';
             }
 
             if (window.SpeechSynthesis) {
@@ -156,8 +184,8 @@ window.onload = async () => {
                     if (elemento) {
                         // ✅ PARA A PULSAÇÃO E VOLTA AO NORMAL QUANDO A VOZ COMEÇA:
                         elemento.style.animation = 'none';
-                        elemento.style.backgroundColor = ''; // Volta ao fundo original
-                        elemento.style.border = ''; // Remove a borda vermelha
+                        elemento.style.backgroundColor = '';
+                        elemento.style.border = '';
                         
                         // SÓ MOSTRA O TEXTO QUANDO A VOZ COMEÇA
                         elemento.textContent = mensagem;
@@ -165,13 +193,12 @@ window.onload = async () => {
 
                     // ✅ ESCONDE IMAGEM IMPACIENTE QUANDO A VOZ COMEÇA
                     if (imagemImpaciente) {
-                        imagemImpaciente.style.display = 'none'; // ← SIMPLESMENTE DESAPARECE
+                        imagemImpaciente.style.display = 'none';
                     }
                 };
 
                 utterance.onend = () => {
                     console.log('🔚 Voz terminada');
-                    // Garante que ambos desapareçam completamente
                     if (imagemImpaciente) {
                         imagemImpaciente.style.display = 'none';
                     }
@@ -179,7 +206,6 @@ window.onload = async () => {
 
                 utterance.onerror = () => {
                     console.log('❌ Erro na voz');
-                    // Garante que ambos desapareçam em caso de erro
                     if (elemento) {
                         elemento.style.animation = 'none';
                         elemento.style.backgroundColor = '';
@@ -192,7 +218,7 @@ window.onload = async () => {
 
                 window.speechSynthesis.speak(utterance);
             }
-        }); // ✅ FIM CORRETO do setDataChannelCallback
+        });
 
         window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
             if (!localStream) return;
