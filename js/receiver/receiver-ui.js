@@ -256,7 +256,77 @@ async function iniciarCameraAposPermissoes() {
         window.rtcCore.initialize(myId);
         window.rtcCore.setupSocketHandlers();
 
-        window.rtcCore.setDataChannelCallback((mensagem) => {
+        // 🎤 FUNÇÃO GOOGLE TTS SEPARADA
+        async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente) {
+            try {
+                console.log('🎤 Iniciando Google TTS para:', mensagem.substring(0, 50) + '...');
+                
+                const resposta = await fetch('https://chat-tradutor.onrender.com/speak', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: mensagem,
+                        languageCode: window.targetTranslationLang || 'pt-BR',
+                        gender: 'FEMALE'
+                    })
+                });
+
+                if (!resposta.ok) {
+                    throw new Error('Erro na API de voz');
+                }
+
+                const blob = await resposta.blob();
+                const url = URL.createObjectURL(blob);
+                const audio = new Audio(url);
+                
+                // EVENTO: ÁUDIO COMEÇOU
+                audio.onplay = () => {
+                    pararSomDigitacao();
+                    
+                    if (elemento) {
+                        elemento.style.animation = 'none';
+                        elemento.style.backgroundColor = '';
+                        elemento.style.border = '';
+                        elemento.textContent = mensagem;
+                    }
+                    if (imagemImpaciente) {
+                        imagemImpaciente.style.display = 'none';
+                    }
+                    
+                    console.log('🔊 Áudio Google TTS iniciado');
+                };
+                
+                // EVENTO: ÁUDIO TERMINOU
+                audio.onended = () => {
+                    console.log('🔚 Áudio Google TTS terminado');
+                    if (imagemImpaciente) {
+                        imagemImpaciente.style.display = 'none';
+                    }
+                };
+                
+                // EVENTO: ERRO NO ÁUDIO
+                audio.onerror = () => {
+                    pararSomDigitacao();
+                    console.log('❌ Erro no áudio Google TTS');
+                    if (elemento) {
+                        elemento.style.animation = 'none';
+                        elemento.style.backgroundColor = '';
+                        elemento.style.border = '';
+                    }
+                    if (imagemImpaciente) {
+                        imagemImpaciente.style.display = 'none';
+                    }
+                };
+
+                await audio.play();
+                
+            } catch (error) {
+                console.error('❌ Erro no Google TTS:', error);
+                // Fallback para síntese nativa se necessário
+            }
+        }
+
+        window.rtcCore.setDataChannelCallback(async (mensagem) => {
             iniciarSomDigitacao();
 
             console.log('📩 Mensagem recebida:', mensagem);
@@ -278,73 +348,8 @@ async function iniciarCameraAposPermissoes() {
                 imagemImpaciente.style.display = 'block';
             }
 
-            // 🎤 NOVO BLOCO COM GOOGLE TTS - COLAR AQUI
-try {
-    console.log('🎤 Iniciando Google TTS para:', mensagem.substring(0, 50) + '...');
-    
-    const resposta = await fetch('https://chat-tradutor.onrender.com/speak', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            text: mensagem,
-            languageCode: window.targetTranslationLang || 'pt-BR',
-            gender: 'FEMALE'
-        })
-    });
-
-    if (!resposta.ok) {
-        throw new Error('Erro na API de voz');
-    }
-
-    const blob = await resposta.blob();
-    const url = URL.createObjectURL(blob);
-    const audio = new Audio(url);
-    
-    // EVENTO: ÁUDIO COMEÇOU
-    audio.onplay = () => {
-        pararSomDigitacao();
-        
-        if (elemento) {
-            elemento.style.animation = 'none';
-            elemento.style.backgroundColor = '';
-            elemento.style.border = '';
-            elemento.textContent = mensagem;
-        }
-        if (imagemImpaciente) {
-            imagemImpaciente.style.display = 'none';
-        }
-        
-        console.log('🔊 Áudio Google TTS iniciado');
-    };
-    
-    // EVENTO: ÁUDIO TERMINOU
-    audio.onended = () => {
-        console.log('🔚 Áudio Google TTS terminado');
-        if (imagemImpaciente) {
-            imagemImpaciente.style.display = 'none';
-        }
-    };
-    
-    // EVENTO: ERRO NO ÁUDIO
-    audio.onerror = () => {
-        pararSomDigitacao();
-        console.log('❌ Erro no áudio Google TTS');
-        if (elemento) {
-            elemento.style.animation = 'none';
-            elemento.style.backgroundColor = '';
-            elemento.style.border = '';
-        }
-        if (imagemImpaciente) {
-            imagemImpaciente.style.display = 'none';
-        }
-    };
-
-    await audio.play();
-    
-} catch (error) {
-    console.error('❌ Erro no Google TTS:', error);
-    // Fallback opcional para síntese nativa se quiser
-}
+            // 🎤 CHAMADA PARA GOOGLE TTS
+            await falarComGoogleTTS(mensagem, elemento, imagemImpaciente);
         });
 
         window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
