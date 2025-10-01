@@ -31,10 +31,10 @@ body {
 
 .lemur-loader {
     position: absolute;
-    top: 60%;
+    top: 70%;
     left: 50%;
     transform: translate(-50%, -50%);
-    z-index: 25;
+    z-index: 20;
     pointer-events: none;
     width: 120px; /* Largura fixa para o container */
     height: 120px; /* Altura fixa para o container */
