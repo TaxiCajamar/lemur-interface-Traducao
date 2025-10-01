@@ -136,7 +136,7 @@ window.onload = async () => {
                 
                 // ✅ PULSAÇÃO AO RECEBER MENSAGEM:
                 elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
-                elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
+                elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.8)';
                 elemento.style.border = '2px solid #ff0000';
             }
 
