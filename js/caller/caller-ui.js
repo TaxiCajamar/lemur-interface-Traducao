@@ -297,24 +297,23 @@ let tentativasFase1 = 3; // 6 segundos (3 tentativas × 2s cada)
 
 window.onload = async () => {
   try {
-    // ✅ BOTÃO CENTRALIZADO PARA ATIVAR ÁUDIO
     const audioButton = document.createElement('button');
-    audioButton.innerHTML = '👉🎧';
-    audioButton.style.position = 'fixed';
-    audioButton.style.top = '50%';
-    audioButton.style.left = '50%';
-    audioButton.style.transform = 'translate(-50%, -50%)';
-    audioButton.style.zIndex = '10000';
-    audioButton.style.padding = '20px 30px';
-    audioButton.style.background = '#4CAF50';
-    audioButton.style.color = 'white';
-    audioButton.style.border = 'none';
-    audioButton.style.borderRadius = '15px';
-    audioButton.style.cursor = 'pointer';
-    audioButton.style.fontSize = '18px';
-    audioButton.style.fontWeight = 'bold';
-    audioButton.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
-    
+audioButton.innerHTML = '<span style="font-size: 32px;">👉🎧</span>'; // ⬅️ Emojis maiores
+audioButton.style.position = 'fixed';
+audioButton.style.top = '50%';
+audioButton.style.left = '50%';
+audioButton.style.transform = 'translate(-50%, -50%)';
+audioButton.style.zIndex = '10000';
+audioButton.style.padding = '20px 30px';
+audioButton.style.background = '#4CAF50';
+audioButton.style.color = 'white';
+audioButton.style.border = 'none';
+audioButton.style.borderRadius = '15px';
+audioButton.style.cursor = 'pointer';
+audioButton.style.fontSize = '16px'; // ⬅️ Mantém o texto pequeno, só os emojis aumentam
+audioButton.style.fontWeight = 'bold';
+audioButton.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
+
     audioButton.onclick = async () => {
         // Inicia o áudio
         iniciarAudio();
