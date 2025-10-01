@@ -84,70 +84,77 @@ window.onload = async () => {
         window.rtcCore.initialize(myId);
         window.rtcCore.setupSocketHandlers();
 
-        // ✅ CONFIGURAÇÃO DO CANAL DE DADOS CORRIGIDA
-        window.rtcCore.setDataChannelCallback((mensagem) => {
-            console.log('📩 Mensagem recebida:', mensagem);
+       // ✅ CONFIGURAÇÃO DO CANAL DE DADOS CORRIGIDA - SINCRONIZADA
+window.rtcCore.setDataChannelCallback((mensagem) => {
+    console.log('📩 Mensagem recebida:', mensagem);
 
-            const lemurFixed = document.getElementById('lemurFixed');
-            const elemento = document.getElementById('texto-recebido');
+    const lemurSync = document.getElementById('lemurSync');
+    const elemento = document.getElementById('texto-recebido');
+    
+    // 🐒 MOSTRA IMAGEM E REQUADRO JUNTOS
+    if (elemento && lemurSync) {
+        // ✅ AMBOS APARECEM SIMULTANEAMENTE
+        elemento.textContent = "";
+        elemento.style.opacity = '1';
+        elemento.style.transition = 'opacity 0.5s ease';
+        elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
+        elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
+        elemento.style.border = '2px solid #ff0000';
+        
+        // APENAS APARECE A IMAGEM - SEM ANIMAÇÃO
+        lemurSync.style.display = 'block';
+        lemurSync.style.opacity = '1';
+    }
+
+    if (window.SpeechSynthesis) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(mensagem);
+        utterance.lang = window.targetTranslationLang || 'pt-BR';
+        utterance.rate = 0.9;
+        utterance.volume = 0.8;
+
+        utterance.onstart = () => {
+            console.log('🗣️ Voz iniciada - parando cintilação E imagem JUNTOS');
+
+            // ✅ AMBOS DESAPARECEM SIMULTANEAMENTE
+            if (elemento) {
+                elemento.style.animation = 'none';
+                elemento.style.backgroundColor = '';
+                elemento.style.border = '';
+                elemento.textContent = mensagem;
+            }
             
-            // 🐒 MOSTRA IMAGEM E REQUADRO JUNTOS
-            if (elemento && lemurFixed) {
-                // ✅ AMBOS APARECEM SIMULTANEAMENTE
-                elemento.textContent = "";
-                elemento.style.opacity = '1';
-                elemento.style.transition = 'opacity 0.5s ease';
-                elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
-                elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
-                elemento.style.border = '2px solid #ff0000';
-                
-                lemurFixed.classList.remove('hidden');
+            // APENAS ESCONDE A IMAGEM
+            if (lemurSync) {
+                lemurSync.style.display = 'none';
+                lemurSync.style.opacity = '0';
             }
+        };
 
-            if (window.SpeechSynthesis) {
-                window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(mensagem);
-                utterance.lang = window.targetTranslationLang || 'pt-BR';
-                utterance.rate = 0.9;
-                utterance.volume = 0.8;
-
-                utterance.onstart = () => {
-                    console.log('🗣️ Voz iniciada - parando cintilação E imagem JUNTOS');
-
-                    // ✅ AMBOS DESAPARECEM SIMULTANEAMENTE
-                    if (elemento) {
-                        elemento.style.animation = 'none';
-                        elemento.style.backgroundColor = '';
-                        elemento.style.border = '';
-                        elemento.textContent = mensagem;
-                    }
-                    
-                    if (lemurFixed) {
-                        lemurFixed.classList.add('hidden');
-                    }
-                };
-
-                utterance.onend = () => {
-                    console.log('🔚 Voz terminada');
-                    // Ambos já estão no estado correto
-                };
-
-                utterance.onerror = () => {
-                    console.log('❌ Erro na voz');
-                    // Garante que ambos desapareçam em caso de erro
-                    if (elemento) {
-                        elemento.style.animation = 'none';
-                        elemento.style.backgroundColor = '';
-                        elemento.style.border = '';
-                    }
-                    if (lemurFixed) {
-                        lemurFixed.classList.add('hidden');
-                    }
-                };
-
-                window.speechSynthesis.speak(utterance);
+        utterance.onend = () => {
+            console.log('🔚 Voz terminada');
+            // Garante que ambos desapareçam completamente
+            if (lemurSync) {
+                lemurSync.style.display = 'none';
             }
-        });
+        };
+
+        utterance.onerror = () => {
+            console.log('❌ Erro na voz');
+            // Garante que ambos desapareçam em caso de erro
+            if (elemento) {
+                elemento.style.animation = 'none';
+                elemento.style.backgroundColor = '';
+                elemento.style.border = '';
+            }
+            if (lemurSync) {
+                lemurSync.style.display = 'none';
+            }
+        };
+
+        window.speechSynthesis.speak(utterance);
+    }
+});
 
         window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
             if (!localStream) return;
