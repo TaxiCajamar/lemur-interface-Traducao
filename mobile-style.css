@@ -31,7 +31,7 @@ body {
 
 .lemur-fixed {
     position: absolute;
-    top: 52%;
+    top: 53%;
     left: 50%;
     transform: translate(-50%, -50%);
     width: 130px;
