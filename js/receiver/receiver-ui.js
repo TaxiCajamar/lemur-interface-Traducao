@@ -5,7 +5,7 @@ import { QRCodeGenerator } from '../qrcode/qr-code-utils.js';
 let audioContext = null;
 let somDigitacao = null;
 let audioCarregado = false;
-let loopAudio = null; // Para controlar o loop
+let permissaoConcedida = false; // Nova variável para controlar permissões
 
 // 🎵 CARREGAR SOM DE DIGITAÇÃO
 function carregarSomDigitacao() {
@@ -39,11 +39,9 @@ function carregarSomDigitacao() {
 function iniciarSomDigitacao() {
     if (!audioCarregado || !somDigitacao) return;
     
-    // Para qualquer som anterior
     pararSomDigitacao();
     
     try {
-        // Configura o loop
         somDigitacao.loop = true;
         somDigitacao.currentTime = 0;
         somDigitacao.play().catch(error => {
@@ -76,7 +74,6 @@ function iniciarAudio() {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
     }
     
-    // Toca um som silencioso para "desbloquear" o áudio
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
     
@@ -88,6 +85,38 @@ function iniciarAudio() {
     oscillator.stop(audioContext.currentTime + 0.1);
     
     console.log('🎵 Áudio desbloqueado!');
+}
+
+// 🎤 SOLICITAR TODAS AS PERMISSÕES DE UMA VEZ
+async function solicitarTodasPermissoes() {
+    try {
+        console.log('🎯 Solicitando todas as permissões...');
+        
+        // Solicita câmera e microfone simultaneamente
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true
+        });
+        
+        console.log('✅ Todas as permissões concedidas!');
+        
+        // Para as tracks imediatamente - só precisamos das permissões
+        stream.getTracks().forEach(track => track.stop());
+        
+        permissaoConcedida = true;
+        
+        // Armazena o estado globalmente para outros arquivos
+        window.permissoesConcedidas = true;
+        window.audioContext = audioContext;
+        
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Erro nas permissões:', error);
+        permissaoConcedida = false;
+        window.permissoesConcedidas = false;
+        throw error;
+    }
 }
 
 // 🎯 FUNÇÃO PARA OBTER IDIOMA COMPLETO
@@ -147,7 +176,7 @@ async function aplicarBandeiraLocal(langCode) {
     }
 }
 
-// 🏳️ Aplica bandeira do idioma remoto
+// 🏳️ Aplica bandeira do idioma remota
 async function aplicarBandeiraRemota(langCode) {
     try {
         const response = await fetch('assets/bandeiras/language-flags.json');
@@ -165,13 +194,17 @@ async function aplicarBandeiraRemota(langCode) {
     }
 }
 
-// ✅ FUNÇÃO SEPARADA PARA INICIAR CÂMERA
-async function iniciarCamera() {
+// ✅ FUNÇÃO PARA INICIAR CÂMERA APÓS PERMISSÕES
+async function iniciarCameraAposPermissoes() {
     try {
-        // Solicita acesso à câmera (vídeo sem áudio)
+        if (!permissaoConcedida) {
+            throw new Error('Permissões não concedidas');
+        }
+
+        // Agora solicita apenas a câmera (microfone já foi autorizado)
         const stream = await navigator.mediaDevices.getUserMedia({
             video: true,
-            audio: false
+            audio: false // Microfone já autorizado, não precisa pedir de novo
         });
 
         // ✅ Captura da câmera local
@@ -213,7 +246,6 @@ async function iniciarCamera() {
 
         // ✅ CALLBACK COM CONTROLE DE SOM
         window.rtcCore.setDataChannelCallback((mensagem) => {
-            // 🎵 INICIA SOM DE DIGITAÇÃO (LOOP)
             iniciarSomDigitacao();
 
             console.log('📩 Mensagem recebida:', mensagem);
@@ -243,7 +275,6 @@ async function iniciarCamera() {
                 utterance.volume = 0.8;
 
                 utterance.onstart = () => {
-                    // 🎵 PARA SOM DE DIGITAÇÃO QUANDO A VOZ COMEÇA
                     pararSomDigitacao();
                     
                     if (elemento) {
@@ -265,7 +296,6 @@ async function iniciarCamera() {
                 };
 
                 utterance.onerror = () => {
-                    // 🎵 PARA SOM EM CASO DE ERRO TAMBÉM
                     pararSomDigitacao();
                     
                     console.log('❌ Erro na voz');
@@ -350,47 +380,81 @@ async function iniciarCamera() {
 
 window.onload = async () => {
     try {
-        // ✅ BOTÃO CENTRALIZADO PARA ATIVAR ÁUDIO E CÂMERA
-        const audioButton = document.createElement('button');
-        audioButton.innerHTML = '<span style="font-size: 32px;">👉🎧</span><br><span style="font-size: 14px;">Clique para ativar áudio e câmera</span>';
-        audioButton.style.position = 'fixed';
-        audioButton.style.top = '50%';
-        audioButton.style.left = '50%';
-        audioButton.style.transform = 'translate(-50%, -50%)';
-        audioButton.style.zIndex = '10000';
-        audioButton.style.padding = '20px 30px';
-        audioButton.style.background = '#4CAF50';
-        audioButton.style.color = 'white';
-        audioButton.style.border = 'none';
-        audioButton.style.borderRadius = '15px';
-        audioButton.style.cursor = 'pointer';
-        audioButton.style.fontSize = '16px';
-        audioButton.style.fontWeight = 'bold';
-        audioButton.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
-        audioButton.style.textAlign = 'center';
-        audioButton.style.lineHeight = '1.4';
+        // ✅ BOTÃO ÚNICO PARA TODAS AS PERMISSÕES
+        const permissaoButton = document.createElement('button');
+        permissaoButton.innerHTML = `
+            <span style="font-size: 32px;">🎤📹🎧</span><br>
+            <span style="font-size: 14px;">Clique para ativar<br>Microfone, Câmera e Áudio</span>
+        `;
+        permissaoButton.style.position = 'fixed';
+        permissaoButton.style.top = '50%';
+        permissaoButton.style.left = '50%';
+        permissaoButton.style.transform = 'translate(-50%, -50%)';
+        permissaoButton.style.zIndex = '10000';
+        permissaoButton.style.padding = '25px 35px';
+        permissaoButton.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+        permissaoButton.style.color = 'white';
+        permissaoButton.style.border = 'none';
+        permissaoButton.style.borderRadius = '20px';
+        permissaoButton.style.cursor = 'pointer';
+        permissaoButton.style.fontSize = '16px';
+        permissaoButton.style.fontWeight = 'bold';
+        permissaoButton.style.boxShadow = '0 8px 25px rgba(0,0,0,0.3)';
+        permissaoButton.style.textAlign = 'center';
+        permissaoButton.style.lineHeight = '1.4';
+        permissaoButton.style.transition = 'all 0.3s ease';
         
-        audioButton.onclick = async () => {
+        // Efeito hover
+        permissaoButton.onmouseover = () => {
+            permissaoButton.style.transform = 'translate(-50%, -50%) scale(1.05)';
+            permissaoButton.style.boxShadow = '0 12px 30px rgba(0,0,0,0.4)';
+        };
+        
+        permissaoButton.onmouseout = () => {
+            permissaoButton.style.transform = 'translate(-50%, -50%)';
+            permissaoButton.style.boxShadow = '0 8px 25px rgba(0,0,0,0.3)';
+        };
+        
+        permissaoButton.onclick = async () => {
             try {
-                // Primeiro: inicia o áudio
+                permissaoButton.innerHTML = '<span style="font-size: 24px;">⏳</span><br><span style="font-size: 12px;">Solicitando permissões...</span>';
+                permissaoButton.style.background = '#ff9800';
+                permissaoButton.disabled = true;
+                
+                // 1. Primeiro: Inicia áudio
                 iniciarAudio();
-                // Segundo: carrega o som de digitação
+                
+                // 2. Segundo: Carrega sons
                 await carregarSomDigitacao();
-                // Terceiro: remove o botão
-                audioButton.remove();
-                // Quarto: inicia a câmera (que agora vai pedir permissões)
-                await iniciarCamera();
+                
+                // 3. Terceiro: Solicita TODAS as permissões (câmera + microfone)
+                await solicitarTodasPermissoes();
+                
+                // 4. Quarto: Remove botão
+                permissaoButton.remove();
+                
+                // 5. Quinto: Inicia câmera e WebRTC
+                await iniciarCameraAposPermissoes();
+                
+                console.log('✅ Fluxo completo concluído com sucesso!');
+                
             } catch (error) {
-                console.error('Erro ao inicializar:', error);
-                alert('Erro ao ativar áudio e câmera. Por favor, recarregue a página e tente novamente.');
+                console.error('❌ Erro no fluxo:', error);
+                permissaoButton.innerHTML = `
+                    <span style="font-size: 32px;">❌</span><br>
+                    <span style="font-size: 12px;">Erro nas permissões<br>Clique para tentar novamente</span>
+                `;
+                permissaoButton.style.background = '#f44336';
+                permissaoButton.disabled = false;
+                
+                alert('Por favor, permita o acesso à câmera e microfone para usar o aplicativo.');
             }
         };
         
-        document.body.appendChild(audioButton);
+        document.body.appendChild(permissaoButton);
 
     } catch (error) {
         console.error("Erro ao inicializar aplicação:", error);
         alert("Erro ao inicializar a aplicação.");
-        return;
     }
 };
