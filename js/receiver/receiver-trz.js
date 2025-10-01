@@ -1,30 +1,3 @@
-// ===== FUNÇÃO DE PRÉ-AQUECIMENTO DO NARRADOR =====
-function preaquecerNarrador() {
-    if (!window.SpeechSynthesis) {
-        console.log('🎯 SpeechSynthesis não disponível');
-        return;
-    }
-    
-    // ✅ PEGA O IDIOMA DA SUA BANDEIRA LOCAL
-    const idiomaLocal = window.targetTranslationLang || 
-                       new URLSearchParams(window.location.search).get('lang') || 
-                       'pt-BR';
-    
-    console.log('🎯 Aquecendo narrador para:', idiomaLocal);
-    
-    // ✅ CANCELA QUALQUER FALA ANTERIOR
-    window.speechSynthesis.cancel();
-    
-    // ✅ FRASE DE AQUECIMENTO QUASE SILENCIOSA
-    const utterance = new SpeechSynthesisUtterance(" ");
-    utterance.lang = idiomaLocal;
-    utterance.volume = 0.01;  // ✅ QUASE SILENCIOSO (não zero)
-    utterance.rate = 0.9;     // ✅ MESMA VELOCIDADE DO SEU PROJETO
-    
-    window.speechSynthesis.speak(utterance);
-    console.log('✅ Narrador aquecido e pronto para:', idiomaLocal);
-}
-
 // ===== FUNÇÃO SIMPLES PARA ENVIAR TEXTO =====
 function enviarParaOutroCelular(texto) {
     if (window.rtcDataChannel && window.rtcDataChannel.isOpen()) {
@@ -283,9 +256,6 @@ function initializeTranslator() {
                 recordButton.disabled = false;
                 translatedText.textContent = "🎤";
                 setupRecognitionEvents();
-                
-                // ✅ AQUI: PRÉ-AQUECIMENTO APÓS MICROFONE JÁ AUTORIZADO
-                preaquecerNarrador();
                 return;
             }
             
@@ -305,9 +275,6 @@ function initializeTranslator() {
             recordButton.disabled = false;
             translatedText.textContent = "🎤";
             setupRecognitionEvents();
-            
-            // ✅ AQUI: PRÉ-AQUECIMENTO APÓS NOVA AUTORIZAÇÃO DE MICROFONE
-            preaquecerNarrador();
             
         } catch (error) {
             console.error('Erro permissão microfone:', error);
