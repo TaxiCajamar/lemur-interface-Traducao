@@ -1,4 +1,3 @@
-// js/receiver/receiver-ui.js 
 import { WebRTCCore } from '../../core/webrtc-core.js';
 import { QRCodeGenerator } from '../qrcode/qr-code-utils.js';
 
@@ -6,7 +5,7 @@ import { QRCodeGenerator } from '../qrcode/qr-code-utils.js';
 let audioContext = null;
 let somDigitacao = null;
 let audioCarregado = false;
-let permissaoConcedida = false; // Nova variável para controlar permissões
+let permissaoConcedida = false;
 
 // 🎵 CARREGAR SOM DE DIGITAÇÃO
 function carregarSomDigitacao() {
@@ -93,7 +92,6 @@ async function solicitarTodasPermissoes() {
     try {
         console.log('🎯 Solicitando todas as permissões...');
         
-        // Solicita câmera e microfone simultaneamente
         const stream = await navigator.mediaDevices.getUserMedia({
             video: true,
             audio: true
@@ -101,12 +99,9 @@ async function solicitarTodasPermissoes() {
         
         console.log('✅ Todas as permissões concedidas!');
         
-        // Para as tracks imediatamente - só precisamos das permissões
         stream.getTracks().forEach(track => track.stop());
         
         permissaoConcedida = true;
-        
-        // Armazena o estado globalmente para outros arquivos
         window.permissoesConcedidas = true;
         window.audioContext = audioContext;
         
@@ -195,6 +190,26 @@ async function aplicarBandeiraRemota(langCode) {
     }
 }
 
+// ✅ FUNÇÃO PARA LIBERAR INTERFACE (FALLBACK)
+function liberarInterfaceFallback() {
+    console.log('🔓 Usando fallback para liberar interface...');
+    
+    // Remove tela de loading
+    const loadingScreen = document.getElementById('loadingScreen');
+    if (loadingScreen) {
+        loadingScreen.style.display = 'none';
+        console.log('✅ Tela de loading removida');
+    }
+    
+    // Mostra conteúdo principal
+    const elementosEscondidos = document.querySelectorAll('.hidden-until-ready');
+    elementosEscondidos.forEach(elemento => {
+        elemento.style.display = '';
+    });
+    
+    console.log(`✅ ${elementosEscondidos.length} elementos liberados`);
+}
+
 // ✅ FUNÇÃO PARA INICIAR CÂMERA APÓS PERMISSÕES
 async function iniciarCameraAposPermissoes() {
     try {
@@ -202,22 +217,18 @@ async function iniciarCameraAposPermissoes() {
             throw new Error('Permissões não concedidas');
         }
 
-        // Agora solicita apenas a câmera (microfone já foi autorizado)
         const stream = await navigator.mediaDevices.getUserMedia({
             video: true,
-            audio: false // Microfone já autorizado, não precisa pedir de novo
+            audio: false
         });
 
-        // ✅ Captura da câmera local
         let localStream = stream;
 
-        // ✅ Exibe vídeo local no PiP azul
         const localVideo = document.getElementById('localVideo');
         if (localVideo) {
             localVideo.srcObject = localStream;
         }
 
-        // ✅ Inicializa WebRTC
         window.rtcCore = new WebRTCCore();
 
         const url = window.location.href;
@@ -245,7 +256,6 @@ async function iniciarCameraAposPermissoes() {
         window.rtcCore.initialize(myId);
         window.rtcCore.setupSocketHandlers();
 
-        // ✅ CALLBACK COM CONTROLE DE SOM
         window.rtcCore.setDataChannelCallback((mensagem) => {
             iniciarSomDigitacao();
 
@@ -348,7 +358,6 @@ async function iniciarCameraAposPermissoes() {
             });
         };
 
-        // ✅ Tradução dos títulos da interface
         const frasesParaTraduzir = {
             "translator-label": "Real-time translation.",
             "qr-modal-title": "This is your online key",
@@ -405,7 +414,6 @@ window.onload = async () => {
         permissaoButton.style.lineHeight = '1.4';
         permissaoButton.style.transition = 'all 0.3s ease';
         
-        // Efeito hover
         permissaoButton.onmouseover = () => {
             permissaoButton.style.transform = 'translate(-50%, -50%) scale(1.05)';
             permissaoButton.style.boxShadow = '0 12px 30px rgba(0,0,0,0.4)';
@@ -416,7 +424,6 @@ window.onload = async () => {
             permissaoButton.style.boxShadow = '0 8px 25px rgba(0,0,0,0.3)';
         };
         
-        // Dentro do onClick do botão de permissões, APÓS as permissões serem concedidas:
         permissaoButton.onclick = async () => {
             try {
                 permissaoButton.innerHTML = '<span style="font-size: 24px;">⏳</span><br><span style="font-size: 12px;">Solicitando permissões...</span>';
@@ -432,19 +439,32 @@ window.onload = async () => {
                 // 3. Terceiro: Solicita TODAS as permissões (câmera + microfone)
                 await solicitarTodasPermissoes();
                 
-                // 4. Quarto: Remove botão E LIBERA INTERFACE
+                // 4. Quarto: Remove botão
                 permissaoButton.remove();
-                window.liberarInterface(); // ✅ NOVA LINHA
                 
-                // 5. Quinto: Inicia câmera e WebRTC
+                // 5. Quinto: Libera interface (com fallback)
+                if (typeof window.liberarInterface === 'function') {
+                    window.liberarInterface();
+                    console.log('✅ Interface liberada via função global');
+                } else {
+                    liberarInterfaceFallback();
+                    console.log('✅ Interface liberada via fallback');
+                }
+                
+                // 6. Sexto: Inicia câmera e WebRTC
                 await iniciarCameraAposPermissoes();
                 
                 console.log('✅ Fluxo completo concluído com sucesso!');
                 
             } catch (error) {
                 console.error('❌ Erro no fluxo:', error);
-                window.mostrarErroCarregamento('Erro ao solicitar permissões de câmera e microfone');
-                // ... resto do código de erro
+                
+                if (typeof window.mostrarErroCarregamento === 'function') {
+                    window.mostrarErroCarregamento('Erro ao solicitar permissões de câmera e microfone');
+                } else {
+                    console.error('❌ Erro no carregamento:', error);
+                }
+                
                 permissaoButton.innerHTML = `
                     <span style="font-size: 32px;">❌</span><br>
                     <span style="font-size: 12px;">Erro nas permissões<br>Clique para tentar novamente</span>
