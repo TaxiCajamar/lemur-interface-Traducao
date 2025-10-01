@@ -215,26 +215,20 @@ window.rtcCore.setDataChannelCallback((mensagem) => {
 
         // ✅ PRÉ-AQUECIMENTO DO NARRADOR - NO LUGAR PERFEITO!
         setTimeout(() => {
-            if (window.SpeechSynthesis) {
-                console.log('🎯 Aquecendo narrador para:', lang);
-                window.speechSynthesis.cancel();
-                
-                const utterance = new SpeechSynthesisUtterance(" ");
-                utterance.lang = lang; // ✅ MESMO IDIOMA DA SUA BANDEIRA
-                utterance.volume = 0;  // ✅ SILENCIOSO
-                utterance.rate = 0.9;  // ✅ MESMA VELOCIDADE
-                
-                window.speechSynthesis.speak(utterance);
-                console.log('✅ Narrador aquecido e pronto!');
-            }
-        }, 2000); // ⏰ 2 segundos após carregar - tempo para câmera + WebRTC
-
-        setTimeout(() => {
-            if (typeof initializeTranslator === 'function') {
-                initializeTranslator();
-            }
-        }, 1000);
-
+   if (window.SpeechSynthesis) {
+            console.log('🎯 Aquecendo narrador após microfone autorizado');
+            window.speechSynthesis.cancel();
+            
+            const idioma = window.targetTranslationLang || 'pt-BR';
+            const utterance = new SpeechSynthesisUtterance(" ");
+            utterance.lang = idioma;
+            utterance.volume = 0.01; // Quase silencioso
+            utterance.rate = 0.9;
+            
+            window.speechSynthesis.speak(utterance);
+            console.log('✅ Narrador aquecido!');
+        }
+        
     } catch (error) {
         console.error("Erro ao solicitar acesso à câmera:", error);
         alert("Erro ao acessar a câmera. Verifique as permissões.");
