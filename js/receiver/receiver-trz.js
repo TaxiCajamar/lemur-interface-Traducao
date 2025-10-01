@@ -28,6 +28,13 @@ async function atualizarBandeiraLocal(novoIdioma) {
     }
 }
 
+// ⭐⭐ NOVA FUNÇÃO: Atualizar idioma de escuta globalmente
+function atualizarIdiomaEscuta(novoIdioma) {
+    // Atualiza no contexto global para o receiver-ui.js usar
+    window.userListeningLang = novoIdioma;
+    console.log('🎯 Idioma de escuta atualizado para:', novoIdioma);
+}
+
 async function translateText(text) {
     try {
         // ⭐⭐ NOVO: Usar o idioma selecionado no mundo como DESTINO
@@ -109,8 +116,9 @@ function initializeWorldButton() {
             const bandeira = await getBandeiraDoJson(novoIdioma);
             currentLanguageFlag.textContent = bandeira;
             
-            // ⭐⭐ NOVO: Atualizar também a bandeira local na interface principal
+            // ⭐⭐ ATUALIZADO: Chamar ambas as funções
             await atualizarBandeiraLocal(novoIdioma);
+            atualizarIdiomaEscuta(novoIdioma); // ⬅️ NOVA LINHA CRÍTICA
             
             languageDropdown.classList.remove('show');
             
