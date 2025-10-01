@@ -5,7 +5,9 @@ import { QRCodeGenerator } from '../qrcode/qr-code-utils.js';
 let audioContext = null;
 let somDigitacao = null;
 let audioCarregado = false;
-let loopAudio = null; // Para controlar o loop
+
+// ⭐⭐ NOVO: Variável global para controle de idioma de escuta
+window.userListeningLang = null; // Idioma que o usuário quer OUVIR
 
 // 🎵 CARREGAR SOM DE DIGITAÇÃO
 function carregarSomDigitacao() {
@@ -168,22 +170,22 @@ async function aplicarBandeiraRemota(langCode) {
 window.onload = async () => {
     try {
         // ✅ BOTÃO CENTRALIZADO PARA ATIVAR ÁUDIO
-const audioButton = document.createElement('button');
-audioButton.innerHTML = '🔊 MP3'; // ⬅️ NOVA VERSÃO
-audioButton.style.position = 'fixed';
-audioButton.style.top = '50%';
-audioButton.style.left = '50%';
-audioButton.style.transform = 'translate(-50%, -50%)';
-audioButton.style.zIndex = '10000';
-audioButton.style.padding = '15px 25px'; // ⬅️ MENOR (era 20px 30px)
-audioButton.style.background = '#007bff';
-audioButton.style.color = 'white';
-audioButton.style.border = 'none';
-audioButton.style.borderRadius = '15px';
-audioButton.style.cursor = 'pointer';
-audioButton.style.fontSize = '16px'; // ⬅️ MENOR (era 18px)
-audioButton.style.fontWeight = 'bold';
-audioButton.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
+        const audioButton = document.createElement('button');
+        audioButton.innerHTML = '🔊 MP3';
+        audioButton.style.position = 'fixed';
+        audioButton.style.top = '50%';
+        audioButton.style.left = '50%';
+        audioButton.style.transform = 'translate(-50%, -50%)';
+        audioButton.style.zIndex = '10000';
+        audioButton.style.padding = '15px 25px';
+        audioButton.style.background = '#007bff';
+        audioButton.style.color = 'white';
+        audioButton.style.border = 'none';
+        audioButton.style.borderRadius = '15px';
+        audioButton.style.cursor = 'pointer';
+        audioButton.style.fontSize = '16px';
+        audioButton.style.fontWeight = 'bold';
+        audioButton.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
         
         audioButton.onclick = async () => {
             // Inicia o áudio
@@ -243,7 +245,7 @@ audioButton.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
             window.rtcCore.initialize(myId);
             window.rtcCore.setupSocketHandlers();
 
-            // ✅ CALLBACK COM CONTROLE DE SOM
+            // ✅ CALLBACK COM CONTROLE DE SOM E IDIOMA DE ESCUTA
             window.rtcCore.setDataChannelCallback((mensagem) => {
                 // 🎵 INICIA SOM DE DIGITAÇÃO (LOOP)
                 iniciarSomDigitacao();
@@ -270,7 +272,11 @@ audioButton.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
                 if (window.SpeechSynthesis) {
                     window.speechSynthesis.cancel();
                     const utterance = new SpeechSynthesisUtterance(mensagem);
-                    utterance.lang = window.targetTranslationLang || 'pt-BR';
+                    
+                    // ⭐⭐ NOVO: Usar userListeningLang se disponível, senão o padrão
+                    const targetLang = window.userListeningLang || window.targetTranslationLang || 'pt-BR';
+                    utterance.lang = targetLang; // ⬅️ AGORA USA O IDIOMA QUE O USUÁRIO QUER OUVIR
+                    
                     utterance.rate = 0.9;
                     utterance.volume = 0.8;
 
