@@ -243,7 +243,7 @@ async function iniciarConexaoVisual(receiverId, receiverToken, meuId, localStrea
   // ✅ FASE 1: Tentativas silenciosas (10 segundos)
   console.log('🔇 Fase 1: Tentativas silenciosas (10s)');
   
-  let tentativasFase1 = 5; // 5 tentativas em 10 segundos
+let tentativasFase1 = 3; // 6 segundos (3 tentativas × 2s cada)
   const tentarConexaoSilenciosa = async () => {
     if (conexaoEstabelecida || window.conexaoCancelada) return;
     
@@ -299,7 +299,7 @@ window.onload = async () => {
   try {
     // ✅ BOTÃO CENTRALIZADO PARA ATIVAR ÁUDIO
     const audioButton = document.createElement('button');
-    audioButton.textContent = '🎵 ATIVAR SONS DA TRADUÇÃO';
+    audioButton.innerHTML = '🔊 MP3'; // ⬅️ NOVA VERSÃO
     audioButton.style.position = 'fixed';
     audioButton.style.top = '50%';
     audioButton.style.left = '50%';
