@@ -101,31 +101,56 @@ window.rtcCore.setDataChannelCallback((mensagem) => {
   if (window.SpeechSynthesis) {
     window.speechSynthesis.cancel();
     
-    // ✅ NOVO: PRÉ-AQUECIMENTO com a frase do subtítulo
-    const frasePreAquecimento = document.getElementById('translator-label');
-    if (frasePreAquecimento && frasePreAquecimento.textContent) {
-      const utterancePre = new SpeechSynthesisUtterance(frasePreAquecimento.textContent);
+    // ✅ ABORDAGEM ALTERNATIVA: Pré-aquecer ANTES de processar a mensagem real
+    // Pegamos a frase do slogan já traduzida
+    const fraseSlogan = document.getElementById('translator-label');
+    
+    if (fraseSlogan && fraseSlogan.textContent) {
+      // ✅ Estratégia: Fazer um speak() e immediate cancel() para forçar o carregamento
+      const utterancePre = new SpeechSynthesisUtterance(fraseSlogan.textContent);
       utterancePre.lang = window.targetTranslationLang || 'pt-BR';
-      utterancePre.volume = 0; // 🔊 SILENCIOSO - só para pré-aquecer
+      utterancePre.volume = 0.1; // Quase silencioso
+      
+      // Fala rapidamente e cancela para "acordar" o TTS
       window.speechSynthesis.speak(utterancePre);
+      setTimeout(() => {
+        window.speechSynthesis.cancel();
+        
+        // ✅ AGORA sim processa a mensagem real
+        const utterance = new SpeechSynthesisUtterance(mensagem);
+        utterance.lang = window.targetTranslationLang || 'pt-BR';
+        utterance.rate = 0.9;
+        utterance.volume = 0.8;
+
+        utterance.onstart = () => {
+          if (elemento) {
+            elemento.style.animation = 'none';
+            elemento.style.backgroundColor = '';
+            elemento.style.border = '';
+            elemento.textContent = mensagem;
+          }
+        };
+
+        window.speechSynthesis.speak(utterance);
+      }, 10); // Delay mínimo
+    } else {
+      // Fallback: se não conseguir pré-aquecer, processa normal
+      const utterance = new SpeechSynthesisUtterance(mensagem);
+      utterance.lang = window.targetTranslationLang || 'pt-BR';
+      utterance.rate = 0.9;
+      utterance.volume = 0.8;
+
+      utterance.onstart = () => {
+        if (elemento) {
+          elemento.style.animation = 'none';
+          elemento.style.backgroundColor = '';
+          elemento.style.border = '';
+          elemento.textContent = mensagem;
+        }
+      };
+
+      window.speechSynthesis.speak(utterance);
     }
-
-    // ✅ AGORA SIM: Ler a mensagem real (já com TTS pré-aquecido)
-    const utterance = new SpeechSynthesisUtterance(mensagem);
-    utterance.lang = window.targetTranslationLang || 'pt-BR';
-    utterance.rate = 0.9;
-    utterance.volume = 0.8;
-
-    utterance.onstart = () => {
-      if (elemento) {
-        elemento.style.animation = 'none';
-        elemento.style.backgroundColor = '';
-        elemento.style.border = '';
-        elemento.textContent = mensagem;
-      }
-    };
-
-    window.speechSynthesis.speak(utterance);
   }
 });
         window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
