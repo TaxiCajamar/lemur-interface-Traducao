@@ -157,41 +157,34 @@ window.rtcCore.setDataChannelCallback((mensagem) => {
             });
         };
 
-        // ✅ MANTIDO: Tradução dos títulos da interface (inglês → idioma local)
-        const frasesParaTraduzir = {
-            "translator-label": "Real-time translation.",
-            "qr-modal-title": "This is your online key",
-            "qr-modal-description": "You can ask to scan, share or print on your business card."
-        };
+        // ✅ MODIFICADO: Tradução dos títulos da interface com síntese de voz
+const frasesParaTraduzir = {
+    "translator-label": "Real-time translation.",
+    "qr-modal-title": "This is your online key", 
+    "qr-modal-description": "You can ask to scan, share or print on your business card."
+};
 
-        (async () => {
-            for (const [id, texto] of Object.entries(frasesParaTraduzir)) {
-                const el = document.getElementById(id);
-                if (el) {
-                    const traduzido = await translateText(texto, lang);
-                    el.textContent = traduzido;
-                    
-                    // ✅ AQUI: PRÉ-AQUECIMENTO SIMPLES E DIRETO!
-                    if (id === "translator-label" && window.SpeechSynthesis) {
-                        console.log('🎯 Aquecendo narrador com frase traduzida:', traduzido);
-                        
-                        const utterance = new SpeechSynthesisUtterance(traduzido);
-                        utterance.lang = lang;
-                        utterance.volume = 0;  // ✅ ZERO VOLUME - SÓ PREPARAÇÃO
-                        utterance.rate = 0.9;
-                        
-                        window.speechSynthesis.speak(utterance);
-                        
-                        // ✅ CANCELA DEPOIS DE PREPARAR
-                        setTimeout(() => {
-                            window.speechSynthesis.cancel();
-                            console.log('✅ Narrador aquecido e pronto!');
-                        }, 100);
-                    }
-                }
+(async () => {
+    for (const [id, texto] of Object.entries(frasesParaTraduzir)) {
+        const el = document.getElementById(id);
+        if (el) {
+            const traduzido = await translateText(texto, lang);
+            el.textContent = traduzido;
+            
+            // ✅ NOVO: Sintetizar voz apenas para a frase "Real-time translation."
+            if (id === "translator-label" && window.SpeechSynthesis) {
+                // Pequeno delay para garantir que a tradução foi aplicada
+                setTimeout(() => {
+                    const utterance = new SpeechSynthesisUtterance(traduzido);
+                    utterance.lang = lang;
+                    utterance.rate = 0.9;
+                    utterance.volume = 0.7;
+                    window.speechSynthesis.speak(utterance);
+                }, 1000);
             }
-        })();
-
+        }
+    }
+})();
         // 🏳️ Aplica bandeira do idioma local (função renomeada para clareza)
         async function aplicarBandeiraLocal(langCode) {
             try {
