@@ -256,7 +256,7 @@ function criarTelaChamando() {
   return telaChamada;
 }
 
-// 🔄 FUNÇÃO UNIFICADA: Tentar conexão visual
+// 🔄 FUNÇÃO UNIFICADA: Tentar conexão visual (COM ESPERA INTELIGENTE)
 async function iniciarConexaoVisual(receiverId, receiverToken, meuId, localStream, meuIdioma) {
   console.log('🚀 Iniciando fluxo visual de conexão...');
   
@@ -264,39 +264,81 @@ async function iniciarConexaoVisual(receiverId, receiverToken, meuId, localStrea
   let notificacaoEnviada = false;
   window.conexaoCancelada = false;
   
-  console.log('🔇 Fase 1: Tentativas silenciosas (10s)');
+  // ✅ AGUARDA O WEBRTC ESTAR COMPLETAMENTE INICIALIZADO
+  console.log('⏳ Aguardando inicialização completa do WebRTC...');
   
-  let tentativasFase1 = 3;
-  const tentarConexaoSilenciosa = async () => {
-    if (conexaoEstabelecida || window.conexaoCancelada) return;
-    
-    if (tentativasFase1 > 0) {
-      console.log(`🔄 Tentativa silenciosa ${6 - tentativasFase1}`);
-      window.rtcCore.startCall(receiverId, localStream, meuIdioma);
-      tentativasFase1--;
-      setTimeout(tentarConexaoSilenciosa, 2000);
-    } else {
-      console.log('📞 Fase 2: Mostrando tela de chamada');
-      const telaChamada = criarTelaChamando();
-      
-      if (!notificacaoEnviada) {
-        console.log('📨 Enviando notificação wake-up...');
-        notificacaoEnviada = await enviarNotificacaoWakeUp(receiverToken, receiverId, meuId, meuIdioma);
-      }
-      
-      const tentarConexaoContinuamente = async () => {
-        if (conexaoEstabelecida || window.conexaoCancelada) return;
-        
-        console.log('🔄 Tentando conexão...');
-        window.rtcCore.startCall(receiverId, localStream, meuIdioma);
-        setTimeout(tentarConexaoContinuamente, 3000);
+  // Função para verificar se o WebRTC está pronto
+  const aguardarWebRTCPronto = () => {
+    return new Promise((resolve) => {
+      const verificar = () => {
+        if (window.rtcCore && window.rtcCore.isInitialized && typeof window.rtcCore.startCall === 'function') {
+          console.log('✅ WebRTC completamente inicializado');
+          resolve(true);
+        } else {
+          console.log('⏳ Aguardando WebRTC...');
+          setTimeout(verificar, 500);
+        }
       };
-      
-      tentarConexaoContinuamente();
-    }
+      verificar();
+    });
   };
-  
-  tentarConexaoSilenciosa();
+
+  try {
+    // Aguarda o WebRTC estar pronto antes de qualquer tentativa
+    await aguardarWebRTCPronto();
+
+    console.log('🔇 Fase 1: Tentativas silenciosas (6s)');
+    
+    let tentativasFase1 = 3;
+    const tentarConexaoSilenciosa = async () => {
+      if (conexaoEstabelecida || window.conexaoCancelada) return;
+      
+      if (tentativasFase1 > 0) {
+        console.log(`🔄 Tentativa silenciosa ${4 - tentativasFase1}`);
+        
+        // ✅ VERIFICAÇÃO EXTRA ANTES DE CHAMAR
+        if (window.rtcCore && typeof window.rtcCore.startCall === 'function') {
+          window.rtcCore.startCall(receiverId, localStream, meuIdioma);
+        } else {
+          console.log('⚠️ WebRTC não está pronto, aguardando...');
+        }
+        
+        tentativasFase1--;
+        setTimeout(tentarConexaoSilenciosa, 2000);
+      } else {
+        console.log('📞 Fase 2: Mostrando tela de chamada');
+        const telaChamada = criarTelaChamando();
+        
+        if (!notificacaoEnviada) {
+          console.log('📨 Enviando notificação wake-up...');
+          notificacaoEnviada = await enviarNotificacaoWakeUp(receiverToken, receiverId, meuId, meuIdioma);
+        }
+        
+        const tentarConexaoContinuamente = async () => {
+          if (conexaoEstabelecida || window.conexaoCancelada) return;
+          
+          console.log('🔄 Tentando conexão...');
+          
+          // ✅ VERIFICAÇÃO SEMPRE ANTES DE TENTAR
+          if (window.rtcCore && typeof window.rtcCore.startCall === 'function') {
+            window.rtcCore.startCall(receiverId, localStream, meuIdioma);
+          }
+          
+          setTimeout(tentarConexaoContinuamente, 3000);
+        };
+        
+        tentarConexaoContinuamente();
+      }
+    };
+    
+    // ✅ PEQUENO ATRASO PARA GARANTIR ESTABILIDADE
+    setTimeout(() => {
+      tentarConexaoSilenciosa();
+    }, 1000);
+    
+  } catch (error) {
+    console.error('❌ Erro no fluxo de conexão:', error);
+  }
   
   window.rtcCore.setRemoteStreamCallback(stream => {
     conexaoEstabelecida = true;
@@ -329,13 +371,51 @@ function liberarInterfaceFallback() {
     console.log(`✅ ${elementosEscondidos.length} elementos liberados`);
 }
 
-// ✅ FUNÇÃO PARA INICIAR CÂMERA APÓS PERMISSÕES
+// 🏳️ Aplica bandeira do idioma local
+async function aplicarBandeiraLocal(langCode) {
+    try {
+        const response = await fetch('assets/bandeiras/language-flags.json');
+        const flags = await response.json();
+
+        const bandeira = flags[langCode] || flags[langCode.split('-')[0]] || '🔴';
+
+        const localLangElement = document.querySelector('.local-mic-Lang');
+        if (localLangElement) localLangElement.textContent = bandeira;
+
+        const localLangDisplay = document.querySelector('.local-Lang');
+        if (localLangDisplay) localLangDisplay.textContent = bandeira;
+
+    } catch (error) {
+        console.error('Erro ao carregar bandeira local:', error);
+    }
+}
+
+// 🏳️ Aplica bandeira do idioma remoto
+async function aplicarBandeiraRemota(langCode) {
+    try {
+        const response = await fetch('assets/bandeiras/language-flags.json');
+        const flags = await response.json();
+
+        const bandeira = flags[langCode] || flags[langCode.split('-')[0]] || '🔴';
+
+        const remoteLangElement = document.querySelector('.remoter-Lang');
+        if (remoteLangElement) remoteLangElement.textContent = bandeira;
+
+    } catch (error) {
+        console.error('Erro ao carregar bandeira remota:', error);
+        const remoteLangElement = document.querySelector('.remoter-Lang');
+        if (remoteLangElement) remoteLangElement.textContent = '🔴';
+    }
+}
+
+// ✅ FUNÇÃO PARA INICIAR CÂMERA APÓS PERMISSÕES (COM ESPERA MELHORADA)
 async function iniciarCameraAposPermissoes() {
     try {
         if (!permissaoConcedida) {
             throw new Error('Permissões não concedidas');
         }
 
+        console.log('📹 Iniciando câmera...');
         const stream = await navigator.mediaDevices.getUserMedia({ 
             video: true, 
             audio: false 
@@ -343,9 +423,15 @@ async function iniciarCameraAposPermissoes() {
         
         let localStream = stream;
         document.getElementById('localVideo').srcObject = localStream;
+        console.log('✅ Câmera iniciada com sucesso');
 
+        // ✅ PEQUENA PAUSA PARA ESTABILIZAR
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        console.log('🌐 Inicializando WebRTC...');
         window.rtcCore = new WebRTCCore();
 
+        // Configura callbacks ANTES de inicializar
         window.rtcCore.setDataChannelCallback((mensagem) => {
             iniciarSomDigitacao();
 
@@ -418,8 +504,13 @@ async function iniciarCameraAposPermissoes() {
         const myId = crypto.randomUUID().substr(0, 8);
         document.getElementById('myId').textContent = myId;
 
+        console.log('🔌 Inicializando socket handlers...');
         window.rtcCore.initialize(myId);
         window.rtcCore.setupSocketHandlers();
+
+        // ✅ MARCA QUE O WEBRTC ESTÁ INICIALIZADO
+        window.rtcCore.isInitialized = true;
+        console.log('✅ WebRTC inicializado com ID:', myId);
 
         const urlParams = new URLSearchParams(window.location.search);
         const receiverId = urlParams.get('targetId') || '';
@@ -432,12 +523,17 @@ async function iniciarCameraAposPermissoes() {
           lang: receiverLang
         };
 
+        // ✅ SÓ INICIA CONEXÃO SE TIVER receiverId E APÓS TUDO ESTAR PRONTO
         if (receiverId) {
           document.getElementById('callActionBtn').style.display = 'none';
           
           if (localStream) {
             const meuIdioma = await obterIdiomaCompleto(navigator.language);
-            iniciarConexaoVisual(receiverId, receiverToken, myId, localStream, meuIdioma);
+            
+            // ✅ PEQUENO ATRASO PARA GARANTIR QUE TUDO ESTÁ ESTÁVEL
+            setTimeout(() => {
+              iniciarConexaoVisual(receiverId, receiverToken, myId, localStream, meuIdioma);
+            }, 1000);
           }
         }
 
@@ -456,37 +552,6 @@ async function iniciarCameraAposPermissoes() {
             }
           }
         })();
-
-        async function aplicarBandeiraLocal(langCode) {
-          try {
-            const response = await fetch('assets/bandeiras/language-flags.json');
-            const flags = await response.json();
-            const bandeira = flags[langCode] || flags[langCode.split('-')[0]] || '🔴';
-
-            const localLangElement = document.querySelector('.local-mic-Lang');
-            if (localLangElement) localLangElement.textContent = bandeira;
-
-            const localLangDisplay = document.querySelector('.local-Lang');
-            if (localLangDisplay) localLangDisplay.textContent = bandeira;
-          } catch (error) {
-            console.error('Erro ao carregar bandeira local:', error);
-          }
-        }
-
-        async function aplicarBandeiraRemota(langCode) {
-          try {
-            const response = await fetch('assets/bandeiras/language-flags.json');
-            const flags = await response.json();
-            const bandeira = flags[langCode] || flags[langCode.split('-')[0]] || '🔴';
-
-            const remoteLangElement = document.querySelector('.remoter-Lang');
-            if (remoteLangElement) remoteLangElement.textContent = bandeira;
-          } catch (error) {
-            console.error('Erro ao carregar bandeira remota:', error);
-            const remoteLangElement = document.querySelector('.remoter-Lang');
-            if (remoteLangElement) remoteLangElement.textContent = '🔴';
-          }
-        }
 
         aplicarBandeiraLocal(navegadorLang);
         aplicarBandeiraRemota(receiverLang);
