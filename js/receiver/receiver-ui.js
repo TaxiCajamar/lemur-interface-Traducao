@@ -1,5 +1,10 @@
+// ✅ 1. COLOCAR CONSOLE LOGS ESTRATÉGICOS para identificar onde trava
+console.log("🔸 [1] Script começou a carregar");
+
 import { WebRTCCore } from '../../core/webrtc-core.js';
 import { QRCodeGenerator } from '../qrcode/qr-code-utils.js';
+
+console.log("🔸 [2] Imports carregados");
 
 // 🎯 FUNÇÃO PARA OBTER IDIOMA COMPLETO (igual ao caller)
 async function obterIdiomaCompleto(lang) {
@@ -39,7 +44,7 @@ async function translateText(text, targetLang) {
   }
 }
 
-// 🏳️ Aplica bandeira do idioma local (função renomeada para clareza)
+// 🏳️ Aplica bandeira do idioma local
 async function aplicarBandeiraLocal(langCode) {
   try {
     const response = await fetch('assets/bandeiras/language-flags.json');
@@ -76,14 +81,22 @@ async function aplicarBandeiraRemota(langCode) {
   }
 }
 
+// ✅ 2. VERIFICAR se há código executando ANTES do window.onload
+console.log("🔸 [3] Funções definidas, aguardando window.onload...");
+
 window.onload = async () => {
+    console.log("🔸 [4] Window.onload INICIOU - solicitando câmera AGORA");
+    
     try {
-        // ✅ **ALTERAÇÃO CRÍTICA: Solicita acesso à câmera PRIMEIRO, antes de tudo**
-        console.log("🎯 Solicitando permissão da câmera IMEDIATAMENTE...");
+        // ✅ SOLICITAÇÃO IMEDIATA DA CÂMERA - PRIMEIRA COISA
+        console.log("🔸 [5] Chamando getUserMedia()...");
+        
         const stream = await navigator.mediaDevices.getUserMedia({
             video: true,
             audio: false
         });
+
+        console.log("🔸 [6] Câmera autorizada! Continuando...");
 
         // ✅ Captura da câmera local
         let localStream = stream;
@@ -94,7 +107,8 @@ window.onload = async () => {
             localVideo.srcObject = localStream;
         }
 
-        // ✅ **AGORA faz todo o resto do código normalmente**
+        // ✅ AGORA faz todo o resto
+        console.log("🔸 [7] Inicializando WebRTC...");
         window.rtcCore = new WebRTCCore();
 
         const url = window.location.href;
@@ -116,6 +130,7 @@ window.onload = async () => {
 
         window.targetTranslationLang = lang;
 
+        console.log("🔸 [8] Gerando QR Code...");
         const callerUrl = `${window.location.origin}/caller.html?targetId=${myId}&token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
         QRCodeGenerator.generate("qrcode", callerUrl);
 
@@ -128,12 +143,10 @@ window.onload = async () => {
 
           const elemento = document.getElementById('texto-recebido');
           if (elemento) {
-            // Box SEMPRE visível, mas texto vazio inicialmente
-            elemento.textContent = ""; // ← TEXTO FICA VAZIO NO INÍCIO
-            elemento.style.opacity = '1'; // ← BOX SEMPRE VISÍVEL
-            elemento.style.transition = 'opacity 0.5s ease'; // ← Transição suave
+            elemento.textContent = "";
+            elemento.style.opacity = '1';
+            elemento.style.transition = 'opacity 0.5s ease';
             
-            // ✅ PULSAÇÃO AO RECEBER MENSAGEM:
             elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
             elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
             elemento.style.border = '2px solid #ff0000';
@@ -148,12 +161,9 @@ window.onload = async () => {
 
             utterance.onstart = () => {
               if (elemento) {
-                // ✅ PARA A PULSAÇÃO E VOLTA AO NORMAL QUANDO A VOZ COMEÇA:
                 elemento.style.animation = 'none';
-                elemento.style.backgroundColor = ''; // Volta ao fundo original
-                elemento.style.border = ''; // Remove a borda vermelha
-                
-                // SÓ MOSTRA O TEXTO QUANDO A VOZ COMEÇA
+                elemento.style.backgroundColor = '';
+                elemento.style.border = '';
                 elemento.textContent = mensagem;
               }
             };
@@ -196,7 +206,8 @@ window.onload = async () => {
             });
         };
 
-        // ✅ MANTIDO: Tradução dos títulos da interface (inglês → idioma local)
+        // ✅ Traduções (podem ser feitas depois)
+        console.log("🔸 [9] Aplicando traduções...");
         const frasesParaTraduzir = {
             "translator-label": "Real-time translation.",
             "qr-modal-title": "This is your online key",
@@ -221,9 +232,13 @@ window.onload = async () => {
             }
         }, 1000);
 
+        console.log("🔸 [10] Tudo carregado com sucesso!");
+
     } catch (error) {
-        console.error("Erro ao solicitar acesso à câmera:", error);
+        console.error("❌ Erro ao solicitar acesso à câmera:", error);
         alert("Erro ao acessar a câmera. Verifique as permissões.");
         return;
     }
 };
+
+console.log("🔸 [11] Window.onload definido, aguardando carregamento...");
