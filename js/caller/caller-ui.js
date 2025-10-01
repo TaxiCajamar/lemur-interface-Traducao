@@ -79,7 +79,7 @@ async function enviarNotificacaoWakeUp(receiverToken, receiverId, meuId, meuIdio
   }
 }
 
-// ⏳ FUNÇÃO: Mostrar estado "Aguardando resposta"
+// ⏳ FUNÇÃO: Mostrar estado "Aguardando resposta" COM ATRASO
 function mostrarEstadoAguardando() {
   const statusElement = document.createElement('div');
   statusElement.id = 'aguardando-status';
@@ -87,84 +87,105 @@ function mostrarEstadoAguardando() {
     <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
                 background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 10px;
                 text-align: center; z-index: 1000;">
-      <div style="font-size: 24px; margin-bottom: 10px;">📞</div>
-      <div>Conectando com receptor...</div>
-      <div style="font-size: 12px; opacity: 0.8;">Aguardando resposta</div>
-      <div id="contador-tempo" style="margin-top: 10px;">30s</div>
+      <div style="font-size: 24px; margin-bottom: 10px;">⏳</div>
+      <div>Preparando conexão...</div>
+      <div style="font-size: 12px; opacity: 0.8;">Iniciando em 3 segundos</div>
     </div>
   `;
   document.body.appendChild(statusElement);
 
-  let tempoRestante = 30;
-  const contador = setInterval(() => {
-    tempoRestante--;
-    document.getElementById('contador-tempo').textContent = tempoRestante + 's';
-    
-    if (tempoRestante <= 0) {
-      clearInterval(contador);
-      statusElement.innerHTML = `
-        <div style="text-align: center;">
-          <div style="font-size: 24px; margin-bottom: 10px;">❌</div>
-          <div>Receptor indisponível</div>
-          <button onclick="this.parentElement.parentElement.remove()" 
-                  style="margin-top: 10px; padding: 5px 10px; background: #ff4444; color: white; border: none; border-radius: 5px;">
-            Fechar
-          </button>
-        </div>
-      `;
-    }
-  }, 1000);
+  return statusElement;
 }
 
-// 🔄 FUNÇÃO UNIFICADA: Tentar conexão + notificação se necessário
+// 🔄 FUNÇÃO UNIFICADA: Tentar conexão + notificação se necessário COM ATRASO
 async function iniciarConexaoUnificada(receiverId, receiverToken, meuId, localStream, meuIdioma) {
-  console.log('🚀 Iniciando fluxo unificado de conexão...');
+  console.log('🚀 Agendando fluxo unificado de conexão em 3 segundos...');
   
   let conexaoEstabelecida = false;
   let tentativasRestantes = 15; // 30 segundos no total
   let notificacaoEnviada = false;
   
-  mostrarEstadoAguardando();
+  // ✅ MOSTRA ESTADO INICIAL COM ATRASO
+  const statusElement = mostrarEstadoAguardando();
   
-  const tentarConexao = async () => {
-    if (conexaoEstabelecida) return;
+  // ⏰ ATRASO DE 3 SEGUNDOS ANTES DE COMEÇAR AS TENTATIVAS
+  setTimeout(() => {
     
-    if (tentativasRestantes > 0) {
-      console.log(`🔄 Tentativa ${16 - tentativasRestantes} de conexão com: ${receiverId}`);
+    // ATUALIZA A INTERFACE PARA "CONECTANDO"
+    statusElement.innerHTML = `
+      <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                  background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 10px;
+                  text-align: center; z-index: 1000;">
+        <div style="font-size: 24px; margin-bottom: 10px;">📞</div>
+        <div>Conectando com receptor...</div>
+        <div style="font-size: 12px; opacity: 0.8;">Aguardando resposta</div>
+        <div id="contador-tempo" style="margin-top: 10px;">30s</div>
+      </div>
+    `;
+
+    let tempoRestante = 30;
+    const contador = setInterval(() => {
+      tempoRestante--;
+      const contadorElement = document.getElementById('contador-tempo');
+      if (contadorElement) contadorElement.textContent = tempoRestante + 's';
       
-      // Tenta conexão direta
-      window.rtcCore.startCall(receiverId, localStream, meuIdioma);
-      
-      tentativasRestantes--;
-      
-      // Se é a 3ª tentativa e ainda não enviou notificação, ENVIA
-      if (tentativasRestantes === 12 && !notificacaoEnviada) {
-        console.log('📨 Enviando notificação wake-up...');
-        notificacaoEnviada = await enviarNotificacaoWakeUp(receiverToken, receiverId, meuId, meuIdioma);
+      if (tempoRestante <= 0) {
+        clearInterval(contador);
+        if (!conexaoEstabelecida) {
+          statusElement.innerHTML = `
+            <div style="text-align: center;">
+              <div style="font-size: 24px; margin-bottom: 10px;">❌</div>
+              <div>Receptor indisponível</div>
+              <button onclick="this.parentElement.parentElement.remove()" 
+                      style="margin-top: 10px; padding: 5px 10px; background: #ff4444; color: white; border: none; border-radius: 5px;">
+                Fechar
+              </button>
+            </div>
+          `;
+        }
       }
+    }, 1000);
+
+    const tentarConexao = async () => {
+      if (conexaoEstabelecida) return;
       
-      // Agenda próxima tentativa
-      setTimeout(tentarConexao, 2000);
-    } else {
-      console.log('❌ Timeout - Não foi possível conectar');
-      const statusElement = document.getElementById('aguardando-status');
-      if (statusElement) {
-        statusElement.innerHTML = `
-          <div style="text-align: center;">
-            <div style="font-size: 24px; margin-bottom: 10px;">❌</div>
-            <div>Não foi possível conectar</div>
-            <button onclick="this.parentElement.parentElement.remove()" 
-                    style="margin-top: 10px; padding: 5px 10px; background: #ff4444; color: white; border: none; border-radius: 5px;">
-              Fechar
-            </button>
-          </div>
-        `;
+      if (tentativasRestantes > 0) {
+        console.log(`🔄 Tentativa ${16 - tentativasRestantes} de conexão com: ${receiverId}`);
+        
+        // Tenta conexão direta
+        window.rtcCore.startCall(receiverId, localStream, meuIdioma);
+        
+        tentativasRestantes--;
+        
+        // Se é a 3ª tentativa e ainda não enviou notificação, ENVIA
+        if (tentativasRestantes === 12 && !notificacaoEnviada) {
+          console.log('📨 Enviando notificação wake-up...');
+          notificacaoEnviada = await enviarNotificacaoWakeUp(receiverToken, receiverId, meuId, meuIdioma);
+        }
+        
+        // Agenda próxima tentativa
+        setTimeout(tentarConexao, 2000);
+      } else {
+        console.log('❌ Timeout - Não foi possível conectar');
+        if (!conexaoEstabelecida) {
+          statusElement.innerHTML = `
+            <div style="text-align: center;">
+              <div style="font-size: 24px; margin-bottom: 10px;">❌</div>
+              <div>Não foi possível conectar</div>
+              <button onclick="this.parentElement.parentElement.remove()" 
+                      style="margin-top: 10px; padding: 5px 10px; background: #ff4444; color: white; border: none; border-radius: 5px;">
+                Fechar
+              </button>
+            </div>
+          `;
+        }
       }
-    }
-  };
-  
-  // Inicia as tentativas
-  tentarConexao();
+    };
+    
+    // ✅ INICIA AS TENTATIVAS APÓS O ATRASO
+    tentarConexao();
+    
+  }, 3000); // ⏰ ATRASO DE 3 SEGUNDOS
   
   // Callback quando conexão é estabelecida
   window.rtcCore.setRemoteStreamCallback(stream => {
@@ -172,7 +193,6 @@ async function iniciarConexaoUnificada(receiverId, receiverToken, meuId, localSt
     console.log('✅ Conexão estabelecida com sucesso!');
     
     // Remove tela de aguardando
-    const statusElement = document.getElementById('aguardando-status');
     if (statusElement) statusElement.remove();
     
     // Configura stream remoto
@@ -242,14 +262,14 @@ window.onload = async () => {
       lang: receiverLang
     };
 
-    // ✅✅✅ FLUXO UNIFICADO: Se tem receiverId, inicia conexão
+    // ✅✅✅ FLUXO UNIFICADO: Se tem receiverId, inicia conexão COM ATRASO
     if (receiverId) {
       document.getElementById('callActionBtn').style.display = 'none';
       
       if (localStream) {
         const meuIdioma = await obterIdiomaCompleto(navigator.language);
         
-        // ⭐⭐ INICIA FLUXO UNIFICADO
+        // ⭐⭐ INICIA FLUXO UNIFICADO COM ATRASO
         iniciarConexaoUnificada(receiverId, receiverToken, myId, localStream, meuIdioma);
       }
     }
