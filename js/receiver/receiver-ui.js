@@ -1,149 +1,74 @@
 import { WebRTCCore } from '../../core/webrtc-core.js';
 import { QRCodeGenerator } from '../qrcode/qr-code-utils.js';
 
-// 🐒 LEMUR LOADER - Imagem animada durante o processamento
+// 🐒 LEMUR LOADER SIMPLES
 class LemurLoader {
     constructor() {
-        this.loaderElement = null;
-        this.impatiente = null;
-        this.olhosFechados = null;
-        this.isActive = false;
         this.intervalId = null;
-        this.createLoader();
     }
 
-    createLoader() {
-        // Remove loader existente se houver
-        const existingLoader = document.getElementById('lemur-loader');
-        if (existingLoader) {
-            existingLoader.remove();
-        }
-
-        // Cria o loader NOVO com posicionamento absoluto na tela toda
+    start() {
+        if (this.intervalId) return;
+        
+        console.log('🐒 Iniciando Lemur Loader...');
+        
+        // Remove loader existente
+        this.stop();
+        
+        // Cria o loader
         const loader = document.createElement('div');
         loader.id = 'lemur-loader';
-        loader.className = 'lemur-loader';
-        loader.innerHTML = `
-            <img src="assets/images/lemurImpaciente.png" id="lemur-impatiente" class="lemur-image active">
-            <img src="assets/images/lemurOlhos.png" id="lemur-olhos-fechados" class="lemur-image">
-        `;
-        
-        // 🔥 ESTILOS CRÍTICOS - Posiciona sobre TODA a tela
         loader.style.position = 'fixed';
         loader.style.top = '50%';
         loader.style.left = '50%';
         loader.style.transform = 'translate(-50%, -50%)';
         loader.style.zIndex = '9999';
-        loader.style.display = 'none';
         loader.style.pointerEvents = 'none';
-        
-        // Estilos das imagens
-        const style = document.createElement('style');
-        style.textContent = `
-            .lemur-image {
-                position: absolute;
-                top: 0;
-                left: 0;
-                opacity: 0;
-                transition: opacity 0.3s ease-in-out;
-                width: 150px;
-                height: auto;
-                max-width: 80vw;
-                max-height: 80vh;
-            }
-            .lemur-image.active {
-                opacity: 1;
-            }
-        `;
-        
-        document.head.appendChild(style);
+
+        const impaciente = document.createElement('img');
+        impaciente.src = 'assets/images/lemurImpaciente.png';
+        impaciente.style.width = '150px';
+        impaciente.style.height = 'auto';
+        impaciente.style.display = 'block';
+
+        const olhosFechados = document.createElement('img');
+        olhosFechados.src = 'assets/images/lemurOlhos.png';
+        olhosFechados.style.width = '150px';
+        olhosFechados.style.height = 'auto';
+        olhosFechados.style.display = 'none';
+        olhosFechados.style.position = 'absolute';
+        olhosFechados.style.top = '0';
+        olhosFechados.style.left = '0';
+
+        loader.appendChild(impaciente);
+        loader.appendChild(olhosFechados);
         document.body.appendChild(loader);
 
-        this.loaderElement = loader;
-        this.impatiente = document.getElementById('lemur-impatiente');
-        this.olhosFechados = document.getElementById('lemur-olhos-fechados');
-    }
-
-    start() {
-        if (this.isActive) return;
-        
-        console.log('🐒 Iniciando Lemur Loader...');
-        this.isActive = true;
-        
-        if (this.loaderElement) {
-            this.loaderElement.style.display = 'block';
-        }
-        
-        this.cycleImages();
+        // Alterna as imagens
+        let mostrarImpatiente = true;
+        this.intervalId = setInterval(() => {
+            if (mostrarImpatiente) {
+                impaciente.style.display = 'none';
+                olhosFechados.style.display = 'block';
+            } else {
+                impaciente.style.display = 'block';
+                olhosFechados.style.display = 'none';
+            }
+            mostrarImpatiente = !mostrarImpatiente;
+        }, 2000);
     }
 
     stop() {
         console.log('🐒 Parando Lemur Loader...');
-        this.isActive = false;
         
         if (this.intervalId) {
             clearInterval(this.intervalId);
             this.intervalId = null;
         }
         
-        if (this.loaderElement) {
-            this.loaderElement.style.display = 'none';
-        }
-        
-        this.resetImages();
-    }
-
-    cycleImages() {
-        let isImpatiente = true;
-        
-        // Começa com a imagem impaciente
-        this.showImpatiente();
-        
-        // Alterna as imagens a cada 3 segundos
-        this.intervalId = setInterval(() => {
-            if (!this.isActive) return;
-            
-            if (isImpatiente) {
-                this.showOlhosFechados();
-            } else {
-                this.showImpatiente();
-            }
-            isImpatiente = !isImpatiente;
-        }, 3000);
-    }
-
-    showImpatiente() {
-        if (this.impatiente && this.olhosFechados) {
-            this.impatiente.classList.add('active');
-            this.olhosFechados.classList.remove('active');
-            
-            // Programa para mostrar olhos fechados depois de 2 segundos
-            setTimeout(() => {
-                if (this.isActive) {
-                    this.showOlhosFechados();
-                }
-            }, 2000);
-        }
-    }
-
-    showOlhosFechados() {
-        if (this.impatiente && this.olhosFechados) {
-            this.olhosFechados.classList.add('active');
-            this.impatiente.classList.remove('active');
-            
-            // Volta para impaciente após 1 segundo
-            setTimeout(() => {
-                if (this.isActive) {
-                    this.showImpatiente();
-                }
-            }, 1000);
-        }
-    }
-
-    resetImages() {
-        if (this.impatiente && this.olhosFechados) {
-            this.impatiente.classList.add('active');
-            this.olhosFechados.classList.remove('active');
+        const loader = document.getElementById('lemur-loader');
+        if (loader) {
+            loader.remove();
         }
     }
 }
@@ -188,13 +113,7 @@ async function translateText(text, targetLang) {
 
 window.onload = async () => {
     try {
-        // ✅ REMOVE o loader antigo do HTML se existir
-        const oldLoader = document.getElementById('lemur-loader');
-        if (oldLoader && oldLoader.parentNode) {
-            oldLoader.remove();
-        }
-
-        // ✅ Inicializa o Lemur Loader (vai criar um NOVO fora do box-principal)
+        // ✅ Inicializa o Lemur Loader
         window.lemurLoader = new LemurLoader();
 
         // ✅ Solicita acesso à câmera (vídeo sem áudio)
