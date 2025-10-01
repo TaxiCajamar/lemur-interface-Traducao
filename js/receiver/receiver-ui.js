@@ -1,29 +1,76 @@
 import { WebRTCCore } from '../../core/webrtc-core.js';
 import { QRCodeGenerator } from '../qrcode/qr-code-utils.js';
 
-// 🎵 SONS PERSONALIZADOS - SOM DE DIGITAÇÃO
-function criarSomDigitacao() {
-    try {
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
+// 🎵 VARIÁVEIS DE ÁUDIO
+let audioContext = null;
+let somDigitacao = null;
+let audioCarregado = false;
 
-        // Som curto e agudo como teclado mecânico
-        oscillator.type = 'square';
-        oscillator.frequency.value = 1200; // Mais agudo
-        gainNode.gain.value = 0.2; // Volume baixo
+// 🎵 CARREGAR SOM DE DIGITAÇÃO
+function carregarSomDigitacao() {
+    return new Promise((resolve) => {
+        try {
+            somDigitacao = new Audio('assets/audio/mechanical-keyboard-23537.mp3');
+            somDigitacao.volume = 0.3;
+            somDigitacao.preload = 'auto';
+            
+            somDigitacao.addEventListener('canplaythrough', () => {
+                console.log('🎵 Áudio de digitação carregado');
+                audioCarregado = true;
+                resolve(true);
+            });
+            
+            somDigitacao.addEventListener('error', () => {
+                console.log('❌ Erro ao carregar áudio');
+                resolve(false);
+            });
+            
+            // Tenta carregar forçadamente
+            somDigitacao.load();
+            
+        } catch (error) {
+            console.log('❌ Erro no áudio:', error);
+            resolve(false);
+        }
+    });
+}
 
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-
-        // Som muito curto - 0.1 segundos
-        oscillator.start();
-        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
-        oscillator.stop(audioContext.currentTime + 0.1);
-
-    } catch (error) {
-        console.log('🔇 Áudio não suportado');
+// 🎵 TOCAR SOM DE DIGITAÇÃO
+function tocarSomDigitacao() {
+    if (!audioCarregado || !somDigitacao) {
+        console.log('🔇 Áudio não carregado');
+        return;
     }
+    
+    try {
+        // Reinicia e toca o som
+        somDigitacao.currentTime = 0;
+        somDigitacao.play().catch(error => {
+            console.log('🔇 Navegador bloqueou áudio automático');
+        });
+    } catch (error) {
+        console.log('❌ Erro ao tocar áudio:', error);
+    }
+}
+
+// 🎵 INICIAR ÁUDIO APÓS INTERAÇÃO DO USUÁRIO
+function iniciarAudio() {
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    
+    // Toca um som silencioso para "desbloquear" o áudio
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    gainNode.gain.value = 0.001; // Quase silencioso
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.1);
+    
+    console.log('🎵 Áudio desbloqueado!');
 }
 
 // 🎯 FUNÇÃO PARA OBTER IDIOMA COMPLETO
@@ -103,185 +150,207 @@ async function aplicarBandeiraRemota(langCode) {
 
 window.onload = async () => {
     try {
-        // ✅ Solicita acesso à câmera (vídeo sem áudio)
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: false
-        });
+        // ✅ BOTÃO PARA ATIVAR ÁUDIO (aparece antes da câmera)
+        const audioButton = document.createElement('button');
+        audioButton.textContent = '🎵 Ativar Sons';
+        audioButton.style.position = 'fixed';
+        audioButton.style.top = '10px';
+        audioButton.style.left = '10px';
+        audioButton.style.zIndex = '10000';
+        audioButton.style.padding = '10px';
+        audioButton.style.background = '#007bff';
+        audioButton.style.color = 'white';
+        audioButton.style.border = 'none';
+        audioButton.style.borderRadius = '5px';
+        audioButton.style.cursor = 'pointer';
+        
+        audioButton.onclick = async () => {
+            // Inicia o áudio
+            iniciarAudio();
+            // Carrega o som de digitação
+            await carregarSomDigitacao();
+            // Remove o botão
+            audioButton.remove();
+            // Continua com a câmera
+            iniciarCamera();
+        };
+        
+        document.body.appendChild(audioButton);
 
-        // ✅ Captura da câmera local
-        let localStream = stream;
+        // ✅ FUNÇÃO SEPARADA PARA INICIAR CÂMERA
+        async function iniciarCamera() {
+            // Solicita acesso à câmera (vídeo sem áudio)
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: false
+            });
 
-        // ✅ Exibe vídeo local no PiP azul
-        const localVideo = document.getElementById('localVideo');
-        if (localVideo) {
-            localVideo.srcObject = localStream;
-        }
+            // ✅ Captura da câmera local
+            let localStream = stream;
 
-        // ✅ Inicializa WebRTC
-        window.rtcCore = new WebRTCCore();
-
-        const url = window.location.href;
-        const fixedId = url.split('?')[1] || crypto.randomUUID().substr(0, 8);
-
-        function fakeRandomUUID(fixedValue) {
-            return {
-                substr: function(start, length) {
-                    return fixedValue.substr(start, length);
-                }
-            };
-        }
-
-        const myId = fakeRandomUUID(fixedId).substr(0, 8);
-
-        const params = new URLSearchParams(window.location.search);
-        const token = params.get('token') || '';
-        const lang = params.get('lang') || navigator.language || 'pt-BR';
-
-        window.targetTranslationLang = lang;
-
-        const callerUrl = `${window.location.origin}/caller.html?targetId=${myId}&token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
-        QRCodeGenerator.generate("qrcode", callerUrl);
-
-        window.rtcCore.initialize(myId);
-        window.rtcCore.setupSocketHandlers();
-
-        // ✅ CORRIGIDO: Bloco do setDataChannelCallback com SOM DE DIGITAÇÃO
-        window.rtcCore.setDataChannelCallback((mensagem) => {
-            // 🎵 TOCA SOM DE DIGITAÇÃO IMEDIATAMENTE
-            criarSomDigitacao();
-
-            console.log('📩 Mensagem recebida:', mensagem);
-
-            const elemento = document.getElementById('texto-recebido');
-            const imagemImpaciente = document.getElementById('lemurFixed');
-            
-            if (elemento) {
-                // Box SEMPRE visível, mas texto vazio inicialmente
-                elemento.textContent = "";
-                elemento.style.opacity = '1';
-                elemento.style.transition = 'opacity 0.5s ease';
-                
-                // ✅ PULSAÇÃO AO RECEBER MENSAGEM:
-                elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
-                elemento.style.backgroundColor = 'rgb(255, 255, 255)';
-                elemento.style.border = '2px solid #ff0000';
+            // ✅ Exibe vídeo local no PiP azul
+            const localVideo = document.getElementById('localVideo');
+            if (localVideo) {
+                localVideo.srcObject = localStream;
             }
 
-            // ✅ MOSTRA IMAGEM IMPACIENTE ESTÁTICA DURANTE O PREPARO
-            if (imagemImpaciente) {
-                imagemImpaciente.style.display = 'block';
+            // ✅ Inicializa WebRTC
+            window.rtcCore = new WebRTCCore();
+
+            const url = window.location.href;
+            const fixedId = url.split('?')[1] || crypto.randomUUID().substr(0, 8);
+
+            function fakeRandomUUID(fixedValue) {
+                return {
+                    substr: function(start, length) {
+                        return fixedValue.substr(start, length);
+                    }
+                };
             }
 
-            if (window.SpeechSynthesis) {
-                window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(mensagem);
-                utterance.lang = window.targetTranslationLang || 'pt-BR';
-                utterance.rate = 0.9;
-                utterance.volume = 0.8;
+            const myId = fakeRandomUUID(fixedId).substr(0, 8);
 
-                utterance.onstart = () => {
-                    if (elemento) {
-                        // ✅ PARA A PULSAÇÃO E VOLTA AO NORMAL QUANDO A VOZ COMEÇA:
-                        elemento.style.animation = 'none';
-                        elemento.style.backgroundColor = '';
-                        elemento.style.border = '';
-                        
-                        // SÓ MOSTRA O TEXTO QUANDO A VOZ COMEÇA
-                        elemento.textContent = mensagem;
-                    }
+            const params = new URLSearchParams(window.location.search);
+            const token = params.get('token') || '';
+            const lang = params.get('lang') || navigator.language || 'pt-BR';
 
-                    // ✅ ESCONDE IMAGEM IMPACIENTE QUANDO A VOZ COMEÇA
-                    if (imagemImpaciente) {
-                        imagemImpaciente.style.display = 'none';
-                    }
-                };
-
-                utterance.onend = () => {
-                    console.log('🔚 Voz terminada');
-                    if (imagemImpaciente) {
-                        imagemImpaciente.style.display = 'none';
-                    }
-                };
-
-                utterance.onerror = () => {
-                    console.log('❌ Erro na voz');
-                    if (elemento) {
-                        elemento.style.animation = 'none';
-                        elemento.style.backgroundColor = '';
-                        elemento.style.border = '';
-                    }
-                    if (imagemImpaciente) {
-                        imagemImpaciente.style.display = 'none';
-                    }
-                };
-
-                window.speechSynthesis.speak(utterance);
-            }
-        });
-
-        window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
-            if (!localStream) return;
-
-            console.log('🎯 Caller fala:', idiomaDoCaller);
-            console.log('🎯 Eu (receiver) entendo:', lang);
-
-            window.sourceTranslationLang = idiomaDoCaller;
             window.targetTranslationLang = lang;
 
-            console.log('🎯 Vou traduzir:', idiomaDoCaller, '→', lang);
+            const callerUrl = `${window.location.origin}/caller.html?targetId=${myId}&token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
+            QRCodeGenerator.generate("qrcode", callerUrl);
 
-            window.rtcCore.handleIncomingCall(offer, localStream, (remoteStream) => {
-                remoteStream.getAudioTracks().forEach(track => track.enabled = false);
+            window.rtcCore.initialize(myId);
+            window.rtcCore.setupSocketHandlers();
 
-                const overlay = document.querySelector('.info-overlay');
-                if (overlay) overlay.classList.add('hidden');
+            // ✅ CALLBACK COM SOM DE DIGITAÇÃO REAL
+            window.rtcCore.setDataChannelCallback((mensagem) => {
+                // 🎵 TOCA SOM DE DIGITAÇÃO REAL
+                tocarSomDigitacao();
 
-                const remoteVideo = document.getElementById('remoteVideo');
-                if (remoteVideo) {
-                    remoteVideo.srcObject = remoteStream;
+                console.log('📩 Mensagem recebida:', mensagem);
+
+                const elemento = document.getElementById('texto-recebido');
+                const imagemImpaciente = document.getElementById('lemurFixed');
+                
+                if (elemento) {
+                    elemento.textContent = "";
+                    elemento.style.opacity = '1';
+                    elemento.style.transition = 'opacity 0.5s ease';
+                    
+                    elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
+                    elemento.style.backgroundColor = 'rgb(255, 255, 255)';
+                    elemento.style.border = '2px solid #ff0000';
                 }
 
-                window.targetTranslationLang = idiomaDoCaller || lang;
-                console.log('🎯 Idioma definido para tradução:', window.targetTranslationLang);
+                if (imagemImpaciente) {
+                    imagemImpaciente.style.display = 'block';
+                }
 
-                if (idiomaDoCaller) {
-                    aplicarBandeiraRemota(idiomaDoCaller);
-                } else {
-                    const remoteLangElement = document.querySelector('.remoter-Lang');
-                    if (remoteLangElement) remoteLangElement.textContent = '🔴';
+                if (window.SpeechSynthesis) {
+                    window.speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(mensagem);
+                    utterance.lang = window.targetTranslationLang || 'pt-BR';
+                    utterance.rate = 0.9;
+                    utterance.volume = 0.8;
+
+                    utterance.onstart = () => {
+                        if (elemento) {
+                            elemento.style.animation = 'none';
+                            elemento.style.backgroundColor = '';
+                            elemento.style.border = '';
+                            elemento.textContent = mensagem;
+                        }
+                        if (imagemImpaciente) {
+                            imagemImpaciente.style.display = 'none';
+                        }
+                    };
+
+                    utterance.onend = () => {
+                        console.log('🔚 Voz terminada');
+                        if (imagemImpaciente) {
+                            imagemImpaciente.style.display = 'none';
+                        }
+                    };
+
+                    utterance.onerror = () => {
+                        console.log('❌ Erro na voz');
+                        if (elemento) {
+                            elemento.style.animation = 'none';
+                            elemento.style.backgroundColor = '';
+                            elemento.style.border = '';
+                        }
+                        if (imagemImpaciente) {
+                            imagemImpaciente.style.display = 'none';
+                        }
+                    };
+
+                    window.speechSynthesis.speak(utterance);
                 }
             });
-        };
 
-        // ✅ Tradução dos títulos da interface
-        const frasesParaTraduzir = {
-            "translator-label": "Real-time translation.",
-            "qr-modal-title": "This is your online key",
-            "qr-modal-description": "You can ask to scan, share or print on your business card."
-        };
+            window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
+                if (!localStream) return;
 
-        (async () => {
-            for (const [id, texto] of Object.entries(frasesParaTraduzir)) {
-                const el = document.getElementById(id);
-                if (el) {
-                    const traduzido = await translateText(texto, lang);
-                    el.textContent = traduzido;
+                console.log('🎯 Caller fala:', idiomaDoCaller);
+                console.log('🎯 Eu (receiver) entendo:', lang);
+
+                window.sourceTranslationLang = idiomaDoCaller;
+                window.targetTranslationLang = lang;
+
+                console.log('🎯 Vou traduzir:', idiomaDoCaller, '→', lang);
+
+                window.rtcCore.handleIncomingCall(offer, localStream, (remoteStream) => {
+                    remoteStream.getAudioTracks().forEach(track => track.enabled = false);
+
+                    const overlay = document.querySelector('.info-overlay');
+                    if (overlay) overlay.classList.add('hidden');
+
+                    const remoteVideo = document.getElementById('remoteVideo');
+                    if (remoteVideo) {
+                        remoteVideo.srcObject = remoteStream;
+                    }
+
+                    window.targetTranslationLang = idiomaDoCaller || lang;
+                    console.log('🎯 Idioma definido para tradução:', window.targetTranslationLang);
+
+                    if (idiomaDoCaller) {
+                        aplicarBandeiraRemota(idiomaDoCaller);
+                    } else {
+                        const remoteLangElement = document.querySelector('.remoter-Lang');
+                        if (remoteLangElement) remoteLangElement.textContent = '🔴';
+                    }
+                });
+            };
+
+            // ✅ Tradução dos títulos da interface
+            const frasesParaTraduzir = {
+                "translator-label": "Real-time translation.",
+                "qr-modal-title": "This is your online key",
+                "qr-modal-description": "You can ask to scan, share or print on your business card."
+            };
+
+            (async () => {
+                for (const [id, texto] of Object.entries(frasesParaTraduzir)) {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        const traduzido = await translateText(texto, lang);
+                        el.textContent = traduzido;
+                    }
                 }
-            }
-        })();
+            })();
 
-        aplicarBandeiraLocal(lang);
+            aplicarBandeiraLocal(lang);
 
-        setTimeout(() => {
-            if (typeof initializeTranslator === 'function') {
-                initializeTranslator();
-            }
-        }, 1000);
+            setTimeout(() => {
+                if (typeof initializeTranslator === 'function') {
+                    initializeTranslator();
+                }
+            }, 1000);
+        }
 
     } catch (error) {
-        console.error("Erro ao solicitar acesso à câmera:", error);
-        alert("Erro ao acessar a câmera. Verifique as permissões.");
+        console.error("Erro ao inicializar:", error);
+        alert("Erro ao inicializar a aplicação.");
         return;
     }
 };
