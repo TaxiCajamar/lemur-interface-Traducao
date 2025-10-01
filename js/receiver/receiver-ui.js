@@ -91,8 +91,9 @@ window.onload = async () => {
             const lemurFixed = document.getElementById('lemurFixed');
             const elemento = document.getElementById('texto-recebido');
             
-            if (elemento) {
-                // ✅ BOX CINTILANTE (vermelho pulsante) - INICIA
+            // 🐒 MOSTRA IMAGEM E REQUADRO JUNTOS
+            if (elemento && lemurFixed) {
+                // ✅ AMBOS APARECEM SIMULTANEAMENTE
                 elemento.textContent = "";
                 elemento.style.opacity = '1';
                 elemento.style.transition = 'opacity 0.5s ease';
@@ -100,10 +101,7 @@ window.onload = async () => {
                 elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
                 elemento.style.border = '2px solid #ff0000';
                 
-                // 🐒 MOSTRA A IMAGEM JUNTO com o requadro cintilante
-                if (lemurFixed) {
-                    lemurFixed.classList.remove('hidden');
-                }
+                lemurFixed.classList.remove('hidden');
             }
 
             if (window.SpeechSynthesis) {
@@ -114,19 +112,16 @@ window.onload = async () => {
                 utterance.volume = 0.8;
 
                 utterance.onstart = () => {
-                    console.log('🗣️ Voz iniciada - parando cintilação E imagem');
+                    console.log('🗣️ Voz iniciada - parando cintilação E imagem JUNTOS');
 
+                    // ✅ AMBOS DESAPARECEM SIMULTANEAMENTE
                     if (elemento) {
-                        // ✅ PARA A CINTILAÇÃO e volta ao normal
                         elemento.style.animation = 'none';
                         elemento.style.backgroundColor = '';
                         elemento.style.border = '';
-                        
-                        // MOSTRA O TEXTO quando a voz começa
                         elemento.textContent = mensagem;
                     }
                     
-                    // 🐒 ESCONDE A IMAGEM JUNTO com o fim da cintilação
                     if (lemurFixed) {
                         lemurFixed.classList.add('hidden');
                     }
@@ -134,12 +129,17 @@ window.onload = async () => {
 
                 utterance.onend = () => {
                     console.log('🔚 Voz terminada');
-                    // A imagem já está escondida desde o início da voz
+                    // Ambos já estão no estado correto
                 };
 
                 utterance.onerror = () => {
                     console.log('❌ Erro na voz');
-                    // Garante que a imagem fique escondida em caso de erro
+                    // Garante que ambos desapareçam em caso de erro
+                    if (elemento) {
+                        elemento.style.animation = 'none';
+                        elemento.style.backgroundColor = '';
+                        elemento.style.border = '';
+                    }
                     if (lemurFixed) {
                         lemurFixed.classList.add('hidden');
                     }
