@@ -5,6 +5,7 @@ import { QRCodeGenerator } from '../qrcode/qr-code-utils.js';
 let audioContext = null;
 let somDigitacao = null;
 let audioCarregado = false;
+let loopAudio = null; // Para controlar o loop
 
 // 🎵 CARREGAR SOM DE DIGITAÇÃO
 function carregarSomDigitacao() {
@@ -25,7 +26,6 @@ function carregarSomDigitacao() {
                 resolve(false);
             });
             
-            // Tenta carregar forçadamente
             somDigitacao.load();
             
         } catch (error) {
@@ -35,21 +35,38 @@ function carregarSomDigitacao() {
     });
 }
 
-// 🎵 TOCAR SOM DE DIGITAÇÃO
-function tocarSomDigitacao() {
-    if (!audioCarregado || !somDigitacao) {
-        console.log('🔇 Áudio não carregado');
-        return;
-    }
+// 🎵 INICIAR LOOP DE DIGITAÇÃO
+function iniciarSomDigitacao() {
+    if (!audioCarregado || !somDigitacao) return;
+    
+    // Para qualquer som anterior
+    pararSomDigitacao();
     
     try {
-        // Reinicia e toca o som
+        // Configura o loop
+        somDigitacao.loop = true;
         somDigitacao.currentTime = 0;
         somDigitacao.play().catch(error => {
             console.log('🔇 Navegador bloqueou áudio automático');
         });
+        
+        console.log('🎵 Som de digitação iniciado');
     } catch (error) {
         console.log('❌ Erro ao tocar áudio:', error);
+    }
+}
+
+// 🎵 PARAR SOM DE DIGITAÇÃO
+function pararSomDigitacao() {
+    if (somDigitacao) {
+        try {
+            somDigitacao.pause();
+            somDigitacao.currentTime = 0;
+            somDigitacao.loop = false;
+            console.log('🎵 Som de digitação parado');
+        } catch (error) {
+            console.log('❌ Erro ao parar áudio:', error);
+        }
     }
 }
 
@@ -66,7 +83,7 @@ function iniciarAudio() {
     oscillator.connect(gainNode);
     gainNode.connect(audioContext.destination);
     
-    gainNode.gain.value = 0.001; // Quase silencioso
+    gainNode.gain.value = 0.001;
     oscillator.start();
     oscillator.stop(audioContext.currentTime + 0.1);
     
@@ -150,19 +167,23 @@ async function aplicarBandeiraRemota(langCode) {
 
 window.onload = async () => {
     try {
-        // ✅ BOTÃO PARA ATIVAR ÁUDIO (aparece antes da câmera)
+        // ✅ BOTÃO CENTRALIZADO PARA ATIVAR ÁUDIO
         const audioButton = document.createElement('button');
-        audioButton.textContent = '🎵 Ativar Sons';
+        audioButton.textContent = '🎵 ATIVAR SONS DA TRADUÇÃO';
         audioButton.style.position = 'fixed';
-        audioButton.style.top = '10px';
-        audioButton.style.left = '10px';
+        audioButton.style.top = '50%';
+        audioButton.style.left = '50%';
+        audioButton.style.transform = 'translate(-50%, -50%)';
         audioButton.style.zIndex = '10000';
-        audioButton.style.padding = '10px';
+        audioButton.style.padding = '20px 30px';
         audioButton.style.background = '#007bff';
         audioButton.style.color = 'white';
         audioButton.style.border = 'none';
-        audioButton.style.borderRadius = '5px';
+        audioButton.style.borderRadius = '15px';
         audioButton.style.cursor = 'pointer';
+        audioButton.style.fontSize = '18px';
+        audioButton.style.fontWeight = 'bold';
+        audioButton.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
         
         audioButton.onclick = async () => {
             // Inicia o áudio
@@ -222,10 +243,10 @@ window.onload = async () => {
             window.rtcCore.initialize(myId);
             window.rtcCore.setupSocketHandlers();
 
-            // ✅ CALLBACK COM SOM DE DIGITAÇÃO REAL
+            // ✅ CALLBACK COM CONTROLE DE SOM
             window.rtcCore.setDataChannelCallback((mensagem) => {
-                // 🎵 TOCA SOM DE DIGITAÇÃO REAL
-                tocarSomDigitacao();
+                // 🎵 INICIA SOM DE DIGITAÇÃO (LOOP)
+                iniciarSomDigitacao();
 
                 console.log('📩 Mensagem recebida:', mensagem);
 
@@ -254,6 +275,9 @@ window.onload = async () => {
                     utterance.volume = 0.8;
 
                     utterance.onstart = () => {
+                        // 🎵 PARA SOM DE DIGITAÇÃO QUANDO A VOZ COMEÇA
+                        pararSomDigitacao();
+                        
                         if (elemento) {
                             elemento.style.animation = 'none';
                             elemento.style.backgroundColor = '';
@@ -273,6 +297,9 @@ window.onload = async () => {
                     };
 
                     utterance.onerror = () => {
+                        // 🎵 PARA SOM EM CASO DE ERRO TAMBÉM
+                        pararSomDigitacao();
+                        
                         console.log('❌ Erro na voz');
                         if (elemento) {
                             elemento.style.animation = 'none';
