@@ -88,7 +88,7 @@ window.onload = async () => {
   console.log('📩 Mensagem recebida:', mensagem);
 
   const elemento = document.getElementById('texto-recebido');
-  const imagemImpaciente = document.getElementById('imagem-impaciente'); // ✅ Nova linha
+   const imagemImpaciente = document.getElementById('lemurFixed'); // ✅ ID CORRETO
   
   if (elemento) {
     // Box SEMPRE visível, mas texto vazio inicialmente
