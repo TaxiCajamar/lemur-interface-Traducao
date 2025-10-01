@@ -5,13 +5,12 @@ import { QRCodeGenerator } from '../qrcode/qr-code-utils.js';
 let audioContext = null;
 let somDigitacao = null;
 let audioCarregado = false;
-let loopAudio = null; // Para controlar o loop
 
 // 🎵 CARREGAR SOM DE DIGITAÇÃO
 function carregarSomDigitacao() {
     return new Promise((resolve) => {
         try {
-            somDigitacao = new Audio('assets/audio/mechanical-keyboard-23537.mp3');
+            somDigitacao = new Audio('assets/audio/keyboard.mp3');
             somDigitacao.volume = 0.3;
             somDigitacao.preload = 'auto';
             
@@ -70,24 +69,35 @@ function pararSomDigitacao() {
     }
 }
 
-// 🎵 INICIAR ÁUDIO APÓS INTERAÇÃO DO USUÁRIO
-function iniciarAudio() {
-    if (!audioContext) {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    
-    // Toca um som silencioso para "desbloquear" o áudio
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    gainNode.gain.value = 0.001;
-    oscillator.start();
-    oscillator.stop(audioContext.currentTime + 0.1);
-    
-    console.log('🎵 Áudio desbloqueado!');
+// 🎵 TENTAR INICIAR ÁUDIO QUANDO O USUÁRIO CLICA NA AUTORIZAÇÃO DA CÂMERA
+function tentarIniciarAudioComCamera() {
+    // Espera um pouco para o navegador mostrar o popup de câmera
+    setTimeout(() => {
+        try {
+            // Tenta iniciar o áudio silenciosamente
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            gainNode.gain.value = 0.001; // Quase silencioso
+            
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.1);
+            
+            console.log('🎵 Tentativa de áudio durante autorização de câmera');
+            
+            // Tenta carregar o som também
+            carregarSomDigitacao();
+            
+        } catch (error) {
+            console.log('❌ Não foi possível iniciar áudio com a câmera');
+        }
+    }, 1000); // Espera 1 segundo após o clique
 }
 
 // 🎯 FUNÇÃO PARA OBTER IDIOMA COMPLETO
@@ -167,45 +177,68 @@ async function aplicarBandeiraRemota(langCode) {
 
 window.onload = async () => {
     try {
-        // ✅ BOTÃO CENTRALIZADO PARA ATIVAR ÁUDIO
-        const audioButton = document.createElement('button');
-        audioButton.textContent = '🎵 ATIVAR SONS DA TRADUÇÃO';
-        audioButton.style.position = 'fixed';
-        audioButton.style.top = '50%';
-        audioButton.style.left = '50%';
-        audioButton.style.transform = 'translate(-50%, -50%)';
-        audioButton.style.zIndex = '10000';
-        audioButton.style.padding = '20px 30px';
-        audioButton.style.background = '#007bff';
-        audioButton.style.color = 'white';
-        audioButton.style.border = 'none';
-        audioButton.style.borderRadius = '15px';
-        audioButton.style.cursor = 'pointer';
-        audioButton.style.fontSize = '18px';
-        audioButton.style.fontWeight = 'bold';
-        audioButton.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
+        // ✅ TENTA DETECTAR QUANDO O USUÁRIO CLICA NA AUTORIZAÇÃO DA CÂMERA
+        let usuarioClicouNaCamera = false;
         
-        audioButton.onclick = async () => {
-            // Inicia o áudio
-            iniciarAudio();
-            // Carrega o som de digitação
-            await carregarSomDigitacao();
-            // Remove o botão
-            audioButton.remove();
-            // Continua com a câmera
-            iniciarCamera();
-        };
-        
-        document.body.appendChild(audioButton);
+        // Monitora cliques na página ANTES da câmera
+        document.addEventListener('click', function() {
+            if (!usuarioClicouNaCamera) {
+                console.log('🎯 Usuário clicou - tentando iniciar áudio...');
+                usuarioClicouNaCamera = true;
+                tentarIniciarAudioComCamera();
+            }
+        });
 
-        // ✅ FUNÇÃO SEPARADA PARA INICIAR CÂMERA
-        async function iniciarCamera() {
-            // Solicita acesso à câmera (vídeo sem áudio)
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: true,
-                audio: false
-            });
+        // ✅ BOTÃO DE FALLBACK (aparece só se a tentativa acima falhar)
+        function mostrarBotaoAudio() {
+            const audioButton = document.createElement('button');
+            audioButton.textContent = '🎵 ATIVAR SONS DA TRADUÇÃO';
+            audioButton.style.position = 'fixed';
+            audioButton.style.top = '50%';
+            audioButton.style.left = '50%';
+            audioButton.style.transform = 'translate(-50%, -50%)';
+            audioButton.style.zIndex = '10000';
+            audioButton.style.padding = '20px 30px';
+            audioButton.style.background = '#007bff';
+            audioButton.style.color = 'white';
+            audioButton.style.border = 'none';
+            audioButton.style.borderRadius = '15px';
+            audioButton.style.cursor = 'pointer';
+            audioButton.style.fontSize = '18px';
+            audioButton.style.fontWeight = 'bold';
+            audioButton.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
+            
+            audioButton.onclick = async () => {
+                // Inicia o áudio
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                await carregarSomDigitacao();
+                audioButton.remove();
+                console.log('🎵 Áudio ativado via botão');
+            };
+            
+            document.body.appendChild(audioButton);
+            return audioButton;
+        }
 
+        // ✅ INICIA A CÂMERA DIRETO (tentativa automática primeiro)
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false
+        });
+
+        // ✅ AGORA MOSTRA BOTÃO SE PRECISAR (após 2 segundos)
+        let botãoAudio = null;
+        setTimeout(() => {
+            if (!audioCarregado) {
+                console.log('🔇 Mostrando botão de áudio (tentativa automática falhou)');
+                botãoAudio = mostrarBotaoAudio();
+            }
+        }, 2000);
+
+        // ✅ FUNÇÃO PARA INICIAR CÂMERA
+        function iniciarCamera(stream) {
             // ✅ Captura da câmera local
             let localStream = stream;
 
@@ -245,8 +278,10 @@ window.onload = async () => {
 
             // ✅ CALLBACK COM CONTROLE DE SOM
             window.rtcCore.setDataChannelCallback((mensagem) => {
-                // 🎵 INICIA SOM DE DIGITAÇÃO (LOOP)
-                iniciarSomDigitacao();
+                // 🎵 INICIA SOM DE DIGITAÇÃO (LOOP) - se áudio estiver carregado
+                if (audioCarregado) {
+                    iniciarSomDigitacao();
+                }
 
                 console.log('📩 Mensagem recebida:', mensagem);
 
@@ -375,9 +410,12 @@ window.onload = async () => {
             }, 1000);
         }
 
+        // INICIA A CÂMERA
+        iniciarCamera(stream);
+
     } catch (error) {
         console.error("Erro ao inicializar:", error);
-        alert("Erro ao inicializar a aplicação.");
+        alert("Erro ao acessar a câmera. Verifique as permissões.");
         return;
     }
 };
