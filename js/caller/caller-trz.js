@@ -8,15 +8,15 @@ function initializeTranslator() {
     
     // ===== ELEMENTOS DOM =====
     const recordButton = document.getElementById('recordButton');
-    const translatedText = document.getElementById('translatedText');
     const recordingModal = document.getElementById('recordingModal');
     const recordingTimer = document.getElementById('recordingTimer');
     const sendButton = document.getElementById('sendButton');
     const speakerButton = document.getElementById('speakerButton');
     const currentLanguageFlag = document.getElementById('currentLanguageFlag');
+    const textoRecebido = document.getElementById('texto-recebido');
     
     // ⭐ VERIFICA SE ELEMENTOS CRÍTICOS EXISTEM
-    if (!currentLanguageFlag || !recordButton || !translatedText) {
+    if (!currentLanguageFlag || !recordButton || !textoRecebido) {
         console.log('Aguardando elementos do DOM...');
         setTimeout(initializeTranslator, 300);
         return;
@@ -49,14 +49,12 @@ function initializeTranslator() {
     getBandeiraDoJson(IDIOMA_ORIGEM).then(bandeira => {
         currentLanguageFlag.textContent = bandeira;
     });
-    translatedText.textContent = "🎤";
     
     // ===== VERIFICAÇÃO DE SUPORTE =====
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const SpeechSynthesis = window.speechSynthesis;
     
     if (!SpeechRecognition) {
-        translatedText.textContent = "❌";
         if (recordButton) recordButton.style.display = 'none';
         return;
     }
@@ -95,11 +93,6 @@ function initializeTranslator() {
                 }
             }
 
-            // ✅ CORREÇÃO: NUNCA mostra o que estou falando
-            if (translatedText) {
-                translatedText.textContent = "🎤"; // Mantém apenas o ícone
-            }
-
             // ✅ CORREÇÃO: Processo totalmente silencioso
             if (finalTranscript && !isTranslating) {
                 const now = Date.now();
@@ -110,18 +103,9 @@ function initializeTranslator() {
                     // ✅ Traduz e envia SEM MOSTRAR o processo
                     translateText(finalTranscript).then(translation => {
                         enviarParaOutroCelular(translation); // Envia silenciosamente
-                        
-                        // ✅ Apenas confirmação visual breve
-                        if (translatedText) {
-                            translatedText.textContent = "✅";
-                            setTimeout(() => {
-                                if (translatedText) translatedText.textContent = "🎤";
-                            }, 500);
-                        }
                         isTranslating = false;
                     }).catch(error => {
                         console.error('Erro na tradução:', error);
-                        if (translatedText) translatedText.textContent = "🎤";
                         isTranslating = false;
                     });
                 }
@@ -130,9 +114,6 @@ function initializeTranslator() {
         
         recognition.onerror = function(event) {
             console.log('Erro recognition:', event.error);
-            if (event.error !== 'no-speech' && translatedText) {
-                translatedText.textContent = "❌";
-            }
             stopRecording();
         };
         
@@ -154,7 +135,6 @@ function initializeTranslator() {
             if (hasMicrophonePermission) {
                 microphonePermissionGranted = true;
                 recordButton.disabled = false;
-                translatedText.textContent = "🎤";
                 setupRecognitionEvents();
                 return;
             }
@@ -173,12 +153,10 @@ function initializeTranslator() {
             
             microphonePermissionGranted = true;
             recordButton.disabled = false;
-            translatedText.textContent = "🎤";
             setupRecognitionEvents();
             
         } catch (error) {
             console.error('Erro permissão microfone:', error);
-            translatedText.textContent = "🚫";
             recordButton.disabled = true;
         }
     }
@@ -252,8 +230,7 @@ function initializeTranslator() {
             isSpeechPlaying = false;
             if (speakerButton) speakerButton.textContent = '🔊';
         } else {
-            // ✅ CORREÇÃO: Lê apenas o texto recebido (não o que eu falo)
-            const textoRecebido = document.getElementById("texto-recebido");
+            // ✅ CORREÇÃO: Lê apenas o texto recebido
             if (textoRecebido && textoRecebido.textContent) {
                 const textToSpeak = textoRecebido.textContent;
                 if (textToSpeak && textToSpeak.trim() !== "") {
@@ -275,7 +252,6 @@ function initializeTranslator() {
             updateTimer();
             timerInterval = setInterval(updateTimer, 1000);
             
-            if (translatedText) translatedText.textContent = "🎙️";
             if (speakerButton) {
                 speakerButton.disabled = true;
                 speakerButton.textContent = '🔇';
@@ -283,7 +259,6 @@ function initializeTranslator() {
             
         } catch (error) {
             console.error('Erro ao iniciar gravação:', error);
-            if (translatedText) translatedText.textContent = "❌";
             stopRecording();
         }
     }
@@ -295,10 +270,6 @@ function initializeTranslator() {
         if (recordButton) recordButton.classList.remove('recording');
         clearInterval(timerInterval);
         hideRecordingModal();
-        
-        if (translatedText && !isTranslating) {
-            translatedText.textContent = "🎤";
-        }
     }
     
     function showRecordingModal() {
