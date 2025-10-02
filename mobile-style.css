@@ -80,6 +80,15 @@ body {
   z-index: 40;
 }
 
+/* 🏳️ Bandeira do idioma local */
+.language-flag {
+  position: absolute;
+  top: 53%;
+  left: 83.6%;
+  font-size: 2rem;
+  z-index: 40;
+}
+
 /* ESTILO ORIGINAL DO BOTÃO (quando inativo) */
 .record-btn {
     position: absolute;
