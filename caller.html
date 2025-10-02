@@ -75,8 +75,7 @@
     <img src="assets/images/lemurp2p.png" alt="Lemur Logo" class="logo">
     <img src="assets/images/Bridg.png" alt="ponte" class="ponte">
     <img id="logo-traduz" src="assets/images/TradGlobo.png" alt="logo-traduz">
-    <!-- Mantenha a imagem mas deixe oculta como fallback -->
-<img id="lemurFixed" src="" style="display: none;" onerror="this.style.display='none'" alt="">
+    <img id="lemurFixed" src="" style="display: none;" onerror="this.style.display='none'" alt="">
        
     <div class="translator-label" id="translator-label">
         Real-time translation.
@@ -98,17 +97,8 @@
     </div>
 
    <button id="callActionBtn" style="display: none;">SEND 🚀</button>
-    
-    <div class="text-box">
-        <div class="text-display">
-            <div class="text-title">
-                🌐
-                <button class="speaker-btn" id="speakerButton" disabled>🔊</button>
-            </div>
-            <div id="translatedText" class="text-content">🎤</div>
-        </div>
-    </div>
 
+    <!-- ✅ APENAS A CAIXA PRINCIPAL DE TEXTO -->
     <div id="texto-recebido"></div>
 
     <!-- 🏳️ Bandeira do idioma local -->
@@ -116,6 +106,9 @@
 
     <!-- 🎤 Microfone -->
     <button class="record-btn" id="recordButton" disabled>🎤</button>
+
+    <!-- 🔊 Botão de áudio -->
+    <button class="speaker-btn" id="speakerButton" disabled>🔊</button>
              
   </div>
 
