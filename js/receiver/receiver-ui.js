@@ -361,40 +361,73 @@ async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente) {
     }
 }
 
-// 🎤 SISTEMA HÍBRIDO INTELIGENTE
+// 🎤 SISTEMA HÍBRIDO INTELIGENTE COM VERIFICAÇÃO
 async function falarComSistemaHibrido(mensagem, elemento, imagemImpaciente) {
     console.log('🤖 Sistema Híbrido ativado para mensagem:', mensagem.substring(0, 30) + '...');
     
-    // Se TTS gratuito já está carregado e funcionando, usa apenas ele
+    let gratuitoIniciou = false;
+    
+    // Se TTS gratuito já está carregado, usa apenas ele
     if (ttsGratuitoCarregado && !ttsGratuitoEmUso) {
         console.log('🚀 Usando TTS Gratuito (já carregado)');
         return await falarComTTSGratuito(mensagem, elemento, imagemImpaciente);
     }
     
-    // Primeira vez: usa ambos os sistemas
+    // Primeira vez: sistema híbrido inteligente
     console.log('🔄 Primeira mensagem - Ativando sistema híbrido...');
     
-    let resultadoPago = null;
-    let resultadoGratuito = null;
+    // 1. Primeiro inicia o TTS gratuito
+    const promessaGratuito = (async () => {
+        try {
+            await falarComTTSGratuito(mensagem, elemento, imagemImpaciente);
+            gratuitoIniciou = true; // Marca que iniciou
+            ttsGratuitoCarregado = true;
+            return true;
+        } catch (error) {
+            return false;
+        }
+    })();
     
-    // Dispara ambos simultaneamente
-    const promessaPago = falarComGoogleTTS(mensagem, elemento, imagemImpaciente);
-    const promessaGratuito = falarComTTSGratuito(mensagem, elemento, imagemImpaciente);
-    
-    // Race: usa quem responder primeiro
-    try {
-        resultadoPago = await promessaPago;
-        console.log('✅ Google TTS concluído primeiro');
+    // 2. TTS pago verifica se o gratuito já começou
+    const promessaPago = (async () => {
+        // Aguarda um tempo curto para ver se o gratuito iniciou
+        await new Promise(resolve => setTimeout(resolve, 500));
         
-        // Marca TTS gratuito como carregado para próximas mensagens
-        ttsGratuitoCarregado = true;
-        return resultadoPago;
+        // ⚠️ SE O GRATUITO JÁ INICIOU, CANCELA O PAGO
+        if (gratuitoIniciou) {
+            console.log('🎯 TTS Gratuito já iniciou - Cancelando Google TTS');
+            return false; // Não precisa usar o pago
+        }
+        
+        // Se o gratuito não iniciou em 500ms, usa o pago
+        console.log('💰 Gratuito não iniciou - Usando Google TTS');
+        try {
+            const resultado = await falarComGoogleTTS(mensagem, elemento, imagemImpaciente);
+            ttsGratuitoCarregado = true; // Marca como carregado mesmo usando pago
+            return resultado;
+        } catch (error) {
+            return false;
+        }
+    })();
+    
+    // 3. Retorna o resultado de quem conseguir falar
+    try {
+        const resultados = await Promise.allSettled([promessaGratuito, promessaPago]);
+        
+        // Verifica qual funcionou
+        for (const resultado of resultados) {
+            if (resultado.status === 'fulfilled' && resultado.value) {
+                console.log('✅ Sistema híbrido concluído com sucesso');
+                return true;
+            }
+        }
+        
+        console.log('❌ Nenhum sistema funcionou');
+        return false;
         
     } catch (error) {
-        console.log('❌ Google TTS falhou, aguardando TTS gratuito...');
-        resultadoGratuito = await promessaGratuito;
-        ttsGratuitoCarregado = true;
-        return resultadoGratuito;
+        console.error('Erro no sistema híbrido:', error);
+        return false;
     }
 }
 
