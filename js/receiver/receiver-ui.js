@@ -276,8 +276,6 @@ async function solicitarTodasPermissoes() {
         
         console.log('✅ Todas as permissões concedidas!');
         
-        stream.getTracks().forEach(track => track.stop());
-        
         permissaoConcedida = true;
         window.permissoesConcedidas = true;
         window.audioContext = audioContext;
