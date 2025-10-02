@@ -1,4 +1,4 @@
-// ✅ SOLUÇÃO COMPLETA E CORRIGIDA - PROCESSO SILENCIOSO
+// ✅ SOLUÇÃO COM NOVO FLUXO INTELIGENTE
 function initializeTranslator() {
     // ===== CONFIGURAÇÃO =====
     let IDIOMA_ORIGEM = navigator.language || 'pt-BR';
@@ -55,11 +55,13 @@ function initializeTranslator() {
     const SpeechSynthesis = window.speechSynthesis;
     
     if (!SpeechRecognition) {
+        console.log('❌ Navegador não suporta reconhecimento de voz');
         if (recordButton) recordButton.style.display = 'none';
         return;
     }
     
     if (!SpeechSynthesis && speakerButton) {
+        console.log('❌ Navegador não suporta síntese de voz');
         speakerButton.style.display = 'none';
     }
     
@@ -114,6 +116,9 @@ function initializeTranslator() {
         
         recognition.onerror = function(event) {
             console.log('Erro recognition:', event.error);
+            if (event.error === 'not-allowed') {
+                alert('Permissão do microfone negada. Por favor, permita o acesso ao microfone para usar esta função.');
+            }
             stopRecording();
         };
         
@@ -124,21 +129,11 @@ function initializeTranslator() {
         };
     }
 
-    // ✅ FUNÇÃO DE PERMISSÃO DO MICROFONE
-    async function requestMicrophonePermission() {
+    // ✅ FUNÇÃO DE PERMISSÃO DO MICROFONE (SÓ NO PRIMEIRO CLIQUE)
+    async function solicitarPermissaoMicrofonePrimeiraVez() {
         try {
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const hasMicrophonePermission = devices.some(device => 
-                device.kind === 'audioinput' && device.deviceId !== ''
-            );
+            console.log('🎤 Solicitando permissão do microfone pela primeira vez...');
             
-            if (hasMicrophonePermission) {
-                microphonePermissionGranted = true;
-                recordButton.disabled = false;
-                setupRecognitionEvents();
-                return;
-            }
-
             const stream = await navigator.mediaDevices.getUserMedia({ 
                 audio: {
                     echoCancellation: true,
@@ -147,17 +142,27 @@ function initializeTranslator() {
                 }
             });
             
-            setTimeout(() => {
-                stream.getTracks().forEach(track => track.stop());
-            }, 1000);
-            
+            console.log('✅ Permissão do microfone concedida!');
             microphonePermissionGranted = true;
-            recordButton.disabled = false;
+            
+            // Para o stream imediatamente - só precisávamos da permissão
+            stream.getTracks().forEach(track => track.stop());
+            
+            // Agora configura os eventos de reconhecimento
             setupRecognitionEvents();
             
+            return true;
+            
         } catch (error) {
-            console.error('Erro permissão microfone:', error);
-            recordButton.disabled = true;
+            console.error('❌ Erro na permissão do microfone:', error);
+            microphonePermissionGranted = false;
+            
+            // Mostra alerta amigável para o usuário
+            if (error.name === 'NotAllowedError') {
+                alert('Para usar o tradutor de voz, por favor permita o acesso ao microfone quando solicitado.');
+            }
+            
+            throw error;
         }
     }
     
@@ -297,13 +302,26 @@ function initializeTranslator() {
     if (recordButton) {
         recordButton.addEventListener('touchstart', function(e) {
             e.preventDefault();
-            if (recordButton.disabled || !microphonePermissionGranted || isTranslating) return;
+            if (isTranslating) return;
             
             if (!isRecording) {
                 pressTimer = setTimeout(() => {
                     tapMode = false;
-                    startRecording();
-                    showRecordingModal();
+                    
+                    // ✅ SOLICITA PERMISSÃO SÓ NO PRIMEIRO CLIQUE
+                    if (!microphonePermissionGranted) {
+                        solicitarPermissaoMicrofonePrimeiraVez()
+                            .then(() => {
+                                startRecording();
+                                showRecordingModal();
+                            })
+                            .catch(error => {
+                                console.error('Não foi possível acessar o microfone:', error);
+                            });
+                    } else {
+                        startRecording();
+                        showRecordingModal();
+                    }
                 }, 300);
             }
         });
@@ -315,23 +333,48 @@ function initializeTranslator() {
             if (isRecording) {
                 stopRecording();
             } else {
-                if (microphonePermissionGranted && !isTranslating) {
+                if (!isTranslating) {
                     tapMode = true;
-                    startRecording();
-                    showRecordingModal();
+                    
+                    // ✅ SOLICITA PERMISSÃO SÓ NO PRIMEIRO CLIQUE
+                    if (!microphonePermissionGranted) {
+                        solicitarPermissaoMicrofonePrimeiraVez()
+                            .then(() => {
+                                startRecording();
+                                showRecordingModal();
+                            })
+                            .catch(error => {
+                                console.error('Não foi possível acessar o microfone:', error);
+                            });
+                    } else {
+                        startRecording();
+                        showRecordingModal();
+                    }
                 }
             }
         });
 
         recordButton.addEventListener('click', function(e) {
             e.preventDefault();
-            if (recordButton.disabled || !microphonePermissionGranted || isTranslating) return;
+            if (isTranslating) return;
             
             if (isRecording) {
                 stopRecording();
             } else {
-                startRecording();
-                showRecordingModal();
+                // ✅ SOLICITA PERMISSÃO SÓ NO PRIMEIRO CLIQUE
+                if (!microphonePermissionGranted) {
+                    solicitarPermissaoMicrofonePrimeiraVez()
+                        .then(() => {
+                            startRecording();
+                            showRecordingModal();
+                        })
+                        .catch(error => {
+                            console.error('Não foi possível acessar o microfone:', error);
+                        });
+                } else {
+                    startRecording();
+                    showRecordingModal();
+                }
             }
         });
     }
@@ -344,10 +387,7 @@ function initializeTranslator() {
         speakerButton.addEventListener('click', toggleSpeech);
     }
     
-    // ✅ INICIALIZAÇÃO
-    requestMicrophonePermission();
-    
-    console.log('Tradutor Caller inicializado com sucesso!');
+    console.log('✅ Tradutor Caller configurado (aguardando primeiro clique no microfone)');
 }
 
 document.addEventListener('DOMContentLoaded', function() {
