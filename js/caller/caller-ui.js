@@ -5,8 +5,6 @@ import { WebRTCCore } from '../../core/webrtc-core.js';
 let audioContext = null;
 let somDigitacao = null;
 let audioCarregado = false;
-let permissaoMicrofoneConcedida = false;
-let permissaoCameraConcedida = false;
 
 // 🎵 CARREGAR SOM DE DIGITAÇÃO
 function carregarSomDigitacao() {
@@ -66,89 +64,6 @@ function pararSomDigitacao() {
         } catch (error) {
             console.log('❌ Erro ao parar áudio:', error);
         }
-    }
-}
-
-// 🎵 DESBLOQUEAR ÁUDIO (silenciosamente)
-function desbloquearAudio() {
-    if (!audioContext) {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    
-    // Cria um som quase inaudível para desbloquear áudio
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    gainNode.gain.value = 0.001; // Quase mudo
-    oscillator.frequency.value = 1; // Frequência muito baixa
-    oscillator.start();
-    oscillator.stop(audioContext.currentTime + 0.1);
-    
-    console.log('🎵 Áudio desbloqueado silenciosamente');
-}
-
-// 🎤 SOLICITAR PERMISSÃO DO MICROFONE (apenas quando necessário)
-async function solicitarPermissaoMicrofone() {
-    try {
-        console.log('🎤 Solicitando permissão do microfone...');
-        
-        const stream = await navigator.mediaDevices.getUserMedia({
-            audio: {
-                echoCancellation: true,
-                noiseSuppression: true,
-                sampleRate: 44100
-            }
-        });
-        
-        console.log('✅ Permissão do microfone concedida!');
-        permissaoMicrofoneConcedida = true;
-        
-        // Para o stream imediatamente - só precisávamos da permissão
-        stream.getTracks().forEach(track => track.stop());
-        
-        return true;
-        
-    } catch (error) {
-        console.error('❌ Erro na permissão do microfone:', error);
-        permissaoMicrofoneConcedida = false;
-        throw error;
-    }
-}
-
-// 📹 SOLICITAR PERMISSÃO DA CÂMERA (apenas quando necessário)
-async function solicitarPermissaoCamera() {
-    try {
-        console.log('📹 Solicitando permissão da câmera...');
-        
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: false
-        });
-        
-        console.log('✅ Permissão da câmera concedida!');
-        permissaoCameraConcedida = true;
-        
-        // Configura o vídeo local
-        const localVideo = document.getElementById('localVideo');
-        if (localVideo) {
-            localVideo.srcObject = stream;
-        }
-        
-        // Remove o placeholder
-        const placeholder = document.getElementById('cameraPlaceholder');
-        if (placeholder) {
-            placeholder.style.display = 'none';
-        }
-        
-        return stream;
-        
-    } catch (error) {
-        console.error('❌ Erro na permissão da câmera:', error);
-        permissaoCameraConcedida = false;
-        throw error;
     }
 }
 
@@ -230,7 +145,7 @@ async function enviarNotificacaoWakeUp(receiverToken, receiverId, meuId, meuIdio
   }
 }
 
-// 📞 FUNÇÃO: Criar tela de chamada visual (sem textos)
+// 📞 FUNÇÃO: Criar tela de chamada visual
 function criarTelaChamando() {
   const telaChamada = document.createElement('div');
   telaChamada.id = 'tela-chamando';
@@ -252,7 +167,7 @@ function criarTelaChamando() {
   telaChamada.innerHTML = `
     <div style="text-align: center; animation: pulse 2s infinite;">
       <div style="font-size: 80px; margin-bottom: 20px;">📞</div>
-      <div style="font-size: 24px; margin-bottom: 40px; opacity: 0.9;">•••</div>
+      <div style="font-size: 24px; margin-bottom: 40px; opacity: 0.9;">Conectando...</div>
     </div>
     
     <div id="botao-cancelar" style="
@@ -293,7 +208,7 @@ function criarTelaChamando() {
   return telaChamada;
 }
 
-// 🔄 FUNÇÃO UNIFICADA: Tentar conexão visual (COM ESPERA INTELIGENTE)
+// 🔄 FUNÇÃO UNIFICADA: Tentar conexão visual
 async function iniciarConexaoVisual(receiverId, receiverToken, meuId, meuIdioma) {
   console.log('🚀 Iniciando fluxo visual de conexão...');
   
@@ -301,30 +216,8 @@ async function iniciarConexaoVisual(receiverId, receiverToken, meuId, meuIdioma)
   let notificacaoEnviada = false;
   window.conexaoCancelada = false;
   
-  // ✅ AGUARDA O WEBRTC ESTAR COMPLETAMENTE INICIALIZADO
-  console.log('⏳ Aguardando inicialização completa do WebRTC...');
-  
-  // Função para verificar se o WebRTC está pronto
-  const aguardarWebRTCPronto = () => {
-    return new Promise((resolve) => {
-      const verificar = () => {
-        if (window.rtcCore && window.rtcCore.isInitialized && typeof window.rtcCore.startCall === 'function') {
-          console.log('✅ WebRTC completamente inicializado');
-          resolve(true);
-        } else {
-          console.log('⏳ Aguardando WebRTC...');
-          setTimeout(verificar, 500);
-        }
-      };
-      verificar();
-    });
-  };
-
   try {
-    // Aguarda o WebRTC estar pronto antes de qualquer tentativa
-    await aguardarWebRTCPronto();
-
-    console.log('🔇 Fase 1: Tentativas silenciosas (6s)');
+    console.log('🔇 Fase 1: Tentativas silenciosas');
     
     let tentativasFase1 = 3;
     const tentarConexaoSilenciosa = async () => {
@@ -333,12 +226,8 @@ async function iniciarConexaoVisual(receiverId, receiverToken, meuId, meuIdioma)
       if (tentativasFase1 > 0) {
         console.log(`🔄 Tentativa silenciosa ${4 - tentativasFase1}`);
         
-        // ✅ VERIFICAÇÃO EXTRA ANTES DE CHAMAR
         if (window.rtcCore && typeof window.rtcCore.startCall === 'function') {
-          // Inicia chamada SEM stream de mídia inicial
           window.rtcCore.startCall(receiverId, null, meuIdioma);
-        } else {
-          console.log('⚠️ WebRTC não está pronto, aguardando...');
         }
         
         tentativasFase1--;
@@ -357,7 +246,6 @@ async function iniciarConexaoVisual(receiverId, receiverToken, meuId, meuIdioma)
           
           console.log('🔄 Tentando conexão...');
           
-          // ✅ VERIFICAÇÃO SEMPRE ANTES DE TENTAR
           if (window.rtcCore && typeof window.rtcCore.startCall === 'function') {
             window.rtcCore.startCall(receiverId, null, meuIdioma);
           }
@@ -369,7 +257,6 @@ async function iniciarConexaoVisual(receiverId, receiverToken, meuId, meuIdioma)
       }
     };
     
-    // ✅ PEQUENO ATRASO PARA GARANTIR ESTABILIDADE
     setTimeout(() => {
       tentarConexaoSilenciosa();
     }, 1000);
@@ -398,9 +285,6 @@ async function aplicarBandeiraLocal(langCode) {
         const flags = await response.json();
 
         const bandeira = flags[langCode] || flags[langCode.split('-')[0]] || '🔴';
-
-        const localLangElement = document.querySelector('.local-mic-Lang');
-        if (localLangElement) localLangElement.textContent = bandeira;
 
         const localLangDisplay = document.querySelector('.local-Lang');
         if (localLangDisplay) localLangDisplay.textContent = bandeira;
@@ -451,7 +335,6 @@ async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente) {
         const url = URL.createObjectURL(blob);
         const audio = new Audio(url);
         
-        // EVENTO: ÁUDIO COMEÇOU
         audio.onplay = () => {
             pararSomDigitacao();
             
@@ -468,7 +351,6 @@ async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente) {
             console.log('🔊 Áudio Google TTS iniciado');
         };
         
-        // EVENTO: ÁUDIO TERMINOU
         audio.onended = () => {
             console.log('🔚 Áudio Google TTS terminado');
             if (imagemImpaciente) {
@@ -476,7 +358,6 @@ async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente) {
             }
         };
         
-        // EVENTO: ERRO NO ÁUDIO
         audio.onerror = () => {
             pararSomDigitacao();
             console.log('❌ Erro no áudio Google TTS');
@@ -494,7 +375,6 @@ async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente) {
         
     } catch (error) {
         console.error('❌ Erro no Google TTS:', error);
-        // Fallback para síntese nativa se necessário
     }
 }
 
@@ -599,7 +479,21 @@ function configurarBotaoCamera() {
     pipWrapper.addEventListener('click', async function() {
         try {
             console.log('📹 Usuário clicou para ativar câmera...');
-            await solicitarPermissaoCamera();
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: false
+            });
+            
+            const localVideo = document.getElementById('localVideo');
+            if (localVideo) {
+                localVideo.srcObject = stream;
+            }
+            
+            const placeholder = document.getElementById('cameraPlaceholder');
+            if (placeholder) {
+                placeholder.style.display = 'none';
+            }
+            
         } catch (error) {
             console.error('❌ Usuário recusou a câmera:', error);
             alert('Para usar a câmera, por favor permita o acesso quando solicitado.');
@@ -607,26 +501,25 @@ function configurarBotaoCamera() {
     });
 }
 
+// ✅ INICIALIZAÇÃO SIMPLES E ROBUSTA
 window.onload = async () => {
   try {
     console.log('🚀 Iniciando aplicação Caller...');
     
-    // 1. ✅ DESBLOQUEIA ÁUDIO SILENCIOSAMENTE
-    desbloquearAudio();
-    
-    // 2. ✅ CARREGA SONS EM BACKGROUND
+    // 1. ✅ CARREGA SONS EM BACKGROUND
     await carregarSomDigitacao();
     
-    // 3. ✅ INICIA WEBRTC (sem mídia)
+    // 2. ✅ INICIA WEBRTC (sem mídia)
     await iniciarWebRTCAposCarregamento();
     
-    // 4. ✅ CONFIGURA BOTÃO DA CÂMARA
+    // 3. ✅ CONFIGURA BOTÃO DA CÂMARA
     configurarBotaoCamera();
     
     console.log('✅ Aplicação Caller iniciada com sucesso!');
 
   } catch (error) {
     console.error("Erro ao inicializar aplicação:", error);
-    alert("Erro ao inicializar a aplicação.");
+    // Mensagem mais específica para mobile
+    alert("Erro ao conectar. Verifique sua internet e tente novamente.");
   }
 };
