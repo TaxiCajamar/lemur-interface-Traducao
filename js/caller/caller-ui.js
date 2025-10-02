@@ -660,6 +660,18 @@ async function iniciarCameraAposPermissoes() {
         // ✅ PEQUENA PAUSA PARA ESTABILIZAR
         await new Promise(resolve => setTimeout(resolve, 500));
 
+        // ==== 🎤 ADICIONAR AQUI AS 2 LINHAS DO TRADUTOR SIMPLES ====
+        // ✅ CONFIGURAR BOTÃO DE MICROFONE SIMPLES
+        const recordButton = document.getElementById('recordButton');
+        if (recordButton) {
+            recordButton.disabled = false;
+            recordButton.addEventListener('click', traduzirVoz);
+        }
+
+        // ✅ CONFIGURAR RECEPTOR DE TRADUÇÃO
+        configurarReceptorTraducao();
+        // ==== FIM DAS 2 LINHAS ====
+
         console.log('🌐 Inicializando WebRTC...');
         window.rtcCore = new WebRTCCore();
 
