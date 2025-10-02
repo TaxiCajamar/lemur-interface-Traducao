@@ -73,8 +73,6 @@ async function solicitarPermissaoMidiaMinima() {
     try {
         console.log('📹🎤 Solicitando permissão mínima de mídia para WebRTC...');
         
-        // No mobile, precisamos de pelo menos UMA permissão de mídia
-        // antes do WebRTC funcionar. Vamos tentar a câmera primeiro.
         const stream = await navigator.mediaDevices.getUserMedia({
             video: true,
             audio: false
@@ -83,13 +81,11 @@ async function solicitarPermissaoMidiaMinima() {
         console.log('✅ Permissão de mídia concedida! WebRTC pode funcionar.');
         permissaoMidiaConcedida = true;
         
-        // Configura o vídeo local
         const localVideo = document.getElementById('localVideo');
         if (localVideo) {
             localVideo.srcObject = stream;
         }
         
-        // Remove o placeholder
         const placeholder = document.getElementById('cameraPlaceholder');
         if (placeholder) {
             placeholder.style.display = 'none';
@@ -100,7 +96,6 @@ async function solicitarPermissaoMidiaMinima() {
     } catch (error) {
         console.error('❌ Usuário recusou a câmera, tentando microfone...', error);
         
-        // Se a câmera falhou, tenta apenas o microfone
         try {
             const audioStream = await navigator.mediaDevices.getUserMedia({
                 video: false,
@@ -110,7 +105,6 @@ async function solicitarPermissaoMidiaMinima() {
             console.log('✅ Permissão de áudio concedida! WebRTC pode funcionar.');
             permissaoMidiaConcedida = true;
             
-            // Para o stream de áudio - só precisávamos da permissão
             audioStream.getTracks().forEach(track => track.stop());
             
             return audioStream;
@@ -119,8 +113,7 @@ async function solicitarPermissaoMidiaMinima() {
             console.error('❌ Usuário recusou TODAS as permissões de mídia:', audioError);
             permissaoMidiaConcedida = false;
             
-            // Mostra alerta explicativo
-            alert('Para a chamada funcionar, é necessário permitir o acesso à câmera ou microfone. A conexão WebRTC não funcionará sem pelo menos uma permissão de mídia.');
+            alert('Para a chamada funcionar, é necessário permitir o acesso à câmera ou microfone.');
             
             throw audioError;
         }
@@ -287,7 +280,6 @@ async function iniciarConexaoVisual(receiverId, receiverToken, meuId, meuIdioma)
         console.log(`🔄 Tentativa silenciosa ${4 - tentativasFase1}`);
         
         if (window.rtcCore && typeof window.rtcCore.startCall === 'function') {
-          // ✅ AGORA temos permissão de mídia, WebRTC deve funcionar no mobile
           window.rtcCore.startCall(receiverId, null, meuIdioma);
         }
         
@@ -439,7 +431,7 @@ async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente) {
     }
 }
 
-// ✅ FUNÇÃO PARA INICIAR WEBRTC (AGORA COM PERMISSÃO DE MÍDIA)
+// ✅ FUNÇÃO PARA INICIAR WEBRTC (COM VERIFICAÇÃO DE CONEXÃO)
 async function iniciarWebRTCAposPermissao() {
     try {
         console.log('🌐 Inicializando WebRTC...');
@@ -468,7 +460,6 @@ async function iniciarWebRTCAposPermissao() {
                 imagemImpaciente.style.display = 'block';
             }
 
-            // 🎤 CHAMADA PARA GOOGLE TTS
             await falarComGoogleTTS(mensagem, elemento, imagemImpaciente);
         });
 
@@ -476,10 +467,12 @@ async function iniciarWebRTCAposPermissao() {
         document.getElementById('myId').textContent = myId;
 
         console.log('🔌 Inicializando socket handlers...');
-        window.rtcCore.initialize(myId);
-        window.rtcCore.setupSocketHandlers();
-
-        // ✅ MARCA QUE O WEBRTC ESTÁ INICIALIZADO
+        
+        // ✅ VERIFICAÇÃO CRÍTICA: Inicializa WebRTC e verifica se conectou
+        await window.rtcCore.initialize(myId);
+        await window.rtcCore.setupSocketHandlers();
+        
+        // ✅ AGORA SIM marca como inicializado (após confirmar conexão)
         window.rtcCore.isInitialized = true;
         console.log('✅ WebRTC inicializado com ID:', myId);
 
@@ -500,7 +493,6 @@ async function iniciarWebRTCAposPermissao() {
           
           const meuIdioma = await obterIdiomaCompleto(navigator.language);
           
-          // ✅ PEQUENO ATRASO PARA GARANTIR QUE TUDO ESTÁ ESTÁVEL
           setTimeout(() => {
             iniciarConexaoVisual(receiverId, receiverToken, myId, meuIdioma);
           }, 1000);
@@ -526,8 +518,8 @@ async function iniciarWebRTCAposPermissao() {
         aplicarBandeiraRemota(receiverLang);
 
     } catch (error) {
-        console.error("Erro ao iniciar WebRTC:", error);
-        throw error;
+        console.error("❌ Erro ao iniciar WebRTC:", error);
+        throw new Error("Falha na conexão com o servidor. Verifique sua internet.");
     }
 }
 
@@ -539,22 +531,24 @@ window.onload = async () => {
     // 1. ✅ CARREGA SONS EM BACKGROUND
     await carregarSomDigitacao();
     
-    // 2. ✅✅✅ SOLICITA PERMISSÃO DE MÍDIA (CRÍTICO PARA MOBILE)
+    // 2. ✅ SOLICITA PERMISSÃO DE MÍDIA
     console.log('📱 Mobile: Solicitando permissão de mídia para WebRTC...');
     await solicitarPermissaoMidiaMinima();
     
-    // 3. ✅ INICIA WEBRTC (AGORA COM PERMISSÃO)
+    // 3. ✅ INICIA WEBRTC (COM VERIFICAÇÃO)
     await iniciarWebRTCAposPermissao();
     
     console.log('✅ Aplicação Caller iniciada com sucesso!');
 
   } catch (error) {
-    console.error("Erro ao inicializar aplicação:", error);
+    console.error("❌ Erro ao inicializar aplicação:", error);
     
-    if (!permissaoMidiaConcedida) {
-      alert("A conexão não pôde ser estabelecida. É necessário permitir o acesso à câmera ou microfone para que a chamada funcione.");
+    if (error.message.includes("servidor") || error.message.includes("conexão")) {
+      alert("❌ Erro de conexão: " + error.message + "\n\nVerifique sua conexão com a internet e tente novamente.");
+    } else if (!permissaoMidiaConcedida) {
+      alert("❌ Permissão necessária: " + error.message);
     } else {
-      alert("Erro ao conectar. Verifique sua internet e tente novamente.");
+      alert("❌ Erro: " + error.message);
     }
   }
 };
