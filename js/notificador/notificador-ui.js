@@ -208,7 +208,7 @@ function liberarInterfaceFallback() {
 }
 
 // 🎤 FUNÇÃO GOOGLE TTS SEPARADA
-async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente) {
+async function falarComGoogleTTS(mensagem, elemento) {
     try {
         console.log('🎤 Iniciando Google TTS para:', mensagem.substring(0, 50) + '...');
         
@@ -240,9 +240,6 @@ async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente) {
                 elemento.style.border = '';
                 elemento.textContent = mensagem;
             }
-            if (imagemImpaciente) {
-                imagemImpaciente.style.display = 'none';
-            }
             
             console.log('🔊 Áudio Google TTS iniciado');
         };
@@ -250,9 +247,6 @@ async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente) {
         // EVENTO: ÁUDIO TERMINOU
         audio.onended = () => {
             console.log('🔚 Áudio Google TTS terminado');
-            if (imagemImpaciente) {
-                imagemImpaciente.style.display = 'none';
-            }
         };
         
         // EVENTO: ERRO NO ÁUDIO
@@ -263,9 +257,6 @@ async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente) {
                 elemento.style.animation = 'none';
                 elemento.style.backgroundColor = '';
                 elemento.style.border = '';
-            }
-            if (imagemImpaciente) {
-                imagemImpaciente.style.display = 'none';
             }
         };
 
@@ -323,7 +314,6 @@ async function iniciarCameraAposPermissoes() {
             console.log('📩 Mensagem recebida:', mensagem);
 
             const elemento = document.getElementById('texto-recebido');
-            const imagemImpaciente = document.getElementById('lemurFixed');
             
             if (elemento) {
                 elemento.textContent = "";
@@ -335,12 +325,8 @@ async function iniciarCameraAposPermissoes() {
                 elemento.style.border = '2px solid #ff0000';
             }
 
-            if (imagemImpaciente) {
-                imagemImpaciente.style.display = 'block';
-            }
-
             // 🎤 CHAMADA PARA GOOGLE TTS
-            await falarComGoogleTTS(mensagem, elemento, imagemImpaciente);
+            await falarComGoogleTTS(mensagem, elemento);
         });
 
         window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
