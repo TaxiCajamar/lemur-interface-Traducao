@@ -26,8 +26,34 @@ body {
   overflow-y: auto;
 }
 
-/* ESTILO PARA O ELEMENTO QUE EXIBE MENSAGENS RECEBIDAS */
+/* ===== PLACEHOLDER DA CÂMERA ===== */
+.camera-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  border-radius: 8px;
+  z-index: 15;
+}
 
+.camera-icon {
+  font-size: 3rem;
+  margin-bottom: 10px;
+}
+
+.camera-text {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+/* ESTILO PARA O ELEMENTO QUE EXIBE MENSAGENS RECEBIDAS */
 .lemur-fixed {
     position: absolute;
     top: 52%;
@@ -38,11 +64,11 @@ body {
     z-index: 25;
     pointer-events: none;
     transition: opacity 0.5s ease-in-out;
-    opacity: 1; /* Começa visível */
+    opacity: 1;
 }
 
 .lemur-fixed.hidden {
-    opacity: 0; /* Some suavemente */
+    opacity: 0;
 }
 
 #texto-recebido {
@@ -56,8 +82,8 @@ body {
   border: 0.2vh solid #4CAF50;
   border-radius: 1vh;
   background-color: #f8f9fa;
-  width: 90%;         /* ✅ largura em porcentagem */
-  height: 15%;        /* ✅ altura em porcentagem */
+  width: 90%;
+  height: 15%;
   max-width: 500px;
   text-align: center;
   color: #333;
@@ -97,7 +123,7 @@ body {
     width: 65px;
     height: 65px;
     border-radius: 50%;
-    background: #ff4757; /* Vermelho mais forte */
+    background: #ff4757;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -111,7 +137,7 @@ body {
 
 /* Botão GRAVANDO - Verde vibrante */
 .record-btn.recording {
-    background: #2ed573; /* Verde mais forte */
+    background: #2ed573;
     animation: pulse 1.5s infinite;
 }
 
@@ -119,15 +145,43 @@ body {
   transform: scale(0.95);
 }
 
-/* Para diferenciar caller vs receiver */
+/* Botão de áudio */
+.speaker-btn {
+  position: absolute;
+  top: 60%;
+  left: 78%;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: #2196F3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  cursor: pointer;
+  border: none;
+  color: white;
+  transition: transform 0.2s, background-color 0.3s;
+  z-index: 30;
+}
 
+.speaker-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.speaker-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+/* Para diferenciar caller vs receiver */
 caller.html #texto-recebido {
-  border-color: #2196F3; /* Azul para caller */
+  border-color: #2196F3;
   background-color: #e3f2fd;
 }
 
 receiver.html #texto-recebido {
-  border-color: #4CAF50; /* Verde para receiver */
+  border-color: #4CAF50;
   background-color: #f1f8e9;
 }
 
@@ -143,10 +197,10 @@ receiver.html #texto-recebido {
 
 .ponte {
   position: absolute;
-  bottom: 60.2%;               /* 20% da altura da box */
-  right:2%;                 /* 5% da largura da box */
-  width: 35%;                /* largura relativa à box */
-  height: 15%;               /* altura relativa à box */
+  bottom: 60.2%;
+  right:2%;
+  width: 35%;
+  height: 15%;
   transform: translateX(-17%);
   border-radius: 8px;
   overflow: hidden;
@@ -169,13 +223,12 @@ receiver.html #texto-recebido {
 }
 
 /* ===== VÍDEO REMOTO ===== */
-
 .video-wrapper {
   position: absolute;
-  bottom: 45%;               /* 20% da altura da box */
-  right: 50%;                 /* 5% da largura da box */
-  width: 35%;                /* largura relativa à box */
-  height: 30%;               /* altura relativa à box */
+  bottom: 45%;
+  right: 50%;
+  width: 35%;
+  height: 30%;
   transform: translateX(-17%);
   border-radius: 8px;
   overflow: hidden;
@@ -191,14 +244,13 @@ receiver.html #texto-recebido {
 }
 
 /* ===== PiP LOCAL ===== */
-
 .pip-local-wrapper {
   position: absolute;
   bottom: 5%;
   right: 5%;
   width: 30%;
   height: 30%;
-  border: 0.3vw solid #2196F3; /* Azul */
+  border: 0.3vw solid #2196F3;
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
@@ -212,12 +264,11 @@ receiver.html #texto-recebido {
 }
 
 /* ===== CIRCULO DA BANDEIRA ===== */
-
 .remoter-Lang {
   position: absolute;
   top: 31%;
   left: 83%;
-  font-size: 6vw;       /* controla o tamanho do emoji */
+  font-size: 6vw;
   line-height: 1;
   z-index: 10;
 }
@@ -226,17 +277,16 @@ receiver.html #texto-recebido {
   position: absolute;
   top: 31%;
   left: 58%;
-  font-size: 6vw;       /* controla o tamanho do emoji */
+  font-size: 6vw;
   line-height: 1;
   z-index: 10;
 }
 
 /* ===== CONTROLES ===== */
-
 .callActionBtn {
   position: absolute;
-  top: 70%;               /* distância do topo */
-  left: 50%;              /* posiciona no centro horizontal */
+  top: 70%;
+  left: 50%;
   width: 60%;
   height: 6%;
   border-radius: 50px;
@@ -251,22 +301,20 @@ receiver.html #texto-recebido {
 }
 
 /* ===== OVERLAY DE QR CODE ===== */
-
 .info-overlay {
   position: absolute;
-  top: 23%;               /* distância do topo */
-  left: 50%;              /* posiciona no centro horizontal */
-  transform: translateX(-50%); /* centraliza horizontalmente */
-  width: 80%;             /* ocupa 80% da largura da tela */
-  background-color: white; /* fundo branco */
-  border-radius: 20px;    /* cantos arredondados */
-  padding: 2% 3%;         /* espaçamento interno */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* sombra suave */
+  top: 23%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  background-color: white;
+  border-radius: 20px;
+  padding: 2% 3%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   z-index: 50;
   text-align: center;
 }
 
-/* Mantém o container interno com fundo branco e sombra */
 .qrcode-container {
   margin: 2% auto;
   padding: 3%;
@@ -282,20 +330,21 @@ receiver.html #texto-recebido {
   white-space: nowrap;
   text-align: center;
   font-weight: bold;
-  width: fit-content;       /* Adapta à largura do conteúdo */
-  max-width: 100%;          /* Evita ultrapassar o container pai */
-  margin: 0 auto;           /* Centraliza horizontalmente */
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
 }
 
 .qr-modal-description {
-  font-size: 1.5rem;            /* Tamanho relativo à altura da box */
-  margin-bottom: 20%;          /* Espaço abaixo do parágrafo */
+  font-size: 1.5rem;
+  margin-bottom: 20%;
   color: #555;
   line-height: 140%;
   text-align: center;
   font-weight: bold;
   width: 100%;
 }
+
 .info-overlay {
   transition: opacity 0.5s ease;
   opacity: 1;
@@ -307,7 +356,6 @@ receiver.html #texto-recebido {
 }
 
 /* Modal de gravação */
-
 .recording-modal {
   position: fixed;
   bottom: -100%;
@@ -398,6 +446,7 @@ receiver.html #texto-recebido {
   50% { transform: scale(1.02); opacity: 1; }
   100% { transform: scale(1); opacity: 0.8; }
 }
+
 @keyframes pulsar-flutuar-intenso {
   0% { 
     box-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
