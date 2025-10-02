@@ -28,6 +28,7 @@ function initializeTranslator() {
     
     let currentLang = 'pt-BR';
     let isRecording = false;
+    let microphonePermissionGranted = false;
     
     // ===== FUNÇÃO SIMPLES PARA ENVIAR TEXTO =====
     function enviarParaOutroCelular(texto) {
@@ -100,42 +101,88 @@ function initializeTranslator() {
         });
     }
 
-    // ===== RECONHECIMENTO DE VOZ =====
-    recognition.onresult = function(event) {
-        const transcript = event.results[0][0].transcript;
-        
-        if (translatedText) {
-            translatedText.textContent = "🔄";
+    // ===== PERMISSÃO DO MICROFONE =====
+    async function requestMicrophonePermission() {
+        try {
+            // Verifica se já tem permissão
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const hasMicrophonePermission = devices.some(device => 
+                device.kind === 'audioinput' && device.deviceId !== ''
+            );
+            
+            if (hasMicrophonePermission) {
+                microphonePermissionGranted = true;
+                recordButton.disabled = false;
+                translatedText.textContent = "🎤";
+                setupRecognitionEvents();
+                console.log('✅ Microfone já autorizado');
+                return;
+            }
+
+            // Solicita permissão
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    sampleRate: 44100
+                }
+            });
+            
+            // Para a stream imediatamente (só precisamos da permissão)
+            stream.getTracks().forEach(track => track.stop());
+            
+            microphonePermissionGranted = true;
+            recordButton.disabled = false;
+            translatedText.textContent = "🎤";
+            setupRecognitionEvents();
+            
+            console.log('✅ Permissão de microfone concedida');
+            
+        } catch (error) {
+            console.error('❌ Erro permissão microfone:', error);
+            translatedText.textContent = "🚫";
+            recordButton.disabled = true;
         }
-        
-        translateText(transcript).then(translation => {
-            enviarParaOutroCelular(translation);
+    }
+
+    // ===== RECONHECIMENTO DE VOZ =====
+    function setupRecognitionEvents() {
+        recognition.onresult = function(event) {
+            const transcript = event.results[0][0].transcript;
             
             if (translatedText) {
-                translatedText.textContent = "✅";
-                setTimeout(() => {
-                    if (translatedText) translatedText.textContent = "🎤";
-                }, 1000);
+                translatedText.textContent = "🔄";
             }
-        }).catch(error => {
-            console.error('Erro:', error);
+            
+            translateText(transcript).then(translation => {
+                enviarParaOutroCelular(translation);
+                
+                if (translatedText) {
+                    translatedText.textContent = "✅";
+                    setTimeout(() => {
+                        if (translatedText) translatedText.textContent = "🎤";
+                    }, 1000);
+                }
+            }).catch(error => {
+                console.error('Erro:', error);
+                if (translatedText) translatedText.textContent = "🎤";
+            });
+        };
+        
+        recognition.onerror = function(event) {
+            console.log('Erro reconhecimento:', event.error);
             if (translatedText) translatedText.textContent = "🎤";
-        });
-    };
-    
-    recognition.onerror = function(event) {
-        console.log('Erro reconhecimento:', event.error);
-        if (translatedText) translatedText.textContent = "🎤";
-        isRecording = false;
-    };
-    
-    recognition.onend = function() {
-        isRecording = false;
-    };
+            isRecording = false;
+        };
+        
+        recognition.onend = function() {
+            isRecording = false;
+        };
+    }
     
     // Evento simples do botão de gravar
     recordButton.addEventListener('click', function() {
-        if (isRecording) return;
+        if (isRecording || !microphonePermissionGranted) return;
         
         try {
             recognition.lang = window.currentSourceLang || currentLang;
@@ -162,6 +209,9 @@ function initializeTranslator() {
             }
         });
     }
+    
+    // ✅ SOLICITA PERMISSÃO DO MICROFONE
+    requestMicrophonePermission();
     
     console.log('✅ Tradutor Caller inicializado');
 }
