@@ -150,6 +150,8 @@ function initializeTranslator() {
         recognition.onresult = function(event) {
             const transcript = event.results[0][0].transcript;
             
+            console.log('🎤 Texto reconhecido:', transcript);
+            
             if (translatedText) {
                 translatedText.textContent = "🔄";
             }
@@ -171,30 +173,70 @@ function initializeTranslator() {
         
         recognition.onerror = function(event) {
             console.log('Erro reconhecimento:', event.error);
-            if (translatedText) translatedText.textContent = "🎤";
+            if (translatedText) translatedText.textContent = "❌";
+            setTimeout(() => {
+                if (translatedText) translatedText.textContent = "🎤";
+            }, 1000);
             isRecording = false;
+            updateRecordButton(false);
         };
         
         recognition.onend = function() {
+            console.log('⏹️ Gravação finalizada');
             isRecording = false;
+            updateRecordButton(false);
+            
+            if (translatedText && translatedText.textContent === "🎙️") {
+                translatedText.textContent = "🎤";
+            }
         };
     }
     
-    // Evento simples do botão de gravar
+    // ===== FEEDBACK VISUAL =====
+    function updateRecordButton(recording) {
+        if (recording) {
+            recordButton.style.background = "#2ed573"; // Verde quando gravando
+            recordButton.style.transform = "scale(1.1)";
+            recordButton.style.boxShadow = "0 0 20px rgba(46, 213, 115, 0.5)";
+        } else {
+            recordButton.style.background = "#ff4757"; // Vermelho quando parado
+            recordButton.style.transform = "scale(1)";
+            recordButton.style.boxShadow = "none";
+        }
+    }
+    
+    // Evento do botão de gravar
     recordButton.addEventListener('click', function() {
-        if (isRecording || !microphonePermissionGranted) return;
+        if (isRecording || !microphonePermissionGranted) {
+            // Se já está gravando, para a gravação
+            if (isRecording) {
+                recognition.stop();
+                isRecording = false;
+                updateRecordButton(false);
+                if (translatedText) translatedText.textContent = "🎤";
+            }
+            return;
+        }
         
         try {
             recognition.lang = window.currentSourceLang || currentLang;
             recognition.start();
             isRecording = true;
             
+            // ✅ FEEDBACK VISUAL PARA O USUÁRIO
+            updateRecordButton(true);
             if (translatedText) translatedText.textContent = "🎙️";
+            
+            console.log('🔴 Iniciando gravação...');
             
         } catch (error) {
             console.error('Erro ao gravar:', error);
-            if (translatedText) translatedText.textContent = "🎤";
+            if (translatedText) translatedText.textContent = "❌";
+            setTimeout(() => {
+                if (translatedText) translatedText.textContent = "🎤";
+            }, 1000);
             isRecording = false;
+            updateRecordButton(false);
         }
     });
     
