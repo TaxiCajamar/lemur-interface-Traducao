@@ -5,6 +5,7 @@ import { WebRTCCore } from '../../core/webrtc-core.js';
 let audioContext = null;
 let somDigitacao = null;
 let audioCarregado = false;
+let permissaoMidiaConcedida = false;
 
 // 🎵 CARREGAR SOM DE DIGITAÇÃO
 function carregarSomDigitacao() {
@@ -63,6 +64,65 @@ function pararSomDigitacao() {
             console.log('🎵 Som de digitação parado');
         } catch (error) {
             console.log('❌ Erro ao parar áudio:', error);
+        }
+    }
+}
+
+// 📹✅ SOLICITA PERMISSÃO MÍNIMA DE MÍDIA (para WebRTC funcionar no mobile)
+async function solicitarPermissaoMidiaMinima() {
+    try {
+        console.log('📹🎤 Solicitando permissão mínima de mídia para WebRTC...');
+        
+        // No mobile, precisamos de pelo menos UMA permissão de mídia
+        // antes do WebRTC funcionar. Vamos tentar a câmera primeiro.
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false
+        });
+        
+        console.log('✅ Permissão de mídia concedida! WebRTC pode funcionar.');
+        permissaoMidiaConcedida = true;
+        
+        // Configura o vídeo local
+        const localVideo = document.getElementById('localVideo');
+        if (localVideo) {
+            localVideo.srcObject = stream;
+        }
+        
+        // Remove o placeholder
+        const placeholder = document.getElementById('cameraPlaceholder');
+        if (placeholder) {
+            placeholder.style.display = 'none';
+        }
+        
+        return stream;
+        
+    } catch (error) {
+        console.error('❌ Usuário recusou a câmera, tentando microfone...', error);
+        
+        // Se a câmera falhou, tenta apenas o microfone
+        try {
+            const audioStream = await navigator.mediaDevices.getUserMedia({
+                video: false,
+                audio: true
+            });
+            
+            console.log('✅ Permissão de áudio concedida! WebRTC pode funcionar.');
+            permissaoMidiaConcedida = true;
+            
+            // Para o stream de áudio - só precisávamos da permissão
+            audioStream.getTracks().forEach(track => track.stop());
+            
+            return audioStream;
+            
+        } catch (audioError) {
+            console.error('❌ Usuário recusou TODAS as permissões de mídia:', audioError);
+            permissaoMidiaConcedida = false;
+            
+            // Mostra alerta explicativo
+            alert('Para a chamada funcionar, é necessário permitir o acesso à câmera ou microfone. A conexão WebRTC não funcionará sem pelo menos uma permissão de mídia.');
+            
+            throw audioError;
         }
     }
 }
@@ -227,6 +287,7 @@ async function iniciarConexaoVisual(receiverId, receiverToken, meuId, meuIdioma)
         console.log(`🔄 Tentativa silenciosa ${4 - tentativasFase1}`);
         
         if (window.rtcCore && typeof window.rtcCore.startCall === 'function') {
+          // ✅ AGORA temos permissão de mídia, WebRTC deve funcionar no mobile
           window.rtcCore.startCall(receiverId, null, meuIdioma);
         }
         
@@ -378,10 +439,10 @@ async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente) {
     }
 }
 
-// ✅ FUNÇÃO PARA INICIAR WEBRTC SEM MÍDIA
-async function iniciarWebRTCAposCarregamento() {
+// ✅ FUNÇÃO PARA INICIAR WEBRTC (AGORA COM PERMISSÃO DE MÍDIA)
+async function iniciarWebRTCAposPermissao() {
     try {
-        console.log('🌐 Inicializando WebRTC sem mídia...');
+        console.log('🌐 Inicializando WebRTC...');
         window.rtcCore = new WebRTCCore();
 
         // Configura callbacks ANTES de inicializar
@@ -470,38 +531,7 @@ async function iniciarWebRTCAposCarregamento() {
     }
 }
 
-// 🎯 CONFIGURA BOTÃO DA CÂMERA
-function configurarBotaoCamera() {
-    const pipWrapper = document.querySelector('.pip-local-wrapper');
-    if (!pipWrapper) return;
-    
-    pipWrapper.style.cursor = 'pointer';
-    pipWrapper.addEventListener('click', async function() {
-        try {
-            console.log('📹 Usuário clicou para ativar câmera...');
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: true,
-                audio: false
-            });
-            
-            const localVideo = document.getElementById('localVideo');
-            if (localVideo) {
-                localVideo.srcObject = stream;
-            }
-            
-            const placeholder = document.getElementById('cameraPlaceholder');
-            if (placeholder) {
-                placeholder.style.display = 'none';
-            }
-            
-        } catch (error) {
-            console.error('❌ Usuário recusou a câmera:', error);
-            alert('Para usar a câmera, por favor permita o acesso quando solicitado.');
-        }
-    });
-}
-
-// ✅ INICIALIZAÇÃO SIMPLES E ROBUSTA
+// ✅ INICIALIZAÇÃO CORRETA PARA MOBILE
 window.onload = async () => {
   try {
     console.log('🚀 Iniciando aplicação Caller...');
@@ -509,17 +539,22 @@ window.onload = async () => {
     // 1. ✅ CARREGA SONS EM BACKGROUND
     await carregarSomDigitacao();
     
-    // 2. ✅ INICIA WEBRTC (sem mídia)
-    await iniciarWebRTCAposCarregamento();
+    // 2. ✅✅✅ SOLICITA PERMISSÃO DE MÍDIA (CRÍTICO PARA MOBILE)
+    console.log('📱 Mobile: Solicitando permissão de mídia para WebRTC...');
+    await solicitarPermissaoMidiaMinima();
     
-    // 3. ✅ CONFIGURA BOTÃO DA CÂMARA
-    configurarBotaoCamera();
+    // 3. ✅ INICIA WEBRTC (AGORA COM PERMISSÃO)
+    await iniciarWebRTCAposPermissao();
     
     console.log('✅ Aplicação Caller iniciada com sucesso!');
 
   } catch (error) {
     console.error("Erro ao inicializar aplicação:", error);
-    // Mensagem mais específica para mobile
-    alert("Erro ao conectar. Verifique sua internet e tente novamente.");
+    
+    if (!permissaoMidiaConcedida) {
+      alert("A conexão não pôde ser estabelecida. É necessário permitir o acesso à câmera ou microfone para que a chamada funcione.");
+    } else {
+      alert("Erro ao conectar. Verifique sua internet e tente novamente.");
+    }
   }
 };
