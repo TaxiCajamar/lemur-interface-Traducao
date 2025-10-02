@@ -48,26 +48,28 @@ body {
 
 #texto-recebido {
   position: absolute;
-  top:65%;
+  top: 65%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 1.2em;
+  font-size: clamp(1em, 4vw, 1.2em); /* Fonte responsiva */
   padding: 2vh 2vw;
-  margin: 2vh 0;
   border: 0.2vh solid #4CAF50;
   border-radius: 1vh;
   background-color: #f8f9fa;
-  width: 90%;         /* ✅ largura em porcentagem */
-  height: 15%;        /* ✅ altura em porcentagem */
+  width: 90%;
   max-width: 500px;
+  /* 🎯 CORREÇÕES PARA TEXTO LONGO */
+  max-height: 25vh;            /* Altura máxima relativa à tela */
+  min-height: 12vh;            /* Altura mínima relativa à tela */
+  overflow-y: auto;            /* Scroll vertical */
+  word-wrap: break-word;       /* Quebra palavras longas */
+  white-space: pre-wrap;       /* Mantém quebras de linha */
   text-align: center;
   color: #333;
   font-weight: bold;
-  display: block;
-  opacity: 1;
-  visibility: visible;
   box-sizing: border-box;
   z-index: 30;
+  line-height: 1.4;
 }
 
 #logo-traduz {
