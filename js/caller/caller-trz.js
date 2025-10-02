@@ -14,12 +14,9 @@ function initializeTranslator() {
     const sendButton = document.getElementById('sendButton');
     const speakerButton = document.getElementById('speakerButton');
     const currentLanguageFlag = document.getElementById('currentLanguageFlag');
-    const worldButton = document.getElementById('worldButton');
-    const languageDropdown = document.getElementById('languageDropdown');
-    const languageOptions = document.querySelectorAll('.language-option');
     
     // ⭐ VERIFICA SE ELEMENTOS CRÍTICOS EXISTEM
-    if (!currentLanguageFlag || !recordButton || !translatedText || !languageDropdown) {
+    if (!currentLanguageFlag || !recordButton || !translatedText) {
         console.log('Aguardando elementos do DOM...');
         setTimeout(initializeTranslator, 300);
         return;
@@ -83,54 +80,6 @@ function initializeTranslator() {
     let isSpeechPlaying = false;
     let microphonePermissionGranted = false;
     let lastTranslationTime = 0;
-    
-    // ===== FUNÇÕES DE IDIOMA =====
-    if (worldButton && languageDropdown) {
-        worldButton.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            languageDropdown.classList.toggle('show');
-        });
-    }
-    
-    document.addEventListener('click', function(e) {
-        if (languageDropdown && !languageDropdown.contains(e.target) && e.target !== worldButton) {
-            languageDropdown.classList.remove('show');
-        }
-    });
-    
-    if (languageOptions && languageOptions.length > 0) {
-        languageOptions.forEach(option => {
-            option.addEventListener('click', async function() {
-                const novoIdioma = this.getAttribute('data-lang');
-                IDIOMA_ORIGEM = novoIdioma;
-                
-                const bandeira = await getBandeiraDoJson(novoIdioma);
-                currentLanguageFlag.textContent = bandeira;
-                
-                if (languageDropdown) {
-                    languageDropdown.classList.remove('show');
-                }
-                
-                if (isRecording && recognition) {
-                    recognition.stop();
-                }
-                
-                recognition = new SpeechRecognition();
-                recognition.lang = novoIdioma;
-                recognition.continuous = false;
-                recognition.interimResults = true;
-                setupRecognitionEvents();
-                
-                if (translatedText) {
-                    translatedText.textContent = "✅";
-                    setTimeout(() => {
-                        if (translatedText) translatedText.textContent = "🎤";
-                    }, 1000);
-                }
-            });
-        });
-    }
     
     // ===== FUNÇÕES PRINCIPAIS =====
     function setupRecognitionEvents() {
