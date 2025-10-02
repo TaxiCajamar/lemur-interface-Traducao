@@ -7,6 +7,10 @@ let somDigitacao = null;
 let audioCarregado = false;
 let permissaoConcedida = false;
 
+// 🎤 VARIÁVEIS DO SISTEMA HÍBRIDO TTS
+let ttsGratuitoCarregado = false;
+let ttsGratuitoEmUso = false;
+
 // 🎵 CARREGAR SOM DE DIGITAÇÃO
 function carregarSomDigitacao() {
     return new Promise((resolve) => {
@@ -210,6 +214,190 @@ function liberarInterfaceFallback() {
     console.log(`✅ ${elementosEscondidos.length} elementos liberados`);
 }
 
+// 🎤 PRÉ-CARREGAR TTS GRATUITO (SILENCIOSO)
+function preCarregarTTSGratuito() {
+    if (ttsGratuitoCarregado || !window.speechSynthesis) return;
+    
+    try {
+        console.log('🔄 Pré-carregando TTS gratuito...');
+        const utterance = new SpeechSynthesisUtterance(" ");
+        utterance.volume = 0; // Silencioso
+        utterance.lang = window.targetTranslationLang || 'pt-BR';
+        
+        utterance.onend = () => {
+            console.log('✅ TTS gratuito pré-carregado!');
+            ttsGratuitoCarregado = true;
+        };
+        
+        utterance.onerror = () => {
+            console.log('❌ Falha no pré-carregamento TTS');
+        };
+        
+        window.speechSynthesis.speak(utterance);
+    } catch (error) {
+        console.error('Erro no pré-carregamento TTS:', error);
+    }
+}
+
+// 🎤 TTS GRATUITO (NAVEGADOR)
+function falarComTTSGratuito(mensagem, elemento, imagemImpaciente) {
+    return new Promise((resolve) => {
+        if (!window.speechSynthesis) {
+            console.log('❌ TTS não suportado');
+            resolve(false);
+            return;
+        }
+
+        ttsGratuitoEmUso = true;
+        window.speechSynthesis.cancel();
+
+        const utterance = new SpeechSynthesisUtterance(mensagem);
+        utterance.lang = window.targetTranslationLang || 'pt-BR';
+        utterance.rate = 0.9;
+        utterance.volume = 0.8;
+
+        utterance.onstart = () => {
+            pararSomDigitacao();
+            console.log('🔊 TTS Gratuito iniciado');
+            
+            if (elemento) {
+                elemento.style.animation = 'none';
+                elemento.style.backgroundColor = '';
+                elemento.style.border = '';
+                elemento.textContent = mensagem;
+            }
+            if (imagemImpaciente) {
+                imagemImpaciente.style.display = 'none';
+            }
+        };
+
+        utterance.onend = () => {
+            console.log('🔚 TTS Gratuito terminado');
+            ttsGratuitoEmUso = false;
+            resolve(true);
+        };
+
+        utterance.onerror = () => {
+            console.log('❌ Erro TTS Gratuito');
+            ttsGratuitoEmUso = false;
+            resolve(false);
+        };
+
+        window.speechSynthesis.speak(utterance);
+    });
+}
+
+// 🎤 TTS PAGO (GOOGLE TTS)
+async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente) {
+    try {
+        console.log('🎤 Iniciando Google TTS para:', mensagem.substring(0, 50) + '...');
+        
+        const resposta = await fetch('https://chat-tradutor.onrender.com/speak', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                text: mensagem,
+                languageCode: window.targetTranslationLang || 'pt-BR',
+                gender: 'FEMALE'
+            })
+        });
+
+        if (!resposta.ok) {
+            throw new Error('Erro na API de voz');
+        }
+
+        const blob = await resposta.blob();
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        
+        return new Promise((resolve) => {
+            audio.onplay = () => {
+                pararSomDigitacao();
+                
+                if (elemento) {
+                    elemento.style.animation = 'none';
+                    elemento.style.backgroundColor = '';
+                    elemento.style.border = '';
+                    elemento.textContent = mensagem;
+                }
+                if (imagemImpaciente) {
+                    imagemImpaciente.style.display = 'none';
+                }
+                
+                console.log('🔊 Áudio Google TTS iniciado');
+            };
+            
+            audio.onended = () => {
+                console.log('🔚 Áudio Google TTS terminado');
+                if (imagemImpaciente) {
+                    imagemImpaciente.style.display = 'none';
+                }
+                resolve(true);
+            };
+            
+            audio.onerror = () => {
+                pararSomDigitacao();
+                console.log('❌ Erro no áudio Google TTS');
+                if (elemento) {
+                    elemento.style.animation = 'none';
+                    elemento.style.backgroundColor = '';
+                    elemento.style.border = '';
+                }
+                if (imagemImpaciente) {
+                    imagemImpaciente.style.display = 'none';
+                }
+                resolve(false);
+            };
+
+            audio.play().catch(error => {
+                console.error('Erro ao reproduzir áudio:', error);
+                resolve(false);
+            });
+        });
+        
+    } catch (error) {
+        console.error('❌ Erro no Google TTS:', error);
+        return false;
+    }
+}
+
+// 🎤 SISTEMA HÍBRIDO INTELIGENTE
+async function falarComSistemaHibrido(mensagem, elemento, imagemImpaciente) {
+    console.log('🤖 Sistema Híbrido ativado para mensagem:', mensagem.substring(0, 30) + '...');
+    
+    // Se TTS gratuito já está carregado e funcionando, usa apenas ele
+    if (ttsGratuitoCarregado && !ttsGratuitoEmUso) {
+        console.log('🚀 Usando TTS Gratuito (já carregado)');
+        return await falarComTTSGratuito(mensagem, elemento, imagemImpaciente);
+    }
+    
+    // Primeira vez: usa ambos os sistemas
+    console.log('🔄 Primeira mensagem - Ativando sistema híbrido...');
+    
+    let resultadoPago = null;
+    let resultadoGratuito = null;
+    
+    // Dispara ambos simultaneamente
+    const promessaPago = falarComGoogleTTS(mensagem, elemento, imagemImpaciente);
+    const promessaGratuito = falarComTTSGratuito(mensagem, elemento, imagemImpaciente);
+    
+    // Race: usa quem responder primeiro
+    try {
+        resultadoPago = await promessaPago;
+        console.log('✅ Google TTS concluído primeiro');
+        
+        // Marca TTS gratuito como carregado para próximas mensagens
+        ttsGratuitoCarregado = true;
+        return resultadoPago;
+        
+    } catch (error) {
+        console.log('❌ Google TTS falhou, aguardando TTS gratuito...');
+        resultadoGratuito = await promessaGratuito;
+        ttsGratuitoCarregado = true;
+        return resultadoGratuito;
+    }
+}
+
 // ✅ FUNÇÃO PARA INICIAR CÂMERA APÓS PERMISSÕES
 async function iniciarCameraAposPermissoes() {
     try {
@@ -256,76 +444,6 @@ async function iniciarCameraAposPermissoes() {
         window.rtcCore.initialize(myId);
         window.rtcCore.setupSocketHandlers();
 
-        // 🎤 FUNÇÃO GOOGLE TTS SEPARADA
-        async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente) {
-            try {
-                console.log('🎤 Iniciando Google TTS para:', mensagem.substring(0, 50) + '...');
-                
-                const resposta = await fetch('https://chat-tradutor.onrender.com/speak', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        text: mensagem,
-                        languageCode: window.targetTranslationLang || 'pt-BR',
-                        gender: 'FEMALE'
-                    })
-                });
-
-                if (!resposta.ok) {
-                    throw new Error('Erro na API de voz');
-                }
-
-                const blob = await resposta.blob();
-                const url = URL.createObjectURL(blob);
-                const audio = new Audio(url);
-                
-                // EVENTO: ÁUDIO COMEÇOU
-                audio.onplay = () => {
-                    pararSomDigitacao();
-                    
-                    if (elemento) {
-                        elemento.style.animation = 'none';
-                        elemento.style.backgroundColor = '';
-                        elemento.style.border = '';
-                        elemento.textContent = mensagem;
-                    }
-                    if (imagemImpaciente) {
-                        imagemImpaciente.style.display = 'none';
-                    }
-                    
-                    console.log('🔊 Áudio Google TTS iniciado');
-                };
-                
-                // EVENTO: ÁUDIO TERMINOU
-                audio.onended = () => {
-                    console.log('🔚 Áudio Google TTS terminado');
-                    if (imagemImpaciente) {
-                        imagemImpaciente.style.display = 'none';
-                    }
-                };
-                
-                // EVENTO: ERRO NO ÁUDIO
-                audio.onerror = () => {
-                    pararSomDigitacao();
-                    console.log('❌ Erro no áudio Google TTS');
-                    if (elemento) {
-                        elemento.style.animation = 'none';
-                        elemento.style.backgroundColor = '';
-                        elemento.style.border = '';
-                    }
-                    if (imagemImpaciente) {
-                        imagemImpaciente.style.display = 'none';
-                    }
-                };
-
-                await audio.play();
-                
-            } catch (error) {
-                console.error('❌ Erro no Google TTS:', error);
-                // Fallback para síntese nativa se necessário
-            }
-        }
-
         window.rtcCore.setDataChannelCallback(async (mensagem) => {
             iniciarSomDigitacao();
 
@@ -348,8 +466,8 @@ async function iniciarCameraAposPermissoes() {
                 imagemImpaciente.style.display = 'block';
             }
 
-            // 🎤 CHAMADA PARA GOOGLE TTS
-            await falarComGoogleTTS(mensagem, elemento, imagemImpaciente);
+            // 🎤 CHAMADA PARA SISTEMA HÍBRIDO INTELIGENTE
+            await falarComSistemaHibrido(mensagem, elemento, imagemImpaciente);
         });
 
         window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
@@ -404,7 +522,9 @@ async function iniciarCameraAposPermissoes() {
 
         aplicarBandeiraLocal(lang);
 
+        // Pré-carrega TTS gratuito após interface estar pronta
         setTimeout(() => {
+            preCarregarTTSGratuito();
             if (typeof initializeTranslator === 'function') {
                 initializeTranslator();
             }
