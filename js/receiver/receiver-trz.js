@@ -41,75 +41,6 @@ async function translateText(text) {
     }
 }
 
-// ===== INICIALIZAÇÃO DO BOTÃO MUNDO (INDEPENDENTE) =====
-function initializeWorldButton() {
-    const currentLanguageFlag = document.getElementById('currentLanguageFlag');
-    const worldButton = document.getElementById('worldButton');
-    const languageDropdown = document.getElementById('languageDropdown');
-    const languageOptions = document.querySelectorAll('.language-option');
-    
-    if (!worldButton || !languageDropdown || !currentLanguageFlag) {
-        console.log('⏳ Aguardando elementos do botão mundo...');
-        setTimeout(initializeWorldButton, 300);
-        return;
-    }
-    
-    console.log('🎯 Inicializando botão mundo...');
-    
-    let IDIOMA_ORIGEM = window.callerLang || navigator.language || 'pt-BR';
-    
-    async function getBandeiraDoJson(langCode) {
-        try {
-            const response = await fetch('./assets/bandeiras/language-flags.json');
-            const flags = await response.json();
-            return flags[langCode] || flags[langCode.split('-')[0]] || '🎌';
-        } catch (error) {
-            console.error('Erro ao carregar bandeiras:', error);
-            return '🎌';
-        }
-    }
-    
-    // Configurar bandeira inicial
-    getBandeiraDoJson(IDIOMA_ORIGEM).then(bandeira => {
-        currentLanguageFlag.textContent = bandeira;
-    });
-
-    // Evento do botão mundo
-    worldButton.addEventListener('click', function(e) {
-        console.log('🎯 Botão Mundo clicado!');
-        e.preventDefault();
-        e.stopPropagation();
-        languageDropdown.classList.toggle('show');
-    });
-
-    // Fechar dropdown ao clicar fora
-    document.addEventListener('click', function(e) {
-        if (!languageDropdown.contains(e.target) && e.target !== worldButton) {
-            languageDropdown.classList.remove('show');
-        }
-    });
-
-    // Eventos das opções de idioma
-    languageOptions.forEach(option => {
-        option.addEventListener('click', async function() {
-            const novoIdioma = this.getAttribute('data-lang');
-            IDIOMA_ORIGEM = novoIdioma;
-            
-            const bandeira = await getBandeiraDoJson(novoIdioma);
-            currentLanguageFlag.textContent = bandeira;
-            
-            languageDropdown.classList.remove('show');
-            
-            // Atualizar idioma no contexto global para o tradutor
-            window.currentSourceLang = novoIdioma;
-            
-            console.log('🌎 Idioma alterado para:', novoIdioma);
-        });
-    });
-    
-    console.log('✅ Botão mundo inicializado com sucesso!');
-}
-
 // ===== INICIALIZAÇÃO DO TRADUTOR =====
 function initializeTranslator() {
     
@@ -143,21 +74,25 @@ function initializeTranslator() {
     });
 
     const recordButton = document.getElementById('recordButton');
+    const translatedText = document.getElementById('translatedText');
     const recordingModal = document.getElementById('recordingModal');
     const recordingTimer = document.getElementById('recordingTimer');
     const sendButton = document.getElementById('sendButton');
     const speakerButton = document.getElementById('speakerButton');
     
-    if (!recordButton) {
+    if (!recordButton || !translatedText) {
         console.log('⏳ Aguardando elementos do tradutor...');
         setTimeout(initializeTranslator, 300);
         return;
     }
     
+    translatedText.textContent = "⏳";
+    
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const SpeechSynthesis = window.speechSynthesis;
     
     if (!SpeechRecognition) {
+        translatedText.textContent = "❌";
         if (recordButton) recordButton.style.display = 'none';
         return;
     }
@@ -196,6 +131,11 @@ function initializeTranslator() {
                 }
             }
             
+            // ✅ CORREÇÃO: NUNCA mostra o que estou falando, apenas o ícone
+            if (translatedText) {
+                translatedText.textContent = "🎤"; // Mantém apenas o ícone
+            }
+            
             // ✅ CORREÇÃO: Processo totalmente silencioso
             if (finalTranscript && !isTranslating) {
                 const now = Date.now();
@@ -206,9 +146,18 @@ function initializeTranslator() {
                     // ✅ Traduz e envia SEM MOSTRAR o processo
                     translateText(finalTranscript).then(translation => {
                         enviarParaOutroCelular(translation); // Envia silenciosamente
+                        
+                        // ✅ Apenas confirmação visual breve
+                        if (translatedText) {
+                            translatedText.textContent = "✅";
+                            setTimeout(() => {
+                                if (translatedText) translatedText.textContent = "🎤";
+                            }, 500);
+                        }
                         isTranslating = false;
                     }).catch(error => {
                         console.error('Erro na tradução:', error);
+                        if (translatedText) translatedText.textContent = "🎤";
                         isTranslating = false;
                     });
                 }
@@ -217,6 +166,9 @@ function initializeTranslator() {
         
         recognition.onerror = function(event) {
             console.log('Erro recognition:', event.error);
+            if (event.error !== 'no-speech' && translatedText) {
+                translatedText.textContent = "❌";
+            }
             stopRecording();
         };
         
@@ -232,6 +184,7 @@ function initializeTranslator() {
             // ✅ CORREÇÃO: Aguarda as permissões do botão principal
             if (permissionCheckAttempts >= MAX_PERMISSION_CHECKS) {
                 console.log('❌ Tempo esgotado aguardando permissões');
+                translatedText.textContent = "🚫";
                 recordButton.disabled = true;
                 return;
             }
@@ -247,6 +200,7 @@ function initializeTranslator() {
             if (hasMicrophonePermission || window.permissoesConcedidas) {
                 microphonePermissionGranted = true;
                 recordButton.disabled = false;
+                translatedText.textContent = "🎤";
                 setupRecognitionEvents();
                 console.log('✅ Microfone autorizado - tradutor pronto');
                 return;
@@ -254,6 +208,7 @@ function initializeTranslator() {
             
             // Se não tem permissão ainda, aguarda e tenta novamente
             console.log(`⏳ Aguardando permissões... (tentativa ${permissionCheckAttempts}/${MAX_PERMISSION_CHECKS})`);
+            translatedText.textContent = "⏳";
             
             setTimeout(() => {
                 requestMicrophonePermission();
@@ -268,6 +223,7 @@ function initializeTranslator() {
                     requestMicrophonePermission();
                 }, 1000);
             } else {
+                translatedText.textContent = "🚫";
                 recordButton.disabled = true;
             }
         }
@@ -335,6 +291,7 @@ function initializeTranslator() {
             updateTimer();
             timerInterval = setInterval(updateTimer, 1000);
             
+            if (translatedText) translatedText.textContent = "🎙️";
             if (speakerButton) {
                 speakerButton.disabled = true;
                 speakerButton.textContent = '🔇';
@@ -342,6 +299,7 @@ function initializeTranslator() {
             
         } catch (error) {
             console.error('Erro ao iniciar gravação:', error);
+            if (translatedText) translatedText.textContent = "❌";
             stopRecording();
         }
     }
@@ -353,6 +311,10 @@ function initializeTranslator() {
         if (recordButton) recordButton.classList.remove('recording');
         clearInterval(timerInterval);
         hideRecordingModal();
+        
+        if (translatedText && !isTranslating) {
+            translatedText.textContent = "🎤";
+        }
     }
     
     function showRecordingModal() {
@@ -435,8 +397,7 @@ function initializeTranslator() {
 // ===== INICIALIZAÇÃO GERAL =====
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM carregado, iniciando aplicação...');
-    initializeWorldButton(); // Inicializa primeiro (independente)
     
-    // ⏳ ATRASO MAIOR para o tradutor - aguarda o botão de permissões
+    // ⏳ ATRASO para o tradutor - aguarda o botão de permissões
     setTimeout(initializeTranslator, 2000); // 2 segundos de delay
 });
