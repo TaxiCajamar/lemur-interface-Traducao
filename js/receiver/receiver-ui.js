@@ -5,8 +5,7 @@ import { QRCodeGenerator } from '../qrcode/qr-code-utils.js';
 let audioContext = null;
 let somDigitacao = null;
 let audioCarregado = false;
-let permissaoMicrofoneConcedida = false;
-let permissaoCameraConcedida = false;
+let permissaoMidiaConcedida = false;
 
 // 🎵 CARREGAR SOM DE DIGITAÇÃO
 function carregarSomDigitacao() {
@@ -69,67 +68,20 @@ function pararSomDigitacao() {
     }
 }
 
-// 🎵 DESBLOQUEAR ÁUDIO (silenciosamente)
-function desbloquearAudio() {
-    if (!audioContext) {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    
-    // Cria um som quase inaudível para desbloquear áudio
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    gainNode.gain.value = 0.001; // Quase mudo
-    oscillator.frequency.value = 1; // Frequência muito baixa
-    oscillator.start();
-    oscillator.stop(audioContext.currentTime + 0.1);
-    
-    console.log('🎵 Áudio desbloqueado silenciosamente');
-}
-
-// 🎤 SOLICITAR PERMISSÃO DO MICROFONE (apenas quando necessário)
-async function solicitarPermissaoMicrofone() {
+// 📹✅ SOLICITA PERMISSÃO MÍNIMA DE MÍDIA (para WebRTC funcionar no mobile)
+async function solicitarPermissaoMidiaMinima() {
     try {
-        console.log('🎤 Solicitando permissão do microfone...');
+        console.log('📹🎤 Receiver: Solicitando permissão mínima de mídia para WebRTC...');
         
-        const stream = await navigator.mediaDevices.getUserMedia({
-            audio: {
-                echoCancellation: true,
-                noiseSuppression: true,
-                sampleRate: 44100
-            }
-        });
-        
-        console.log('✅ Permissão do microfone concedida!');
-        permissaoMicrofoneConcedida = true;
-        
-        // Para o stream imediatamente - só precisávamos da permissão
-        stream.getTracks().forEach(track => track.stop());
-        
-        return true;
-        
-    } catch (error) {
-        console.error('❌ Erro na permissão do microfone:', error);
-        permissaoMicrofoneConcedida = false;
-        throw error;
-    }
-}
-
-// 📹 SOLICITAR PERMISSÃO DA CÂMERA (apenas quando necessário)
-async function solicitarPermissaoCamera() {
-    try {
-        console.log('📹 Solicitando permissão da câmera...');
-        
+        // No mobile, precisamos de pelo menos UMA permissão de mídia
+        // antes do WebRTC funcionar. Vamos tentar a câmera primeiro.
         const stream = await navigator.mediaDevices.getUserMedia({
             video: true,
             audio: false
         });
         
-        console.log('✅ Permissão da câmera concedida!');
-        permissaoCameraConcedida = true;
+        console.log('✅ Receiver: Permissão de mídia concedida! WebRTC pode funcionar.');
+        permissaoMidiaConcedida = true;
         
         // Configura o vídeo local
         const localVideo = document.getElementById('localVideo');
@@ -146,9 +98,32 @@ async function solicitarPermissaoCamera() {
         return stream;
         
     } catch (error) {
-        console.error('❌ Erro na permissão da câmera:', error);
-        permissaoCameraConcedida = false;
-        throw error;
+        console.error('❌ Receiver: Usuário recusou a câmera, tentando microfone...', error);
+        
+        // Se a câmera falhou, tenta apenas o microfone
+        try {
+            const audioStream = await navigator.mediaDevices.getUserMedia({
+                video: false,
+                audio: true
+            });
+            
+            console.log('✅ Receiver: Permissão de áudio concedida! WebRTC pode funcionar.');
+            permissaoMidiaConcedida = true;
+            
+            // Para o stream de áudio - só precisávamos da permissão
+            audioStream.getTracks().forEach(track => track.stop());
+            
+            return audioStream;
+            
+        } catch (audioError) {
+            console.error('❌ Receiver: Usuário recusou TODAS as permissões de mídia:', audioError);
+            permissaoMidiaConcedida = false;
+            
+            // Mostra alerta explicativo
+            alert('Para receber chamadas, é necessário permitir o acesso à câmera ou microfone. A conexão WebRTC não funcionará sem pelo menos uma permissão de mídia.');
+            
+            throw audioError;
+        }
     }
 }
 
@@ -197,9 +172,6 @@ async function aplicarBandeiraLocal(langCode) {
         const flags = await response.json();
 
         const bandeira = flags[langCode] || flags[langCode.split('-')[0]] || '🔴';
-
-        const localLangElement = document.querySelector('.local-mic-Lang');
-        if (localLangElement) localLangElement.textContent = bandeira;
 
         const localLangDisplay = document.querySelector('.local-Lang');
         if (localLangDisplay) localLangDisplay.textContent = bandeira;
@@ -250,7 +222,6 @@ async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente) {
         const url = URL.createObjectURL(blob);
         const audio = new Audio(url);
         
-        // EVENTO: ÁUDIO COMEÇOU
         audio.onplay = () => {
             pararSomDigitacao();
             
@@ -267,7 +238,6 @@ async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente) {
             console.log('🔊 Áudio Google TTS iniciado');
         };
         
-        // EVENTO: ÁUDIO TERMINOU
         audio.onended = () => {
             console.log('🔚 Áudio Google TTS terminado');
             if (imagemImpaciente) {
@@ -275,7 +245,6 @@ async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente) {
             }
         };
         
-        // EVENTO: ERRO NO ÁUDIO
         audio.onerror = () => {
             pararSomDigitacao();
             console.log('❌ Erro no áudio Google TTS');
@@ -293,14 +262,13 @@ async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente) {
         
     } catch (error) {
         console.error('❌ Erro no Google TTS:', error);
-        // Fallback para síntese nativa se necessário
     }
 }
 
-// ✅ FUNÇÃO PARA INICIAR WEBRTC SEM MÍDIA
-async function iniciarWebRTCAposCarregamento() {
+// ✅ FUNÇÃO PARA INICIAR WEBRTC (AGORA COM PERMISSÃO DE MÍDIA)
+async function iniciarWebRTCAposPermissao() {
     try {
-        console.log('🌐 Inicializando WebRTC sem mídia...');
+        console.log('🌐 Receiver: Inicializando WebRTC...');
         window.rtcCore = new WebRTCCore();
 
         const url = window.location.href;
@@ -364,7 +332,7 @@ async function iniciarWebRTCAposCarregamento() {
 
             console.log('🎯 Vou traduzir:', idiomaDoCaller, '→', lang);
 
-            // Aceita a chamada SEM stream local inicial
+            // ✅ AGORA temos permissão de mídia, podemos aceitar a chamada
             window.rtcCore.handleIncomingCall(offer, null, (remoteStream) => {
                 remoteStream.getAudioTracks().forEach(track => track.enabled = false);
 
@@ -413,48 +381,35 @@ async function iniciarWebRTCAposCarregamento() {
         }, 1000);
 
     } catch (error) {
-        console.error("Erro ao iniciar WebRTC:", error);
+        console.error("Receiver: Erro ao iniciar WebRTC:", error);
         throw error;
     }
 }
 
-// 🎯 CONFIGURA BOTÃO DA CÂMERA
-function configurarBotaoCamera() {
-    const pipWrapper = document.querySelector('.pip-local-wrapper');
-    if (!pipWrapper) return;
-    
-    pipWrapper.style.cursor = 'pointer';
-    pipWrapper.addEventListener('click', async function() {
-        try {
-            console.log('📹 Usuário clicou para ativar câmera...');
-            await solicitarPermissaoCamera();
-        } catch (error) {
-            console.error('❌ Usuário recusou a câmera:', error);
-            alert('Para usar a câmera, por favor permita o acesso quando solicitado.');
-        }
-    });
-}
-
+// ✅ INICIALIZAÇÃO CORRETA PARA MOBILE
 window.onload = async () => {
     try {
         console.log('🚀 Iniciando aplicação Receiver...');
         
-        // 1. ✅ DESBLOQUEIA ÁUDIO SILENCIOSAMENTE
-        desbloquearAudio();
-        
-        // 2. ✅ CARREGA SONS EM BACKGROUND
+        // 1. ✅ CARREGA SONS EM BACKGROUND
         await carregarSomDigitacao();
         
-        // 3. ✅ INICIA WEBRTC (sem mídia)
-        await iniciarWebRTCAposCarregamento();
+        // 2. ✅✅✅ SOLICITA PERMISSÃO DE MÍDIA (CRÍTICO PARA MOBILE)
+        console.log('📱 Receiver Mobile: Solicitando permissão de mídia para WebRTC...');
+        await solicitarPermissaoMidiaMinima();
         
-        // 4. ✅ CONFIGURA BOTÃO DA CÂMARA
-        configurarBotaoCamera();
+        // 3. ✅ INICIA WEBRTC (AGORA COM PERMISSÃO)
+        await iniciarWebRTCAposPermissao();
         
         console.log('✅ Aplicação Receiver iniciada com sucesso!');
 
     } catch (error) {
-        console.error("Erro ao inicializar aplicação:", error);
-        alert("Erro ao inicializar a aplicação.");
+        console.error("Receiver: Erro ao inicializar aplicação:", error);
+        
+        if (!permissaoMidiaConcedida) {
+            alert("Não foi possível configurar o receiver. É necessário permitir o acesso à câmera ou microfone para receber chamadas.");
+        } else {
+            alert("Erro ao inicializar o receiver. Verifique sua internet e tente novamente.");
+        }
     }
 };
