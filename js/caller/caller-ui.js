@@ -267,15 +267,30 @@ function iniciarAudio() {
 // 🎤 SOLICITAR TODAS AS PERMISSÕES DE UMA VEZ (seu código original)
 async function solicitarTodasPermissoes() {
     try {
-        console.log('🎯 Solicitando todas as permissões...');
+        console.log('🎯 Solicitando permissões separadamente...');
         
-        const stream = await navigator.mediaDevices.getUserMedia({
+        // 1. PRIMEIRO: Só câmera (mais fácil de autorizar)
+        const videoStream = await navigator.mediaDevices.getUserMedia({
             video: true,
-            audio: true
+            audio: false  // ✅ Só vídeo primeiro
         });
         
-        console.log('✅ Todas as permissões concedidas!');
-       
+        console.log('✅ Câmera autorizada!');
+        
+        // Para o stream de vídeo (não precisamos dele aqui)
+        videoStream.getTracks().forEach(track => track.stop());
+        
+        // 2. DEPOIS: Só áudio 
+        const audioStream = await navigator.mediaDevices.getUserMedia({
+            video: false,
+            audio: true  // ✅ Agora só áudio
+        });
+        
+        console.log('✅ Microfone autorizado!');
+        
+        // Para o stream de áudio
+        audioStream.getTracks().forEach(track => track.stop());
+        
         permissaoConcedida = true;
         window.permissoesConcedidas = true;
         window.audioContext = audioContext;
