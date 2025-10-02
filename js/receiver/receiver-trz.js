@@ -90,11 +90,13 @@ function initializeTranslator() {
     const SpeechSynthesis = window.speechSynthesis;
     
     if (!SpeechRecognition) {
+        console.log('❌ Navegador não suporta reconhecimento de voz');
         if (recordButton) recordButton.style.display = 'none';
         return;
     }
     
     if (!SpeechSynthesis && speakerButton) {
+        console.log('❌ Navegador não suporta síntese de voz');
         speakerButton.style.display = 'none';
     }
     
@@ -149,6 +151,9 @@ function initializeTranslator() {
         
         recognition.onerror = function(event) {
             console.log('Erro recognition:', event.error);
+            if (event.error === 'not-allowed') {
+                alert('Permissão do microfone negada. Por favor, permita o acesso ao microfone para usar esta função.');
+            }
             stopRecording();
         };
         
@@ -159,49 +164,40 @@ function initializeTranslator() {
         };
     }
     
-    async function requestMicrophonePermission() {
+    // ✅ FUNÇÃO DE PERMISSÃO DO MICROFONE (SÓ NO PRIMEIRO CLIQUE)
+    async function solicitarPermissaoMicrofonePrimeiraVez() {
         try {
-            // ✅ CORREÇÃO: Aguarda as permissões do botão principal
-            if (permissionCheckAttempts >= MAX_PERMISSION_CHECKS) {
-                console.log('❌ Tempo esgotado aguardando permissões');
-                recordButton.disabled = true;
-                return;
-            }
+            console.log('🎤 Solicitando permissão do microfone pela primeira vez...');
             
-            permissionCheckAttempts++;
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    sampleRate: 44100
+                }
+            });
             
-            // Verifica se as permissões já foram concedidas
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const hasMicrophonePermission = devices.some(device => 
-                device.kind === 'audioinput' && device.deviceId !== ''
-            );
+            console.log('✅ Permissão do microfone concedida!');
+            microphonePermissionGranted = true;
             
-            if (hasMicrophonePermission || window.permissoesConcedidas) {
-                microphonePermissionGranted = true;
-                recordButton.disabled = false;
-                setupRecognitionEvents();
-                console.log('✅ Microfone autorizado - tradutor pronto');
-                return;
-            }
+            // Para o stream imediatamente - só precisávamos da permissão
+            stream.getTracks().forEach(track => track.stop());
             
-            // Se não tem permissão ainda, aguarda e tenta novamente
-            console.log(`⏳ Aguardando permissões... (tentativa ${permissionCheckAttempts}/${MAX_PERMISSION_CHECKS})`);
+            // Agora configura os eventos de reconhecimento
+            setupRecognitionEvents();
             
-            setTimeout(() => {
-                requestMicrophonePermission();
-            }, 1000);
+            return true;
             
         } catch (error) {
-            console.error('Erro ao verificar permissões:', error);
+            console.error('❌ Erro na permissão do microfone:', error);
+            microphonePermissionGranted = false;
             
-            // Se deu erro, tenta novamente após um tempo
-            if (permissionCheckAttempts < MAX_PERMISSION_CHECKS) {
-                setTimeout(() => {
-                    requestMicrophonePermission();
-                }, 1000);
-            } else {
-                recordButton.disabled = true;
+            // Mostra alerta amigável para o usuário
+            if (error.name === 'NotAllowedError') {
+                alert('Para usar o tradutor de voz, por favor permita o acesso ao microfone quando solicitado.');
             }
+            
+            throw error;
         }
     }
     
@@ -310,13 +306,26 @@ function initializeTranslator() {
     if (recordButton) {
         recordButton.addEventListener('touchstart', function(e) {
             e.preventDefault();
-            if (recordButton.disabled || !microphonePermissionGranted || isTranslating) return;
+            if (isTranslating) return;
             
             if (!isRecording) {
                 pressTimer = setTimeout(() => {
                     tapMode = false;
-                    startRecording();
-                    showRecordingModal();
+                    
+                    // ✅ SOLICITA PERMISSÃO SÓ NO PRIMEIRO CLIQUE
+                    if (!microphonePermissionGranted) {
+                        solicitarPermissaoMicrofonePrimeiraVez()
+                            .then(() => {
+                                startRecording();
+                                showRecordingModal();
+                            })
+                            .catch(error => {
+                                console.error('Não foi possível acessar o microfone:', error);
+                            });
+                    } else {
+                        startRecording();
+                        showRecordingModal();
+                    }
                 }, 300);
             }
         });
@@ -328,23 +337,48 @@ function initializeTranslator() {
             if (isRecording) {
                 stopRecording();
             } else {
-                if (microphonePermissionGranted && !isTranslating) {
+                if (!isTranslating) {
                     tapMode = true;
-                    startRecording();
-                    showRecordingModal();
+                    
+                    // ✅ SOLICITA PERMISSÃO SÓ NO PRIMEIRO CLIQUE
+                    if (!microphonePermissionGranted) {
+                        solicitarPermissaoMicrofonePrimeiraVez()
+                            .then(() => {
+                                startRecording();
+                                showRecordingModal();
+                            })
+                            .catch(error => {
+                                console.error('Não foi possível acessar o microfone:', error);
+                            });
+                    } else {
+                        startRecording();
+                        showRecordingModal();
+                    }
                 }
             }
         });
         
         recordButton.addEventListener('click', function(e) {
             e.preventDefault();
-            if (recordButton.disabled || !microphonePermissionGranted || isTranslating) return;
+            if (isTranslating) return;
             
             if (isRecording) {
                 stopRecording();
             } else {
-                startRecording();
-                showRecordingModal();
+                // ✅ SOLICITA PERMISSÃO SÓ NO PRIMEIRO CLIQUE
+                if (!microphonePermissionGranted) {
+                    solicitarPermissaoMicrofonePrimeiraVez()
+                        .then(() => {
+                            startRecording();
+                            showRecordingModal();
+                        })
+                        .catch(error => {
+                            console.error('Não foi possível acessar o microfone:', error);
+                        });
+                } else {
+                    startRecording();
+                    showRecordingModal();
+                }
             }
         });
     }
@@ -357,16 +391,13 @@ function initializeTranslator() {
         speakerButton.addEventListener('click', toggleSpeech);
     }
     
-    // Inicia a verificação de permissões
-    requestMicrophonePermission();
-    
-    console.log('✅ Tradutor inicializado com sucesso!');
+    console.log('✅ Tradutor Receiver configurado (aguardando primeiro clique no microfone)');
 }
 
 // ===== INICIALIZAÇÃO GERAL =====
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM carregado, iniciando aplicação...');
     
-    // ⏳ ATRASO para o tradutor - aguarda o botão de permissões
-    setTimeout(initializeTranslator, 2000); // 2 segundos de delay
+    // ⏳ ATRASO para o tradutor - aguarda o WebRTC inicializar
+    setTimeout(initializeTranslator, 2000);
 });
