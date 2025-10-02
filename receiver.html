@@ -6,72 +6,11 @@
     <title>Lemur-EchoMeP2P-Receiver</title>
     <link rel="stylesheet" href="mobile-style.css" />
     <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
-    
-    <style>
-        /* 🚫 TELA DE BLOQUEIO INICIAL */
-        #loadingScreen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
-            color: white;
-            text-align: center;
-            font-family: Arial, sans-serif;
-        }
-        
-        .loading-logo {
-            width: 120px;
-            height: 120px;
-            margin-bottom: 20px;
-            animation: pulse 2s infinite;
-        }
-        
-        .loading-text {
-            font-size: 18px;
-            margin-bottom: 10px;
-            font-weight: bold;
-        }
-        
-        .loading-subtext {
-            font-size: 14px;
-            opacity: 0.8;
-            max-width: 80%;
-            line-height: 1.4;
-        }
-        
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-        
-        /* 🚫 ESCONDE TUDO ATÉ LIBERAR */
-        .hidden-until-ready {
-            display: none !important;
-        }
-    </style>
 </head>
 <body>
     
-    <!-- 🚫 TELA DE CARREGAMENTO/CONFIRMAÇÃO -->
-    <div id="loadingScreen">
-        <img src="assets/images/lemurp2p.png" alt="Lemur Logo" class="loading-logo">
-        <div class="loading-text">Lemur EchoMe P2P</div>
-        <div class="loading-subtext">
-            Aguarde...<br>
-            O aplicativo será iniciado em instantes
-        </div>
-    </div>
-    
-    <!-- ✅ CONTEÚDO PRINCIPAL (ESCONDIDO INICIALMENTE) -->
-    <div class="box-principal hidden-until-ready">
+    <!-- ✅ CONTEÚDO PRINCIPAL VISÍVEL DIRETO -->
+    <div class="box-principal">
                       
         <img src="assets/images/lemurp2p.png" alt="Lemur Logo" class="logo">
         <img src="assets/images/Bridg.png" alt="ponte" class="ponte">
@@ -91,9 +30,13 @@
     <div class="video-wrapper">
         <video id="remoteVideo" autoplay playsinline></video>
 
-        <!-- 🎥 Vídeo local em PiP -->
+        <!-- 🎥 Vídeo local em PiP (com placeholder) -->
         <div class="pip-local-wrapper">
             <video id="localVideo" autoplay muted playsinline></video>
+            <div class="camera-placeholder" id="cameraPlaceholder">
+                <div class="camera-icon">📹</div>
+                <div class="camera-text">Ativar Câmera</div>
+            </div>
         </div>
     </div>
 
@@ -105,32 +48,23 @@
                 You can ask to scan, share or print on your business card.
             </p>
         </div>
-        
-        <!-- ===== TRADUTOR POR VOZ ===== -->
-        
-        <!-- Caixa de Texto -->
-        <div class="text-box">
-            <div class="text-display">
-                <div class="text-title">
-                    🌐
-                    <button class="speaker-btn" id="speakerButton" disabled>🔊</button>
-                </div>
-                <div id="translatedText" class="text-content">🎤</div>
-            </div>
-        </div>
 
+        <!-- ✅ CAIXA PRINCIPAL DE TEXTO -->
         <div id="texto-recebido"></div>
 
         <!-- 🏳️ Bandeira do idioma local -->
         <div class="language-flag" id="currentLanguageFlag">🇧🇷</div>
 
         <!-- 🎤 Microfone -->
-        <button class="record-btn" id="recordButton" disabled>🎤</button>
+        <button class="record-btn" id="recordButton">🎤</button>
+
+        <!-- 🔊 Botão de áudio -->
+        <button class="speaker-btn" id="speakerButton" disabled>🔊</button>
              
     </div>
 
     <!-- Modal de gravação -->
-    <div class="recording-modal hidden-until-ready" id="recordingModal">
+    <div class="recording-modal" id="recordingModal">
         <div class="recording-indicator">
             <div class="recording-dot"></div>
             <div class="recording-text">●</div>
@@ -141,45 +75,6 @@
 
     <!-- 🔌 Scripts -->
     <script src="https://lemur-signal-ings.onrender.com/socket.io/socket.io.js"></script>
-    
-    <script>
-        // ✅ FUNÇÃO GLOBAL PARA LIBERAR A INTERFACE
-        window.liberarInterface = function() {
-            console.log('✅ Liberando interface...');
-            
-            // Remove tela de loading
-            const loadingScreen = document.getElementById('loadingScreen');
-            if (loadingScreen) {
-                loadingScreen.style.display = 'none';
-            }
-            
-            // Mostra conteúdo principal
-            const elementosEscondidos = document.querySelectorAll('.hidden-until-ready');
-            elementosEscondidos.forEach(elemento => {
-                elemento.classList.remove('hidden-until-ready');
-            });
-            
-            console.log('✅ Interface liberada com sucesso!');
-        };
-        
-        // ✅ SE HOUVER ERRO, MOSTRA MENSAGAM
-        window.mostrarErroCarregamento = function(mensagem) {
-            const loadingScreen = document.getElementById('loadingScreen');
-            if (loadingScreen) {
-                loadingScreen.innerHTML = `
-                    <div style="text-align: center; padding: 20px;">
-                        <div style="font-size: 48px; margin-bottom: 20px;">❌</div>
-                        <div class="loading-text">Erro no Carregamento</div>
-                        <div class="loading-subtext">${mensagem}</div>
-                        <button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px; background: white; color: #667eea; border: none; border-radius: 10px; cursor: pointer;">
-                            Tentar Novamente
-                        </button>
-                    </div>
-                `;
-            }
-        };
-    </script>
-    
     <script type="module" src="./js/receiver/receiver-ui.js"></script>
     <script src="./js/receiver/receiver-trz.js"></script>
 </body>
