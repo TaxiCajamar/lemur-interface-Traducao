@@ -4,6 +4,7 @@ html {
   font-size: clamp(14px, 2.5vw, 18px);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   text-align: center;
+  transition: background-color 0.5s;
 }
 
 body {
@@ -26,9 +27,27 @@ body {
 }
 
 /* ESTILO PARA O ELEMENTO QUE EXIBE MENSAGENS RECEBIDAS */
+
+.lemur-fixed {
+    position: absolute;
+    top: 52%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 130px;
+    height: auto;
+    z-index: 25;
+    pointer-events: none;
+    transition: opacity 0.5s ease-in-out;
+    opacity: 1; /* Começa visível */
+}
+
+.lemur-fixed.hidden {
+    opacity: 0; /* Some suavemente */
+}
+
 #texto-recebido {
   position: absolute;
-  top: 65%;
+  top:65%;
   left: 50%;
   transform: translate(-50%, -50%);
   font-size: 1.2em;
@@ -37,8 +56,8 @@ body {
   border: 0.2vh solid #4CAF50;
   border-radius: 1vh;
   background-color: #f8f9fa;
-  width: 90%;
-  height: 15%;
+  width: 90%;         /* ✅ largura em porcentagem */
+  height: 15%;        /* ✅ altura em porcentagem */
   max-width: 500px;
   text-align: center;
   color: #333;
@@ -61,70 +80,46 @@ body {
   z-index: 40;
 }
 
-/* ===== BOTÃO DO GLOBO ===== */
-.world-wrapper {
-  position: absolute;
-  top: 40%;
-  left: 69%;
-  z-index: 30;
-}
-
-.world-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 5px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  transition: background-color 0.3s ease;
-}
-
-.world-btn:hover {
-  background-color: rgba(255, 255, 255, 0.3);
-}
-
-.world-image {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  display: block;
-}
-
-/* 🏳️ Bandeira */
-.language-flag {
-  position: absolute;
-  top: 53%;
-  left: 83.6%;
-  font-size: 2rem;
-  z-index: 40;
-}
-
-/* BOTÃO DE GRAVAÇÃO */
+/* ESTILO ORIGINAL DO BOTÃO (quando inativo) */
 .record-btn {
-  position: absolute;
-  top: 46%;
-  left: 78%;
-  width: 65px;
-  height: 65px;
-  border-radius: 50%;
-  background: #ff4757;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-  cursor: pointer;
-  border: none;
-  color: white;
-  transition: transform 0.2s;
-  z-index: 30;
+    position: absolute;
+    top: 46%;
+    left: 78%;
+    width: 65px;
+    height: 65px;
+    border-radius: 50%;
+    background: #ff4757; /* Vermelho mais forte */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    cursor: pointer;
+    border: none;
+    color: white;
+    transition: transform 0.2s, background-color 0.3s;
+    z-index: 30;
+}
+
+/* Botão GRAVANDO - Verde vibrante */
+.record-btn.recording {
+    background: #2ed573; /* Verde mais forte */
+    animation: pulse 1.5s infinite;
 }
 
 .record-btn:active {
   transform: scale(0.95);
+}
+
+/* Para diferenciar caller vs receiver */
+
+caller.html #texto-recebido {
+  border-color: #2196F3; /* Azul para caller */
+  background-color: #e3f2fd;
+}
+
+receiver.html #texto-recebido {
+  border-color: #4CAF50; /* Verde para receiver */
+  background-color: #f1f8e9;
 }
 
 .logo {
@@ -139,10 +134,10 @@ body {
 
 .ponte {
   position: absolute;
-  bottom: 60.2%;
-  right: 2%;
-  width: 35%;
-  height: 15%;
+  bottom: 60.2%;               /* 20% da altura da box */
+  right:2%;                 /* 5% da largura da box */
+  width: 35%;                /* largura relativa à box */
+  height: 15%;               /* altura relativa à box */
   transform: translateX(-17%);
   border-radius: 8px;
   overflow: hidden;
@@ -165,12 +160,13 @@ body {
 }
 
 /* ===== VÍDEO REMOTO ===== */
+
 .video-wrapper {
   position: absolute;
-  bottom: 45%;
-  right: 50%;
-  width: 35%;
-  height: 30%;
+  bottom: 45%;               /* 20% da altura da box */
+  right: 50%;                 /* 5% da largura da box */
+  width: 35%;                /* largura relativa à box */
+  height: 30%;               /* altura relativa à box */
   transform: translateX(-17%);
   border-radius: 8px;
   overflow: hidden;
@@ -186,13 +182,14 @@ body {
 }
 
 /* ===== PiP LOCAL ===== */
+
 .pip-local-wrapper {
   position: absolute;
   bottom: 5%;
   right: 5%;
   width: 30%;
   height: 30%;
-  border: 0.3vw solid #2196F3;
+  border: 0.3vw solid #2196F3; /* Azul */
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
@@ -206,11 +203,12 @@ body {
 }
 
 /* ===== CIRCULO DA BANDEIRA ===== */
+
 .remoter-Lang {
   position: absolute;
   top: 31%;
   left: 83%;
-  font-size: 6vw;
+  font-size: 6vw;       /* controla o tamanho do emoji */
   line-height: 1;
   z-index: 10;
 }
@@ -219,26 +217,47 @@ body {
   position: absolute;
   top: 31%;
   left: 58%;
-  font-size: 6vw;
+  font-size: 6vw;       /* controla o tamanho do emoji */
   line-height: 1;
   z-index: 10;
 }
 
+/* ===== CONTROLES ===== */
+
+.callActionBtn {
+  position: absolute;
+  top: 70%;               /* distância do topo */
+  left: 50%;              /* posiciona no centro horizontal */
+  width: 60%;
+  height: 6%;
+  border-radius: 50px;
+  border: none;
+  font-size: 1em;
+  font-weight: bold;
+  color: white;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  background: #4CAF50;
+  z-index: 1000
+}
+
 /* ===== OVERLAY DE QR CODE ===== */
+
 .info-overlay {
   position: absolute;
-  top: 23%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80%;
-  background-color: white;
-  border-radius: 20px;
-  padding: 2% 3%;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  top: 23%;               /* distância do topo */
+  left: 50%;              /* posiciona no centro horizontal */
+  transform: translateX(-50%); /* centraliza horizontalmente */
+  width: 80%;             /* ocupa 80% da largura da tela */
+  background-color: white; /* fundo branco */
+  border-radius: 20px;    /* cantos arredondados */
+  padding: 2% 3%;         /* espaçamento interno */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* sombra suave */
   z-index: 50;
   text-align: center;
 }
 
+/* Mantém o container interno com fundo branco e sombra */
 .qrcode-container {
   margin: 2% auto;
   padding: 3%;
@@ -254,19 +273,23 @@ body {
   white-space: nowrap;
   text-align: center;
   font-weight: bold;
-  width: fit-content;
-  max-width: 100%;
-  margin: 0 auto;
+  width: fit-content;       /* Adapta à largura do conteúdo */
+  max-width: 100%;          /* Evita ultrapassar o container pai */
+  margin: 0 auto;           /* Centraliza horizontalmente */
 }
 
 .qr-modal-description {
-  font-size: 1.5rem;
-  margin-bottom: 20%;
+  font-size: 1.5rem;            /* Tamanho relativo à altura da box */
+  margin-bottom: 20%;          /* Espaço abaixo do parágrafo */
   color: #555;
   line-height: 140%;
   text-align: center;
   font-weight: bold;
   width: 100%;
+}
+.info-overlay {
+  transition: opacity 0.5s ease;
+  opacity: 1;
 }
 
 .info-overlay.hidden {
@@ -274,47 +297,98 @@ body {
   pointer-events: none;
 }
 
-/* Dropdown de idiomas */
-.language-dropdown {
-  position: absolute;
-  bottom: 100%;
+/* Modal de gravação */
+
+.recording-modal {
+  position: fixed;
+  bottom: -100%;
   left: 50%;
   transform: translateX(-50%);
-  background: white;
-  border-radius: 12px;
-  padding: 2%;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-  z-index: 40;
-  display: none;
+  width: 80%;
+  max-width: 320px;
+  background: rgba(0, 0, 0, 0.85);
+  border-radius: 20px;
+  padding: 6% 8%;
+  display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2%;
-  width: auto;
-  min-width: 20px;
+  transition: bottom 0.5s ease;
+  z-index: 40;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
 }
 
-.language-dropdown.show {
+.recording-modal.visible {
+  bottom: 15%;
+}
+
+.recording-indicator {
   display: flex;
+  align-items: center;
+  margin-bottom: 4%;
+  width: 100%;
 }
 
-.language-option {
-  font-size: 1.2rem;
-  width: 30px;
-  height: 30px;
+.recording-dot {
+  width: 12px;
+  height: 12px;
+  background: #ff6b6b;
+  border-radius: 50%;
+  margin-right: 10px;
+  animation: blink 1s infinite;
+}
+
+.recording-text {
+  color: white;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.recording-timer {
+  color: white;
+  font-size: 0.9rem;
+  margin-left: auto;
+}
+
+.send-button {
+  width: 15%;
+  height: 15%;
+  max-width: 60px;
+  max-height: 60px;
+  border-radius: 50%;
+  background: #219ebc;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: white;
+  font-size: 1.5rem;
   cursor: pointer;
-  border-radius: 50%;
-  transition: all 0.2s ease;
+  border: none;
+  transition: all 0.3s ease;
 }
 
-.language-option:hover {
-  transform: scale(1.1);
-  background-color: #f0f8ff;
+.send-button:active {
+  transform: scale(0.95);
+  background: #126782;
 }
 
 /* Animações */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes blink {
+  0% { opacity: 1; }
+  50% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+
+@keyframes pulsar {
+  0% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.02); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.8; }
+}
 @keyframes pulsar-flutuar-intenso {
   0% { 
     box-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
