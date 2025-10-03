@@ -68,25 +68,6 @@ body {
     pointer-events: auto;
 }
 
-
-/* ESTILO PARA O ELEMENTO QUE EXIBE MENSAGENS RECEBIDAS */
-.lemur-fixed {
-    position: absolute;
-    top: 52%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 130px;
-    height: auto;
-    z-index: 25;
-    pointer-events: none;
-    transition: opacity 0.5s ease-in-out;
-    opacity: 1;
-}
-
-.lemur-fixed.hidden {
-    opacity: 0;
-}
-
 #texto-recebido {
   position: absolute;
   top:65%;
