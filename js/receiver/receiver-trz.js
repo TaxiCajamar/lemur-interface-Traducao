@@ -203,20 +203,31 @@ function initializeTranslator() {
             
             permissionCheckAttempts++;
             
-            // ✅ TENTATIVA MAIS AGRESSIVA: Tenta solicitar microfone diretamente
+            // ✅ TENTATIVA ÚNICA: Solicita microfone E áudio juntos
             try {
+                console.log('🎤🎵 Solicitando microfone e áudio juntos...');
+                
+                // Solicita microfone
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 console.log('✅ Permissão do microfone concedida!');
                 
+                // Para as tracks imediatamente
                 stream.getTracks().forEach(track => track.stop());
+                
+                // ✅ LIBERA ÁUDIO/MP3 também
+                if (!audioPermissionGranted) {
+                    await solicitarPermissaoAudio();
+                }
                 
                 microphonePermissionGranted = true;
                 recordButton.disabled = false;
                 setupRecognitionEvents();
+                
+                console.log('✅ Microfone + Áudio liberados! Tradutor pronto.');
                 return;
                 
             } catch (error) {
-                console.log('⏳ Aguardando permissões do microfone...');
+                console.log('⏳ Aguardando permissões do microfone...', error);
             }
             
             // Fallback: verifica se já tem permissão
@@ -225,11 +236,17 @@ function initializeTranslator() {
                 device.kind === 'audioinput' && device.deviceId !== ''
             );
             
-            if (hasMicrophonePermission || window.permissoesConcedidas) {
+            if (hasMicrophonePermission) {
                 microphonePermissionGranted = true;
                 recordButton.disabled = false;
                 setupRecognitionEvents();
-                console.log('✅ Microfone autorizado - tradutor pronto');
+                
+                // ✅ LIBERA ÁUDIO/MP3 também
+                if (!audioPermissionGranted) {
+                    await solicitarPermissaoAudio();
+                }
+                
+                console.log('✅ Microfone já autorizado + Áudio liberado!');
                 return;
             }
             
@@ -353,22 +370,52 @@ function initializeTranslator() {
     }
     
     if (recordButton) {
-        recordButton.addEventListener('touchstart', async function(e) {
+        recordButton.addEventListener('click', async function(e) {
             e.preventDefault();
             
-            // ✅ UM CLIQUE SÓ: Solicita permissão de áudio E inicia gravação
-            if (!audioPermissionGranted) {
-                console.log('🎵 Solicitando permissão de áudio e iniciando gravação...');
-                await solicitarPermissaoAudio();
+            console.log('🎤 Clique no microfone detectado');
+            
+            // Se já tem permissões, inicia gravação normalmente
+            if (microphonePermissionGranted && audioPermissionGranted) {
+                if (isRecording) {
+                    stopRecording();
+                } else {
+                    startRecording();
+                    showRecordingModal();
+                }
+                return;
             }
             
+            // ✅ SE NÃO TEM PERMISSÕES: Solicita microfone + áudio
+            console.log('🎤🎵 Primeiro clique: solicitando microfone + áudio...');
+            
+            try {
+                // Tenta obter permissão do microfone
+                await requestMicrophonePermission();
+                
+                // Se conseguiu, inicia gravação automaticamente
+                if (microphonePermissionGranted && !recordButton.disabled) {
+                    console.log('✅ Permissões concedidas! Iniciando gravação...');
+                    startRecording();
+                    showRecordingModal();
+                }
+                
+            } catch (error) {
+                console.error('❌ Erro ao solicitar permissões:', error);
+            }
+        });
+        
+        // Mantém os eventos touch para mobile
+        recordButton.addEventListener('touchstart', function(e) {
+            e.preventDefault();
             if (recordButton.disabled || isTranslating) return;
             
             if (!isRecording) {
                 pressTimer = setTimeout(() => {
-                    tapMode = false;
-                    startRecording();
-                    showRecordingModal();
+                    if (!isRecording) {
+                        startRecording();
+                        showRecordingModal();
+                    }
                 }, 300);
             }
         });
@@ -379,31 +426,6 @@ function initializeTranslator() {
             
             if (isRecording) {
                 stopRecording();
-            } else {
-                if (!isTranslating && audioPermissionGranted) {
-                    tapMode = true;
-                    startRecording();
-                    showRecordingModal();
-                }
-            }
-        });
-        
-        recordButton.addEventListener('click', async function(e) {
-            e.preventDefault();
-            
-            // ✅ UM CLIQUE SÓ: Solicita permissão de áudio E inicia gravação
-            if (!audioPermissionGranted) {
-                console.log('🎵 Solicitando permissão de áudio e iniciando gravação...');
-                await solicitarPermissaoAudio();
-            }
-            
-            if (recordButton.disabled || isTranslating) return;
-            
-            if (isRecording) {
-                stopRecording();
-            } else {
-                startRecording();
-                showRecordingModal();
             }
         });
     }
