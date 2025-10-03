@@ -115,8 +115,8 @@ body {
 }
 #globobandeiras {
   position: absolute;
-  top: 30%;
-  left: 75%;
+  top: 35%;
+  left: 74%;
   transform: translate(-50%, -50%);
   width: 11%;
   max-width: 60px;
