@@ -1,4 +1,4 @@
-// ✅ SOLUÇÃO COMPLETA E CORRIGIDA - PROCESSO SILENCIOSO
+// ✅ SOLUÇÃO SIMPLIFICADA - MICROFONE APENAS NO CLIQUE
 function initializeTranslator() {
     // ===== CONFIGURAÇÃO =====
     let IDIOMA_ORIGEM = navigator.language || 'pt-BR';
@@ -76,7 +76,7 @@ function initializeTranslator() {
     let pressTimer;
     let tapMode = false;
     let isSpeechPlaying = false;
-    let microphonePermissionGranted = false;
+    let microphonePermissionGranted = false; // ✅ INICIA SEM PERMISSÃO
     let lastTranslationTime = 0;
     
     // ===== FUNÇÕES PRINCIPAIS =====
@@ -124,21 +124,11 @@ function initializeTranslator() {
         };
     }
 
-    // ✅ FUNÇÃO DE PERMISSÃO DO MICROFONE
-    async function requestMicrophonePermission() {
+    // ✅ FUNÇÃO DE PERMISSÃO DO MICROFONE APENAS NO CLIQUE
+    async function requestMicrophonePermissionOnClick() {
         try {
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const hasMicrophonePermission = devices.some(device => 
-                device.kind === 'audioinput' && device.deviceId !== ''
-            );
+            console.log('🎤 Solicitando permissão de microfone...');
             
-            if (hasMicrophonePermission) {
-                microphonePermissionGranted = true;
-                recordButton.disabled = false;
-                setupRecognitionEvents();
-                return;
-            }
-
             const stream = await navigator.mediaDevices.getUserMedia({ 
                 audio: {
                     echoCancellation: true,
@@ -147,17 +137,25 @@ function initializeTranslator() {
                 }
             });
             
+            // ✅ PARA O STREAM IMEDIATAMENTE (só precisamos da permissão)
             setTimeout(() => {
                 stream.getTracks().forEach(track => track.stop());
-            }, 1000);
+            }, 100);
             
             microphonePermissionGranted = true;
             recordButton.disabled = false;
             setupRecognitionEvents();
             
+            console.log('✅ Microfone autorizado via clique');
+            return true;
+            
         } catch (error) {
-            console.error('Erro permissão microfone:', error);
+            console.error('❌ Permissão de microfone negada:', error);
             recordButton.disabled = true;
+            
+            // Mostra alerta para usuário
+            alert('Para usar o tradutor de voz, permita o acesso ao microfone quando solicitado.');
+            return false;
         }
     }
     
@@ -240,10 +238,16 @@ function initializeTranslator() {
         }
     }
     
-    function startRecording() {
+    async function startRecording() {
         if (isRecording || isTranslating) return;
         
         try {
+            // ✅ SOLICITA PERMISSÃO APENAS NA PRIMEIRA VEZ
+            if (!microphonePermissionGranted) {
+                const permitted = await requestMicrophonePermissionOnClick();
+                if (!permitted) return; // Se usuário negou, para aqui
+            }
+            
             recognition.start();
             isRecording = true;
             
@@ -297,7 +301,7 @@ function initializeTranslator() {
     if (recordButton) {
         recordButton.addEventListener('touchstart', function(e) {
             e.preventDefault();
-            if (recordButton.disabled || !microphonePermissionGranted || isTranslating) return;
+            if (recordButton.disabled || isTranslating) return;
             
             if (!isRecording) {
                 pressTimer = setTimeout(() => {
@@ -315,7 +319,7 @@ function initializeTranslator() {
             if (isRecording) {
                 stopRecording();
             } else {
-                if (microphonePermissionGranted && !isTranslating) {
+                if (!isTranslating) {
                     tapMode = true;
                     startRecording();
                     showRecordingModal();
@@ -325,7 +329,7 @@ function initializeTranslator() {
 
         recordButton.addEventListener('click', function(e) {
             e.preventDefault();
-            if (recordButton.disabled || !microphonePermissionGranted || isTranslating) return;
+            if (recordButton.disabled || isTranslating) return;
             
             if (isRecording) {
                 stopRecording();
@@ -344,10 +348,11 @@ function initializeTranslator() {
         speakerButton.addEventListener('click', toggleSpeech);
     }
     
-    // ✅ INICIALIZAÇÃO
-    requestMicrophonePermission();
+    // ✅ CONFIGURAÇÃO INICIAL (SEM SOLICITAR MICROFONE AUTOMATICAMENTE)
+    console.log('Tradutor Caller inicializado - Microfone será solicitado no primeiro clique');
     
-    console.log('Tradutor Caller inicializado com sucesso!');
+    // ✅ HABILITA O BOTÃO (a permissão será solicitada no clique)
+    recordButton.disabled = false;
 }
 
 document.addEventListener('DOMContentLoaded', function() {
