@@ -219,6 +219,7 @@ receiver.html #texto-recebido {
   margin: 0;
 }
 
+/* ===== VÍDEO REMOTO ===== */
 .video-wrapper {
   position: absolute;
   bottom: 45%;
@@ -232,7 +233,6 @@ receiver.html #texto-recebido {
   border: 0.3vw solid #4CAF50;
   z-index: 5;
   background: url('assets/images/telalemur.png') center/cover no-repeat;
-  /* REMOVA esta linha: position: relative; */
 }
 
 .video-wrapper::after {
@@ -245,6 +245,7 @@ receiver.html #texto-recebido {
   font-size: 24px;
   font-weight: bold;
   animation: loading-dots 1.5s infinite;
+  z-index: 6; /* Garante que fique acima da imagem */
 }
 
 @keyframes loading-dots {
@@ -252,6 +253,7 @@ receiver.html #texto-recebido {
   34%, 66% { content: '..'; }
   67%, 100% { content: '...'; }
 }
+
 /* ===== PiP LOCAL ===== */
 .pip-local-wrapper {
   position: absolute;
