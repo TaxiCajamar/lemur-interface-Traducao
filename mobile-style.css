@@ -232,28 +232,15 @@ receiver.html #texto-recebido {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
   border: 0.3vw solid #4CAF50;
   z-index: 5;
+  /* NOVA LINHA - imagem de placeholder */
   background: url('assets/images/telalemur.png') center/cover no-repeat;
 }
 
-.video-wrapper::after {
-  content: '...';
-  position: absolute;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  color: white;
-  font-size: 24px;
-  font-weight: bold;
-  animation: loading-dots 1.5s infinite;
-  z-index: 6; /* Garante que fique acima da imagem */
+.video-wrapper video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
-
-@keyframes loading-dots {
-  0%, 33% { content: '.'; }
-  34%, 66% { content: '..'; }
-  67%, 100% { content: '...'; }
-}
-
 /* ===== PiP LOCAL ===== */
 .pip-local-wrapper {
   position: absolute;
