@@ -295,18 +295,7 @@ document.getElementById('logo-traduz').addEventListener('click', function() {
     const remoteVideo = document.getElementById('remoteVideo');
     if (remoteVideo && remoteVideo.srcObject) {
         console.log('❌ WebRTC conectado - Botão bloqueado');
-        
-        // Efeito visual vermelho
-        this.style.backgroundColor = '#ff4444';
-        this.style.color = 'white';
-        
-        // Volta ao normal depois de 1 segundo
-        setTimeout(() => {
-            this.style.backgroundColor = '';
-            this.style.color = '';
-        }, 1000);
-        
-        return; // Impede de gerar QR Code
+        return; // Simplesmente não faz nada
     }
     
     console.log('🗝️ Gerando QR Code...');
