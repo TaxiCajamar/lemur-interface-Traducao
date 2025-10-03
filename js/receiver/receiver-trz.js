@@ -206,120 +206,126 @@ function initializeTranslator() {
     }
     
     function speakText(text) {
-        if (!SpeechSynthesis || !text) return;
-        
+    if (!SpeechSynthesis || !text) return;
+    
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = IDIOMA_FALA;
+    utterance.rate = 0.9;
+    utterance.volume = 0.8;
+    
+    utterance.onstart = function() {
+        isSpeechPlaying = true;
+        if (speakerButton) speakerButton.textContent = '⏹';
+    };
+    
+    utterance.onend = function() {
+        isSpeechPlaying = false;
+        if (speakerButton) speakerButton.textContent = '🔊';
+    };
+    
+    utterance.onerror = function() {
+        isSpeechPlaying = false;
+        if (speakerButton) speakerButton.textContent = '🔊';
+    };
+    
+    window.speechSynthesis.speak(utterance);
+}
+
+function toggleSpeech() {
+    if (!SpeechSynthesis) return;
+    
+    if (isSpeechPlaying) {
         window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = IDIOMA_FALA;
-        utterance.rate = 0.9;
-        utterance.volume = 0.8;
-        
-        utterance.onstart = function() {
-            isSpeechPlaying = true;
-            if (speakerButton) speakerButton.textContent = '⏹';
-        };
-        
-        utterance.onend = function() {
-            isSpeechPlaying = false;
-            if (speakerButton) speakerButton.textContent = '🔊';
-        };
-        
-        utterance.onerror = function() {
-            isSpeechPlaying = false;
-            if (speakerButton) speakerButton.textContent = '🔊';
-        };
-        
-        window.speechSynthesis.speak(utterance);
-    }
-    
-    function toggleSpeech() {
-        if (!SpeechSynthesis) return;
-        
-        if (isSpeechPlaying) {
-            window.speechSynthesis.cancel();
-            isSpeechPlaying = false;
-            if (speakerButton) speakerButton.textContent = '🔊';
-        } else {
-            // ✅ CORREÇÃO: Lê apenas o texto recebido
-            if (textoRecebido && textoRecebido.textContent) {
-                const textToSpeak = textoRecebido.textContent;
-                if (textToSpeak && textToSpeak.trim() !== "") {
-                    speakText(textToSpeak);
-                }
+        isSpeechPlaying = false;
+        if (speakerButton) speakerButton.textContent = '🔊';
+    } else {
+        // ✅ Lê apenas o texto recebido
+        if (textoRecebido && textoRecebido.textContent) {
+            const textToSpeak = textoRecebido.textContent;
+            if (textToSpeak && textToSpeak.trim() !== "") {
+                speakText(textToSpeak);
             }
         }
     }
+}
+
+function startRecording() {
+    if (isRecording || isTranslating) return;
     
-    function startRecording() {
-        if (isRecording || isTranslating) return;
+    try {
+        // Atualizar idioma dinamicamente
+        const currentLang = window.currentSourceLang || IDIOMA_ORIGEM;
+        recognition.lang = currentLang;
         
-        try {
-            // Atualizar idioma dinamicamente
-            const currentLang = window.currentSourceLang || IDIOMA_ORIGEM;
-            recognition.lang = currentLang;
-            
-            recognition.start();
-            isRecording = true;
-            
-            if (recordButton) recordButton.classList.add('recording');
-            recordingStartTime = Date.now();
-            updateTimer();
-            timerInterval = setInterval(updateTimer, 1000);
-            
-            if (speakerButton) {
-                speakerButton.disabled = true;
-                speakerButton.textContent = '🔇';
-            }
-            
-        } catch (error) {
-            console.error('Erro ao iniciar gravação:', error);
-            stopRecording();
-        }
-    }
-    
-    function stopRecording() {
-        if (!isRecording) return;
+        recognition.start();
+        isRecording = true;
         
-        isRecording = false;
-        if (recordButton) recordButton.classList.remove('recording');
-        clearInterval(timerInterval);
-        hideRecordingModal();
-    }
-    
-    function showRecordingModal() {
-        if (recordingModal) recordingModal.classList.add('visible');
-    }
-    
-    function hideRecordingModal() {
-        if (recordingModal) recordingModal.classList.remove('visible');
-    }
-    
-    function updateTimer() {
-        const elapsedSeconds = Math.floor((Date.now() - recordingStartTime) / 1000);
-        const minutes = Math.floor(elapsedSeconds / 60);
-        const seconds = elapsedSeconds % 60;
-        if (recordingTimer) {
-            recordingTimer.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        if (recordButton) recordButton.classList.add('recording');
+        recordingStartTime = Date.now();
+        updateTimer();
+        timerInterval = setInterval(updateTimer, 1000);
+        
+        // ✅ CORREÇÃO: NÃO muda o texto do botão - evita emoji na caixa de texto
+        if (speakerButton) {
+            speakerButton.disabled = true;
+            // ❌ REMOVIDO: speakerButton.textContent = '🔇';
         }
         
-        if (elapsedSeconds >= 30) {
-            stopRecording();
-        }
+    } catch (error) {
+        console.error('Erro ao iniciar gravação:', error);
+        stopRecording();
+    }
+}
+
+function stopRecording() {
+    if (!isRecording) return;
+    
+    isRecording = false;
+    if (recordButton) recordButton.classList.remove('recording');
+    clearInterval(timerInterval);
+    hideRecordingModal();
+    
+    // ✅ Reativa o botão de speaker após gravação
+    if (speakerButton) {
+        speakerButton.disabled = false;
+    }
+}
+
+function showRecordingModal() {
+    if (recordingModal) recordingModal.classList.add('visible');
+}
+
+function hideRecordingModal() {
+    if (recordingModal) recordingModal.classList.remove('visible');
+}
+
+function updateTimer() {
+    const elapsedSeconds = Math.floor((Date.now() - recordingStartTime) / 1000);
+    const minutes = Math.floor(elapsedSeconds / 60);
+    const seconds = elapsedSeconds % 60;
+    if (recordingTimer) {
+        recordingTimer.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
     }
     
-    if (recordButton) {
-        recordButton.addEventListener('touchstart', function(e) {
-            e.preventDefault();
-            if (recordButton.disabled || !microphonePermissionGranted || isTranslating) return;
-            
-            if (!isRecording) {
-                pressTimer = setTimeout(() => {
-                    tapMode = false;
-                    startRecording();
-                    showRecordingModal();
-                }, 300);
-            }
-        });
+    if (elapsedSeconds >= 30) {
+        stopRecording();
+    }
+}
+
+if (recordButton) {
+    recordButton.addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        if (recordButton.disabled || !microphonePermissionGranted || isTranslating) return;
+        
+        if (!isRecording) {
+            pressTimer = setTimeout(() => {
+                tapMode = false;
+                startRecording();
+                showRecordingModal();
+            }, 300);
+        }
+    });
         
         recordButton.addEventListener('touchend', function(e) {
             e.preventDefault();
