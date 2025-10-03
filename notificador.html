@@ -7,124 +7,56 @@
     <link rel="stylesheet" href="mobile-style.css" />
     
     <style>
-        /* 🚫 TELA DE BLOQUEIO INICIAL */
-        #loadingScreen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
-            color: white;
-            text-align: center;
-            font-family: Arial, sans-serif;
-        }
-        
-        .loading-logo {
-            width: 120px;
-            height: 120px;
-            margin-bottom: 20px;
-            animation: pulse 2s infinite;
-        }
-        
-        .loading-text {
-            font-size: 18px;
-            margin-bottom: 10px;
-            font-weight: bold;
-        }
-        
-        .loading-subtext {
-            font-size: 14px;
-            opacity: 0.8;
-            max-width: 80%;
-            line-height: 1.4;
-        }
-        
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-        
-        /* 🚫 ESCONDE TUDO ATÉ LIBERAR */
-        .hidden-until-ready {
-            display: none !important;
+        /* ✅ GARANTE que o overlay comece OCULTO */
+        .info-overlay.hidden {
+            opacity: 0 !important;
+            pointer-events: none !important;
         }
     </style>
 </head>
 <body>
-    
-    <!-- 🚫 TELA DE CARREGAMENTO/CONFIRMAÇÃO -->
-    <div id="loadingScreen">
-        <img src="assets/images/lemurp2p.png" alt="Lemur Logo" class="loading-logo">
-        <div class="loading-text">Lemur EchoMe P2P</div>
-        <div class="loading-subtext">
-            Aguarde...<br>
-            O aplicativo será iniciado em instantes
-        </div>
-    </div>
-    
+           
     <!-- ✅ CONTEÚDO PRINCIPAL (ESCONDIDO INICIALMENTE) -->
-    <div class="box-principal hidden-until-ready">
+    <div class="box-principal">
                       
-        <img src="assets/images/lemurp2p.png" alt="Lemur Logo" class="logo">
+        <img src="assets/images/lemurP2P.png" alt="Lemur Logo" class="logo">
         <img src="assets/images/Bridg.png" alt="ponte" class="ponte">
-        <img id="logo-traduz" src="assets/images/TradGlobo.png" alt="logo-traduz">
+         <img id="lemurFixed" src="" style="display: none;" onerror="this.style.display='none'" alt="">
         
+        <!-- Sub Titulo -->
         <div class="translator-label" id="translator-label">
             Real-time translation.
         </div>
            
+        <!-- Remoto & Local -->
         <div class="remoter-Lang">🏳️</div>
         <div class="local-Lang">🏳️</div>
-        
+        <div class="local-mic-Lang">🏳️</div>
+
+        <!-- 🎥 Vídeo remoto (já existente) -->
         <div class="video-wrapper">
           <video id="remoteVideo" autoplay playsinline></video>
 
+         <!-- 🎥 Vídeo local em PiP -->
           <div class="pip-local-wrapper">
             <video id="localVideo" autoplay muted playsinline></video>
           </div>
         </div>
         
-        <div class="text-box">
-            <div class="text-display">
-                <div class="text-title">
-                    🌐
-                    <button class="speaker-btn" id="speakerButton" disabled>🔊</button>
-                </div>
-                <div id="translatedText" class="text-content">🎤</div>
-            </div>
-        </div>
+         <!-- ===== TRADUTOR POR VOZ ===== -->
 
         <div id="texto-recebido"></div>
 
+        <!-- 🏳️ Bandeira do idioma local -->
         <div class="language-flag" id="currentLanguageFlag">🇧🇷</div>
-
+       
+        <!-- 🎤 Microfone -->
         <button class="record-btn" id="recordButton" disabled>🎤</button>
-
-        <div class="world-wrapper">
-          <button class="world-btn" id="worldButton">
-            <img src="assets/images/GloboLang.png" alt="Idioma" class="world-image">
-          </button>
-
-          <div class="language-dropdown" id="languageDropdown">
-            <div class="language-option" data-lang="pt-BR">🇧🇷</div>
-            <div class="language-option" data-lang="en">🇺🇸</div>
-            <div class="language-option" data-lang="es">🇪🇸</div>
-            <div class="language-option" data-lang="fr">🇫🇷</div>
-            <div class="language-option" data-lang="de">🇩🇪</div>
-            <div class="language-option" data-lang="it">🇮🇹</div>
-            <div class="language-option" data-lang="ja">🇯🇵</div>
-          </div>
-        </div>
-             
+                     
     </div>
 
+
+    <!-- Modal de gravação -->
     <div class="recording-modal hidden-until-ready" id="recordingModal">
         <div class="recording-indicator">
             <div class="recording-dot"></div>
@@ -134,41 +66,27 @@
         <button class="send-button" id="sendButton">📤</button>
     </div>
 
+    <!-- 🔌 Scripts -->
     <script src="https://lemur-signal-ings.onrender.com/socket.io/socket.io.js"></script>
     
     <script>
-        // ✅ FUNÇÃO GLOBAL PARA LIBERAR A INTERFACE
+       // ✅ FUNÇÃO GLOBAL PARA LIBERAR A INTERFACE (SIMPLIFICADA)
         window.liberarInterface = function() {
-            console.log('✅ Liberando interface...');
-            
-            const loadingScreen = document.getElementById('loadingScreen');
-            if (loadingScreen) {
-                loadingScreen.style.display = 'none';
-            }
-            
-            const elementosEscondidos = document.querySelectorAll('.hidden-until-ready');
-            elementosEscondidos.forEach(elemento => {
-                elemento.classList.remove('hidden-until-ready');
-            });
-            
-            console.log('✅ Interface liberada com sucesso!');
+            console.log('✅ Interface já está visível');
         };
         
+        // ✅ SE HOUVER ERRO, MOSTRA MENSAGEM
         window.mostrarErroCarregamento = function(mensagem) {
-            const loadingScreen = document.getElementById('loadingScreen');
-            if (loadingScreen) {
-                loadingScreen.innerHTML = `
-                    <div style="text-align: center; padding: 20px;">
-                        <div style="font-size: 48px; margin-bottom: 20px;">❌</div>
-                        <div class="loading-text">Erro no Carregamento</div>
-                        <div class="loading-subtext">${mensagem}</div>
-                        <button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px; background: white; color: #667eea; border: none; border-radius: 10px; cursor: pointer;">
-                            Tentar Novamente
-                        </button>
-                    </div>
-                `;
-            }
+            alert('Erro: ' + mensagem);
         };
+
+        // ✅ GARANTE que o overlay fique OCULTO ao carregar
+        document.addEventListener('DOMContentLoaded', function() {
+            const overlay = document.querySelector('.info-overlay');
+            if (overlay) {
+                overlay.classList.add('hidden');
+            }
+        });
     </script>
     
     <script type="module" src="./js/notificador/notificador-ui.js"></script>
