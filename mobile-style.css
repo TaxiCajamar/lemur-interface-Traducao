@@ -27,10 +27,9 @@ body {
 }
 /* 🗝️ Botão Key - Substitua o estilo #logo-traduz existente */
 #logo-traduz.botao-key {
-    position: absolute;
-    top: 58%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+     position: absolute;
+    top: 47%;
+    left: 60%;
     width: 15%;
     max-width: 120px;
     height: auto;
