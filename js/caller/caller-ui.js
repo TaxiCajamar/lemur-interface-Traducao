@@ -379,14 +379,17 @@ async function aplicarBandeiraLocal(langCode) {
 
         const bandeira = flags[langCode] || flags[langCode.split('-')[0]] || '🔴';
 
-        const localLangElement = document.querySelector('.local-mic-Lang');
-        if (localLangElement) localLangElement.textContent = bandeira;
+        // ✅ MESMA BANDEIRA NAS DUAS POSIÇÕES (usando elementos que EXISTEM)
+        const languageFlagElement = document.querySelector('.language-flag');
+        if (languageFlagElement) languageFlagElement.textContent = bandeira;
 
         const localLangDisplay = document.querySelector('.local-Lang');
         if (localLangDisplay) localLangDisplay.textContent = bandeira;
 
+        console.log('🏳️ Bandeira local aplicada no CALLER:', bandeira, 'em duas posições');
+
     } catch (error) {
-        console.error('Erro ao carregar bandeira local:', error);
+        console.error('Erro ao carregar bandeira local no caller:', error);
     }
 }
 
