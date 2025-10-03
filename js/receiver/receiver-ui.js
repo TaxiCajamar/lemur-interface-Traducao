@@ -206,13 +206,11 @@ document.getElementById('logo-traduz').addEventListener('click', function() {
     // Gera o QR Code
     QRCodeGenerator.generate("qrcode", callerUrl);
     
-    // Mostra o overlay do QR Code
-    const overlay = document.querySelector('.info-overlay');
-    if (overlay) {
-        overlay.classList.remove('hidden');
-        overlay.style.opacity = '1';
-        overlay.style.pointerEvents = 'auto';
-    }
+    // ✅ Mostra o overlay do QR Code
+const overlay = document.querySelector('.info-overlay');
+if (overlay) {
+    overlay.classList.remove('hidden'); // APENAS ISSO
+}
     
     console.log('✅ QR Code gerado!');
 });
