@@ -150,6 +150,31 @@ function liberarInterfaceFallback() {
     console.log(`✅ ${elementosEscondidos.length} elementos liberados`);
 }
 
+// 🌐 TRADUÇÃO DAS FRASES FIXAS (AGORA SEPARADA)
+async function traduzirFrasesFixas(lang) {
+    try {
+        const frasesParaTraduzir = {
+            "translator-label": "Real-time translation.",
+            "qr-modal-title": "This is your online key",
+            "qr-modal-description": "You can ask to scan, share or print on your business card."
+        };
+
+        for (const [id, texto] of Object.entries(frasesParaTraduzir)) {
+            const el = document.getElementById(id);
+            if (el) {
+                const traduzido = await translateText(texto, lang);
+                el.textContent = traduzido;
+                console.log(`✅ Traduzido: ${texto} → ${traduzido}`);
+            }
+        }
+        
+        aplicarBandeiraLocal(lang);
+        
+    } catch (error) {
+        console.error('❌ Erro ao traduzir frases:', error);
+    }
+}
+
 // ✅ FUNÇÃO PARA INICIAR CÂMERA APÓS PERMISSÕES
 async function iniciarCameraAposPermissoes() {
     try {
@@ -190,30 +215,30 @@ async function iniciarCameraAposPermissoes() {
 
         window.targetTranslationLang = lang;
 
-    // ✅ GUARDA as informações para gerar QR Code depois (QUANDO O USUÁRIO CLICAR)
-window.qrCodeData = {
-    myId: myId,
-    token: token,
-    lang: lang
-};
+        // ✅ GUARDA as informações para gerar QR Code depois (QUANDO O USUÁRIO CLICAR)
+        window.qrCodeData = {
+            myId: myId,
+            token: token,
+            lang: lang
+        };
 
-// ✅ CONFIGURA o botão para gerar QR Code quando clicado
-document.getElementById('logo-traduz').addEventListener('click', function() {
-    console.log('🗝️ Gerando QR Code...');
-    
-    const callerUrl = `${window.location.origin}/caller.html?targetId=${window.qrCodeData.myId}&token=${encodeURIComponent(window.qrCodeData.token)}&lang=${encodeURIComponent(window.qrCodeData.lang)}`;
-    
-    // Gera o QR Code
-    QRCodeGenerator.generate("qrcode", callerUrl);
-    
-    // ✅ Mostra o overlay do QR Code
-const overlay = document.querySelector('.info-overlay');
-if (overlay) {
-    overlay.classList.remove('hidden'); // APENAS ISSO
-}
-    
-    console.log('✅ QR Code gerado!');
-});
+        // ✅ CONFIGURA o botão para gerar QR Code quando clicado
+        document.getElementById('logo-traduz').addEventListener('click', function() {
+            console.log('🗝️ Gerando QR Code...');
+            
+            const callerUrl = `${window.location.origin}/caller.html?targetId=${window.qrCodeData.myId}&token=${encodeURIComponent(window.qrCodeData.token)}&lang=${encodeURIComponent(window.qrCodeData.lang)}`;
+            
+            // Gera o QR Code
+            QRCodeGenerator.generate("qrcode", callerUrl);
+            
+            // Mostra o overlay do QR Code
+            const overlay = document.querySelector('.info-overlay');
+            if (overlay) {
+                overlay.classList.remove('hidden');
+            }
+            
+            console.log('✅ QR Code gerado!');
+        });
 
         window.rtcCore.initialize(myId);
         window.rtcCore.setupSocketHandlers();
@@ -343,24 +368,6 @@ if (overlay) {
             });
         };
 
-        const frasesParaTraduzir = {
-            "translator-label": "Real-time translation.",
-            "qr-modal-title": "This is your online key",
-            "qr-modal-description": "You can ask to scan, share or print on your business card."
-        };
-
-        (async () => {
-            for (const [id, texto] of Object.entries(frasesParaTraduzir)) {
-                const el = document.getElementById(id);
-                if (el) {
-                    const traduzido = await translateText(texto, lang);
-                    el.textContent = traduzido;
-                }
-            }
-        })();
-
-        aplicarBandeiraLocal(lang);
-
         setTimeout(() => {
             if (typeof initializeTranslator === 'function') {
                 initializeTranslator();
@@ -378,13 +385,20 @@ window.onload = async () => {
     try {
         console.log('🚀 Iniciando aplicação receiver automaticamente...');
         
-        // 1. Inicia áudio (sem MP3)
+        // 1. Obtém o idioma para tradução
+        const params = new URLSearchParams(window.location.search);
+        const lang = params.get('lang') || navigator.language || 'pt-BR';
+        
+        // 2. Traduz as frases fixas PRIMEIRO
+        await traduzirFrasesFixas(lang);
+        
+        // 3. Inicia áudio (sem MP3)
         iniciarAudio();
         
-        // 2. Solicita permissões diretamente (sem botão)
+        // 4. Solicita permissões diretamente (sem botão)
         await solicitarTodasPermissoes();
         
-        // 3. Libera interface
+        // 5. Libera interface
         if (typeof window.liberarInterface === 'function') {
             window.liberarInterface();
             console.log('✅ Interface liberada via função global');
@@ -393,7 +407,7 @@ window.onload = async () => {
             console.log('✅ Interface liberada via fallback');
         }
         
-        // 4. Inicia câmera e WebRTC
+        // 6. Inicia câmera e WebRTC
         await iniciarCameraAposPermissoes();
         
         console.log('✅ Receiver iniciado com sucesso!');
