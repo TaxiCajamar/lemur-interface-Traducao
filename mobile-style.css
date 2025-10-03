@@ -25,7 +25,30 @@ body {
   position: relative;
   overflow-y: auto;
 }
+/* 🗝️ Estilo do botão Key */
+.botao-key {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    transition: transform 0.2s ease;
+}
 
+.botao-key:hover {
+    transform: scale(1.1);
+}
+
+.botao-key:active {
+    transform: scale(0.95);
+}
+
+/* ✅ Garante que o overlay do QR Code comece invisível */
+.info-overlay {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
 /* ===== PLACEHOLDER DA CÂMERA ===== */
 .camera-placeholder {
   position: absolute;
@@ -95,38 +118,15 @@ body {
   z-index: 30;
 }
 
-/* 🗝️ Botão Key - Mantém a posição original e adiciona estilo de botão */
-#logo-traduz.botao-key {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-    margin: 0;
-    transition: transform 0.2s ease;
-    /* Mantém todas as propriedades originais: */
-    position: absolute;
-    top: 58%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 15%;
-    max-width: 120px;
-    height: auto;
-    z-index: 40;
-}
-
-#logo-traduz.botao-key:hover {
-    transform: translate(-50%, -50%) scale(1.1);
-}
-
-#logo-traduz.botao-key:active {
-    transform: translate(-50%, -50%) scale(0.95);
-}
-
-/* Garante que a imagem dentro do botão ocupe todo o espaço */
-#logo-traduz.botao-key img {
-    width: 100%;
-    height: auto;
-    display: block;
+#logo-traduz {
+  position: absolute;
+  top: 58%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 15%;
+  max-width: 120px;
+  height: auto;
+  z-index: 40;
 }
 
 /* 🏳️ Bandeira do idioma local */
