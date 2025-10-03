@@ -6,42 +6,51 @@
     <title>Lemur-EchoMeP2P-Receiver</title>
     <link rel="stylesheet" href="mobile-style.css" />
     <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+    
+    <style>
+        /* ✅ GARANTE que o overlay comece OCULTO */
+        .info-overlay.hidden {
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+    </style>
 </head>
 <body>
     
     <!-- ✅ CONTEÚDO PRINCIPAL (JÁ VISÍVEL) -->
     <div class="box-principal">
                       
-       <img src="assets/images/lemurp2p.png" alt="Lemur Logo" class="logo">
+        <img src="assets/images/lemurp2p.png" alt="Lemur Logo" class="logo">
         <img src="assets/images/Bridg.png" alt="ponte" class="ponte">
         <img id="lemurFixed" src="" style="display: none;" onerror="this.style.display='none'" alt="">
 
+        <!-- 🗝️ BOTÃO PARA GERAR QR CODE -->
         <button id="logo-traduz" class="botao-key">
-    <img src="assets/images/key.png" alt="Gerar QR Code">
-</button>
+            <img src="assets/images/key.png" alt="Gerar QR Code">
+        </button>
         
         <!-- Sub Titulo --> 
         <div class="translator-label" id="translator-label">
             Real-time translation.
         </div>
            
-      <!-- Remoto & Local -->
-    <div class="remoter-Lang">🏳️</div>
-    <div class="local-Lang">🏳️</div>
-    <div class="local-mic-Lang">🏳️</div>
+        <!-- Remoto & Local -->
+        <div class="remoter-Lang">🏳️</div>
+        <div class="local-Lang">🏳️</div>
+        <div class="local-mic-Lang">🏳️</div>
     
-    <!-- 🎥 Vídeo remoto (já existente) -->
-    <div class="video-wrapper">
-        <video id="remoteVideo" autoplay playsinline></video>
+        <!-- 🎥 Vídeo remoto (já existente) -->
+        <div class="video-wrapper">
+            <video id="remoteVideo" autoplay playsinline></video>
 
-        <!-- 🎥 Vídeo local em PiP -->
-        <div class="pip-local-wrapper">
-            <video id="localVideo" autoplay muted playsinline></video>
+            <!-- 🎥 Vídeo local em PiP -->
+            <div class="pip-local-wrapper">
+                <video id="localVideo" autoplay muted playsinline></video>
+            </div>
         </div>
-    </div>
 
-        <!-- 🧾 Overlay com QR Code -->
-        <div class="info-overlay"> 
+        <!-- 🧾 Overlay com QR Code - COMEÇA OCULTO -->
+        <div class="info-overlay hidden"> 
             <h2 id="qr-modal-title">This is your online key</h2>
             <div id="qrcode" class="qrcode-container"></div>
             <p class="qr-modal-description" id="qr-modal-description">
@@ -95,6 +104,14 @@
         window.mostrarErroCarregamento = function(mensagem) {
             alert('Erro: ' + mensagem);
         };
+
+        // ✅ GARANTE que o overlay fique OCULTO ao carregar
+        document.addEventListener('DOMContentLoaded', function() {
+            const overlay = document.querySelector('.info-overlay');
+            if (overlay) {
+                overlay.classList.add('hidden');
+            }
+        });
     </script>
     
     <script type="module" src="./js/receiver/receiver-ui.js"></script>
