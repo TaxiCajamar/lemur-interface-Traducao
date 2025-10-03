@@ -219,7 +219,6 @@ receiver.html #texto-recebido {
   margin: 0;
 }
 
-/* ===== VÍDEO REMOTO ===== */
 .video-wrapper {
   position: absolute;
   bottom: 45%;
@@ -233,8 +232,7 @@ receiver.html #texto-recebido {
   border: 0.3vw solid #4CAF50;
   z-index: 5;
   background: url('assets/images/telalemur.png') center/cover no-repeat;
-  /* NOVA LINHA - pontinhos animados */
-  position: relative;
+  /* REMOVA esta linha: position: relative; */
 }
 
 .video-wrapper::after {
