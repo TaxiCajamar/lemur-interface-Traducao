@@ -380,32 +380,33 @@ async function iniciarCameraAposPermissoes() {
             }
         }
 
-        window.rtcCore.setDataChannelCallback(async (mensagem) => {
-            iniciarSomDigitacao();
+      window.rtcCore.setDataChannelCallback(async (mensagem) => {
+    iniciarSomDigitacao();
 
-            console.log('📩 Mensagem recebida:', mensagem);
+    console.log('📩 Mensagem recebida:', mensagem);
 
-            const elemento = document.getElementById('texto-recebido');
-            const imagemImpaciente = document.getElementById('lemurFixed');
-            
-            if (elemento) {
-                elemento.textContent = "";
-                elemento.style.opacity = '1';
-                elemento.style.transition = 'opacity 0.5s ease';
-                
-                elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
-                elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
-                elemento.style.border = '2px solid #ff0000';
-            }
+    const elemento = document.getElementById('texto-recebido');
+    const imagemImpaciente = document.getElementById('lemurFixed');
+    
+    if (elemento) {
+        // ✅ CORREÇÃO: NÃO limpar o texto - evitar "fantasma"
+        elemento.style.opacity = '1';
+        elemento.style.transition = 'opacity 0.5s ease';
+        
+        elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
+        elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
+        elemento.style.border = '2px solid #ff0000';
+        
+        // ✅ O texto será definido no Google TTS quando o áudio começar
+    }
 
-            if (imagemImpaciente) {
-                imagemImpaciente.style.display = 'block';
-            }
+    if (imagemImpaciente) {
+        imagemImpaciente.style.display = 'block';
+    }
 
-            // 🎤 CHAMADA PARA GOOGLE TTS
-            await falarComGoogleTTS(mensagem, elemento, imagemImpaciente);
-        });
-
+    // 🎤 CHAMADA PARA GOOGLE TTS
+    await falarComGoogleTTS(mensagem, elemento, imagemImpaciente);
+});
         window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
             if (!localStream) return;
 
