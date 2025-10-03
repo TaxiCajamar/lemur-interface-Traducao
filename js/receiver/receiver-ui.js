@@ -3,29 +3,112 @@ import { QRCodeGenerator } from '../qrcode/qr-code-utils.js';
 
 // 🎵 VARIÁVEIS DE ÁUDIO
 let audioContext = null;
+let somDigitacao = null;
+let audioCarregado = false;
 let permissaoConcedida = false;
 
-// 🎥 SOLICITAR APENAS CÂMERA (para WebRTC funcionar no mobile)
-async function solicitarApenasCamera() {
+// 🎵 CARREGAR SOM DE DIGITAÇÃO
+function carregarSomDigitacao() {
+    return new Promise((resolve) => {
+        try {
+            somDigitacao = new Audio('assets/audio/keyboard.mp3');
+            somDigitacao.volume = 0.3;
+            somDigitacao.preload = 'auto';
+            
+            somDigitacao.addEventListener('canplaythrough', () => {
+                console.log('🎵 Áudio de digitação carregado');
+                audioCarregado = true;
+                resolve(true);
+            });
+            
+            somDigitacao.addEventListener('error', () => {
+                console.log('❌ Erro ao carregar áudio');
+                resolve(false);
+            });
+            
+            somDigitacao.load();
+            
+        } catch (error) {
+            console.log('❌ Erro no áudio:', error);
+            resolve(false);
+        }
+    });
+}
+
+// 🎵 INICIAR LOOP DE DIGITAÇÃO
+function iniciarSomDigitacao() {
+    if (!audioCarregado || !somDigitacao) return;
+    
+    pararSomDigitacao();
+    
     try {
-        console.log('🎥 Solicitando apenas câmera para WebRTC...');
+        somDigitacao.loop = true;
+        somDigitacao.currentTime = 0;
+        somDigitacao.play().catch(error => {
+            console.log('🔇 Navegador bloqueou áudio automático');
+        });
+        
+        console.log('🎵 Som de digitação iniciado');
+    } catch (error) {
+        console.log('❌ Erro ao tocar áudio:', error);
+    }
+}
+
+// 🎵 PARAR SOM DE DIGITAÇÃO
+function pararSomDigitacao() {
+    if (somDigitacao) {
+        try {
+            somDigitacao.pause();
+            somDigitacao.currentTime = 0;
+            somDigitacao.loop = false;
+            console.log('🎵 Som de digitação parado');
+        } catch (error) {
+            console.log('❌ Erro ao parar áudio:', error);
+        }
+    }
+}
+
+// 🎵 INICIAR ÁUDIO APÓS INTERAÇÃO DO USUÁRIO
+function iniciarAudio() {
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    gainNode.gain.value = 0.001;
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.1);
+    
+    console.log('🎵 Áudio desbloqueado!');
+}
+
+// 🎤 SOLICITAR TODAS AS PERMISSÕES DE UMA VEZ
+async function solicitarTodasPermissoes() {
+    try {
+        console.log('🎯 Solicitando todas as permissões...');
         
         const stream = await navigator.mediaDevices.getUserMedia({
             video: true,
-            audio: false // ✅ NÃO solicita microfone aqui
+            audio: true
         });
         
-        console.log('✅ Câmera concedida! WebRTC funcionará.');
+        console.log('✅ Todas as permissões concedidas!');
         
         stream.getTracks().forEach(track => track.stop());
         
         permissaoConcedida = true;
         window.permissoesConcedidas = true;
+        window.audioContext = audioContext;
         
         return true;
         
     } catch (error) {
-        console.error('❌ Erro na permissão da câmera:', error);
+        console.error('❌ Erro nas permissões:', error);
         permissaoConcedida = false;
         window.permissoesConcedidas = false;
         throw error;
@@ -78,7 +161,7 @@ async function aplicarBandeiraLocal(langCode) {
 
         const bandeira = flags[langCode] || flags[langCode.split('-')[0]] || '🔴';
 
-        // ✅ MESMA BANDEIRA NAS DUAS POSIÇÕES
+        // ✅ CORREÇÃO: MESMA BANDEIRA NAS DUAS POSIÇÕES
         const languageFlagElement = document.querySelector('.language-flag');
         if (languageFlagElement) languageFlagElement.textContent = bandeira;
 
@@ -195,6 +278,10 @@ async function iniciarCameraAposPermissoes() {
 
         window.targetTranslationLang = lang;
 
+        // ✅ MODIFICAÇÃO 1: NÃO gera QR Code automaticamente
+        // const callerUrl = `${window.location.origin}/caller.html?targetId=${myId}&token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
+        // QRCodeGenerator.generate("qrcode", callerUrl);
+
         // ✅ GUARDA as informações para gerar QR Code depois (QUANDO O USUÁRIO CLICAR)
         window.qrCodeData = {
             myId: myId,
@@ -202,7 +289,7 @@ async function iniciarCameraAposPermissoes() {
             lang: lang
         };
 
-        // ✅ CONFIGURA o botão para gerar QR Code quando clicado
+        // ✅ MODIFICAÇÃO 2: CONFIGURA o botão para gerar QR Code quando clicado
         document.getElementById('logo-traduz').addEventListener('click', function() {
             console.log('🗝️ Gerando QR Code...');
             
@@ -248,6 +335,8 @@ async function iniciarCameraAposPermissoes() {
                 
                 // EVENTO: ÁUDIO COMEÇOU
                 audio.onplay = () => {
+                    pararSomDigitacao();
+                    
                     if (elemento) {
                         elemento.style.animation = 'none';
                         elemento.style.backgroundColor = '';
@@ -271,6 +360,7 @@ async function iniciarCameraAposPermissoes() {
                 
                 // EVENTO: ERRO NO ÁUDIO
                 audio.onerror = () => {
+                    pararSomDigitacao();
                     console.log('❌ Erro no áudio Google TTS');
                     if (elemento) {
                         elemento.style.animation = 'none';
@@ -289,8 +379,10 @@ async function iniciarCameraAposPermissoes() {
                 // Fallback para síntese nativa se necessário
             }
         }
-       
+
         window.rtcCore.setDataChannelCallback(async (mensagem) => {
+            iniciarSomDigitacao();
+
             console.log('📩 Mensagem recebida:', mensagem);
 
             const elemento = document.getElementById('texto-recebido');
@@ -348,6 +440,24 @@ async function iniciarCameraAposPermissoes() {
             });
         };
 
+        const frasesParaTraduzir = {
+            "translator-label": "Real-time translation.",
+            "qr-modal-title": "This is your online key",
+            "qr-modal-description": "You can ask to scan, share or print on your business card."
+        };
+
+        (async () => {
+            for (const [id, texto] of Object.entries(frasesParaTraduzir)) {
+                const el = document.getElementById(id);
+                if (el) {
+                    const traduzido = await translateText(texto, lang);
+                    el.textContent = traduzido;
+                }
+            }
+        })();
+
+        aplicarBandeiraLocal(lang);
+
         setTimeout(() => {
             if (typeof initializeTranslator === 'function') {
                 initializeTranslator();
@@ -360,7 +470,7 @@ async function iniciarCameraAposPermissoes() {
     }
 }
 
-// 🚀 INICIALIZAÇÃO AUTOMÁTICA
+// 🚀 INICIALIZAÇÃO AUTOMÁTICA (SEM BOTÃO DE PERMISSÕES)
 window.onload = async () => {
     try {
         console.log('🚀 Iniciando aplicação receiver automaticamente...');
@@ -372,10 +482,16 @@ window.onload = async () => {
         // 2. Traduz as frases fixas PRIMEIRO
         await traduzirFrasesFixas(lang);
         
-        // 3. ✅ SOLICITA APENAS CÂMERA (para WebRTC)
-        await solicitarApenasCamera();
+        // 3. Inicia áudio
+        iniciarAudio();
         
-        // 4. Libera interface
+        // 4. Carrega sons da máquina de escrever
+        await carregarSomDigitacao();
+        
+        // 5. Solicita TODAS as permissões (câmera + microfone)
+        await solicitarTodasPermissoes();
+        
+        // 6. Libera interface
         if (typeof window.liberarInterface === 'function') {
             window.liberarInterface();
             console.log('✅ Interface liberada via função global');
@@ -384,7 +500,7 @@ window.onload = async () => {
             console.log('✅ Interface liberada via fallback');
         }
         
-        // 5. Inicia câmera e WebRTC
+        // 7. Inicia câmera e WebRTC
         await iniciarCameraAposPermissoes();
         
         console.log('✅ Receiver iniciado com sucesso!');
@@ -393,7 +509,7 @@ window.onload = async () => {
         console.error('❌ Erro ao inicializar receiver:', error);
         
         if (typeof window.mostrarErroCarregamento === 'function') {
-            window.mostrarErroCarregamento('Erro ao solicitar permissões de câmera');
+            window.mostrarErroCarregamento('Erro ao solicitar permissões de câmera e microfone');
         } else {
             console.error('❌ Erro no carregamento:', error);
             alert('Erro ao inicializar: ' + error.message);
