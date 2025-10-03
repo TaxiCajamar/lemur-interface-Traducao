@@ -39,20 +39,9 @@
         <div class="local-Lang">🏳️</div>
         <div class="local-mic-Lang">🏳️</div>
     
-        <!-- 🎥 Vídeo remoto COM PLACEHOLDER ANIMADO -->
+        <!-- 🎥 Vídeo remoto (já existente) -->
         <div class="video-wrapper">
-            <!-- ✅ PLACEHOLDER ANIMADO (aparece enquanto carrega) -->
-            <div class="video-placeholder">
-                <img src="assets/images/telalemur.png" alt="Carregando..." class="placeholder-image">
-                <div class="loading-dots">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
-            </div>
-            
-            <!-- ✅ VÍDEO REMOTO (fica escondido até carregar) -->
-            <video id="remoteVideo" autoplay playsinline style="display: none;"></video>
+            <video id="remoteVideo" autoplay playsinline></video>
 
             <!-- 🎥 Vídeo local em PiP -->
             <div class="pip-local-wrapper">
@@ -71,6 +60,17 @@
         
         <!-- ===== TRADUTOR POR VOZ ===== -->
         
+        <!-- Caixa de Texto -->
+        <div class="text-box">
+            <div class="text-display">
+                <div class="text-title">
+                    🌐
+                    <button class="speaker-btn" id="speakerButton" disabled>🔊</button>
+                </div>
+                <div id="translatedText" class="text-content">🎤</div>
+            </div>
+        </div>
+
         <div id="texto-recebido"></div>
 
         <!-- 🏳️ Bandeira do idioma local -->
