@@ -26,6 +26,32 @@ body {
   overflow-y: auto;
 }
 
+/* 🗝️ Estilo do botão Key */
+.botao-key {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    transition: transform 0.2s ease;
+}
+
+.botao-key:hover {
+    transform: scale(1.1);
+}
+
+.botao-key:active {
+    transform: scale(0.95);
+}
+
+/* ✅ Garante que o overlay do QR Code comece invisível */
+.info-overlay {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+
 /* ===== PLACEHOLDER DA CÂMERA ===== */
 .camera-placeholder {
   position: absolute;
