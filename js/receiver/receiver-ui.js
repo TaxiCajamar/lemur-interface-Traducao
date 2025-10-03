@@ -3,70 +3,7 @@ import { QRCodeGenerator } from '../qrcode/qr-code-utils.js';
 
 // 🎵 VARIÁVEIS DE ÁUDIO
 let audioContext = null;
-let somDigitacao = null;
-let audioCarregado = false;
 let permissaoConcedida = false;
-
-// 🎵 CARREGAR SOM DE DIGITAÇÃO
-function carregarSomDigitacao() {
-    return new Promise((resolve) => {
-        try {
-            somDigitacao = new Audio('assets/audio/keyboard.mp3');
-            somDigitacao.volume = 0.3;
-            somDigitacao.preload = 'auto';
-            
-            somDigitacao.addEventListener('canplaythrough', () => {
-                console.log('🎵 Áudio de digitação carregado');
-                audioCarregado = true;
-                resolve(true);
-            });
-            
-            somDigitacao.addEventListener('error', () => {
-                console.log('❌ Erro ao carregar áudio');
-                resolve(false);
-            });
-            
-            somDigitacao.load();
-            
-        } catch (error) {
-            console.log('❌ Erro no áudio:', error);
-            resolve(false);
-        }
-    });
-}
-
-// 🎵 INICIAR LOOP DE DIGITAÇÃO
-function iniciarSomDigitacao() {
-    if (!audioCarregado || !somDigitacao) return;
-    
-    pararSomDigitacao();
-    
-    try {
-        somDigitacao.loop = true;
-        somDigitacao.currentTime = 0;
-        somDigitacao.play().catch(error => {
-            console.log('🔇 Navegador bloqueou áudio automático');
-        });
-        
-        console.log('🎵 Som de digitação iniciado');
-    } catch (error) {
-        console.log('❌ Erro ao tocar áudio:', error);
-    }
-}
-
-// 🎵 PARAR SOM DE DIGITAÇÃO
-function pararSomDigitacao() {
-    if (somDigitacao) {
-        try {
-            somDigitacao.pause();
-            somDigitacao.currentTime = 0;
-            somDigitacao.loop = false;
-            console.log('🎵 Som de digitação parado');
-        } catch (error) {
-            console.log('❌ Erro ao parar áudio:', error);
-        }
-    }
-}
 
 // 🎵 INICIAR ÁUDIO APÓS INTERAÇÃO DO USUÁRIO
 function iniciarAudio() {
@@ -284,8 +221,6 @@ async function iniciarCameraAposPermissoes() {
                 
                 // EVENTO: ÁUDIO COMEÇOU
                 audio.onplay = () => {
-                    pararSomDigitacao();
-                    
                     if (elemento) {
                         elemento.style.animation = 'none';
                         elemento.style.backgroundColor = '';
@@ -309,7 +244,6 @@ async function iniciarCameraAposPermissoes() {
                 
                 // EVENTO: ERRO NO ÁUDIO
                 audio.onerror = () => {
-                    pararSomDigitacao();
                     console.log('❌ Erro no áudio Google TTS');
                     if (elemento) {
                         elemento.style.animation = 'none';
@@ -330,8 +264,6 @@ async function iniciarCameraAposPermissoes() {
         }
 
         window.rtcCore.setDataChannelCallback(async (mensagem) => {
-            iniciarSomDigitacao();
-
             console.log('📩 Mensagem recebida:', mensagem);
 
             const elemento = document.getElementById('texto-recebido');
@@ -419,98 +351,39 @@ async function iniciarCameraAposPermissoes() {
     }
 }
 
+// 🚀 INICIALIZAÇÃO AUTOMÁTICA (SEM BOTÃO, SEM TELA INICIAL)
 window.onload = async () => {
     try {
-        // ✅ BOTÃO ÚNICO PARA TODAS AS PERMISSÕES
-        const permissaoButton = document.createElement('button');
-        permissaoButton.innerHTML = `
-            <span style="font-size: 32px;">🎤📹🎧</span><br>
-            <span style="font-size: 14px;">Clique para ativar<br>Microfone, Câmera e Áudio</span>
-        `;
-        permissaoButton.style.position = 'fixed';
-        permissaoButton.style.top = '50%';
-        permissaoButton.style.left = '50%';
-        permissaoButton.style.transform = 'translate(-50%, -50%)';
-        permissaoButton.style.zIndex = '10000';
-        permissaoButton.style.padding = '25px 35px';
-        permissaoButton.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-        permissaoButton.style.color = 'white';
-        permissaoButton.style.border = 'none';
-        permissaoButton.style.borderRadius = '20px';
-        permissaoButton.style.cursor = 'pointer';
-        permissaoButton.style.fontSize = '16px';
-        permissaoButton.style.fontWeight = 'bold';
-        permissaoButton.style.boxShadow = '0 8px 25px rgba(0,0,0,0.3)';
-        permissaoButton.style.textAlign = 'center';
-        permissaoButton.style.lineHeight = '1.4';
-        permissaoButton.style.transition = 'all 0.3s ease';
+        console.log('🚀 Iniciando aplicação receiver automaticamente...');
         
-        permissaoButton.onmouseover = () => {
-            permissaoButton.style.transform = 'translate(-50%, -50%) scale(1.05)';
-            permissaoButton.style.boxShadow = '0 12px 30px rgba(0,0,0,0.4)';
-        };
+        // 1. Inicia áudio (sem MP3)
+        iniciarAudio();
         
-        permissaoButton.onmouseout = () => {
-            permissaoButton.style.transform = 'translate(-50%, -50%)';
-            permissaoButton.style.boxShadow = '0 8px 25px rgba(0,0,0,0.3)';
-        };
+        // 2. Solicita permissões diretamente (sem botão)
+        await solicitarTodasPermissoes();
         
-        permissaoButton.onclick = async () => {
-            try {
-                permissaoButton.innerHTML = '<span style="font-size: 24px;">⏳</span><br><span style="font-size: 12px;">Solicitando permissões...</span>';
-                permissaoButton.style.background = '#ff9800';
-                permissaoButton.disabled = true;
-                
-                // 1. Primeiro: Inicia áudio
-                iniciarAudio();
-                
-                // 2. Segundo: Carrega sons
-                await carregarSomDigitacao();
-                
-                // 3. Terceiro: Solicita TODAS as permissões (câmera + microfone)
-                await solicitarTodasPermissoes();
-                
-                // 4. Quarto: Remove botão
-                permissaoButton.remove();
-                
-                // 5. Quinto: Libera interface (com fallback)
-                if (typeof window.liberarInterface === 'function') {
-                    window.liberarInterface();
-                    console.log('✅ Interface liberada via função global');
-                } else {
-                    liberarInterfaceFallback();
-                    console.log('✅ Interface liberada via fallback');
-                }
-                
-                // 6. Sexto: Inicia câmera e WebRTC
-                await iniciarCameraAposPermissoes();
-                
-                console.log('✅ Fluxo completo concluído com sucesso!');
-                
-            } catch (error) {
-                console.error('❌ Erro no fluxo:', error);
-                
-                if (typeof window.mostrarErroCarregamento === 'function') {
-                    window.mostrarErroCarregamento('Erro ao solicitar permissões de câmera e microfone');
-                } else {
-                    console.error('❌ Erro no carregamento:', error);
-                }
-                
-                permissaoButton.innerHTML = `
-                    <span style="font-size: 32px;">❌</span><br>
-                    <span style="font-size: 12px;">Erro nas permissões<br>Clique para tentar novamente</span>
-                `;
-                permissaoButton.style.background = '#f44336';
-                permissaoButton.disabled = false;
-                
-                alert('Por favor, permita o acesso à câmera e microfone para usar o aplicativo.');
-            }
-        };
+        // 3. Libera interface
+        if (typeof window.liberarInterface === 'function') {
+            window.liberarInterface();
+            console.log('✅ Interface liberada via função global');
+        } else {
+            liberarInterfaceFallback();
+            console.log('✅ Interface liberada via fallback');
+        }
         
-        document.body.appendChild(permissaoButton);
-
+        // 4. Inicia câmera e WebRTC
+        await iniciarCameraAposPermissoes();
+        
+        console.log('✅ Receiver iniciado com sucesso!');
+        
     } catch (error) {
-        console.error("Erro ao inicializar aplicação:", error);
-        alert("Erro ao inicializar a aplicação.");
+        console.error('❌ Erro ao inicializar receiver:', error);
+        
+        if (typeof window.mostrarErroCarregamento === 'function') {
+            window.mostrarErroCarregamento('Erro ao solicitar permissões de câmera e microfone');
+        } else {
+            console.error('❌ Erro no carregamento:', error);
+            alert('Erro ao inicializar: ' + error.message);
+        }
     }
 };
