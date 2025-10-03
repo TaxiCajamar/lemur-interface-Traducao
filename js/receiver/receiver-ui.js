@@ -160,9 +160,15 @@ async function aplicarBandeiraLocal(langCode) {
         const flags = await response.json();
 
         const bandeira = flags[langCode] || flags[langCode.split('-')[0]] || '🔴';
-        
+
+        // ✅ MESMA BANDEIRA NAS DUAS POSIÇÕES
+        const languageFlagElement = document.querySelector('.language-flag');
+        if (languageFlagElement) languageFlagElement.textContent = bandeira;
+
         const localLangDisplay = document.querySelector('.local-Lang');
         if (localLangDisplay) localLangDisplay.textContent = bandeira;
+
+        console.log('🏳️ Bandeira local aplicada:', bandeira, 'em duas posições');
 
     } catch (error) {
         console.error('Erro ao carregar bandeira local:', error);
