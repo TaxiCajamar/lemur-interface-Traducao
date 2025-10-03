@@ -113,16 +113,6 @@ body {
   height: auto;
   z-index: 50;
 }
-#globobandeiras {
-  position: absolute;
-  top: 35%;
-  left: 74%;
-  transform: translate(-50%, -50%);
-  width: 11%;
-  max-width: 60px;
-  height: auto;
-  z-index: 50;
-}
 
 /* 🏳️ Bandeira do idioma local */
 .language-flag {
