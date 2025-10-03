@@ -418,17 +418,21 @@ async function iniciarCameraAposPermissoes() {
 
             console.log('🎯 Vou traduzir:', idiomaDoCaller, '→', lang);
 
-            window.rtcCore.handleIncomingCall(offer, localStream, (remoteStream) => {
-                remoteStream.getAudioTracks().forEach(track => track.enabled = false);
+           window.rtcCore.handleIncomingCall(offer, localStream, (remoteStream) => {
+    remoteStream.getAudioTracks().forEach(track => track.enabled = false);
 
-                const overlay = document.querySelector('.info-overlay');
-                if (overlay) overlay.classList.add('hidden');
+    const overlay = document.querySelector('.info-overlay');
+    if (overlay) overlay.classList.add('hidden');
 
-                const remoteVideo = document.getElementById('remoteVideo');
-                if (remoteVideo) {
-                    remoteVideo.srcObject = remoteStream;
-                }
-
+    const remoteVideo = document.getElementById('remoteVideo');
+    if (remoteVideo) {
+        remoteVideo.srcObject = remoteStream;
+        
+        // ✅ MOSTRAR VÍDEO E ESCONDER PLACEHOLDER
+        remoteVideo.style.display = 'block';
+        document.querySelector('.video-wrapper').classList.add('video-loaded');
+    }
+   
                 window.targetTranslationLang = idiomaDoCaller || lang;
                 console.log('🎯 Idioma definido para tradução:', window.targetTranslationLang);
 
