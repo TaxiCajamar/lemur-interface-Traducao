@@ -190,32 +190,32 @@ async function iniciarCameraAposPermissoes() {
 
         window.targetTranslationLang = lang;
 
-        // ✅ GUARDA as informações para gerar QR Code depois (QUANDO O USUÁRIO CLICAR)
-        window.qrCodeData = {
-            myId: myId,
-            token: token,
-            lang: lang
-        };
+    // ✅ GUARDA as informações para gerar QR Code depois (QUANDO O USUÁRIO CLICAR)
+window.qrCodeData = {
+    myId: myId,
+    token: token,
+    lang: lang
+};
 
-        // ✅ CONFIGURA o botão para gerar QR Code quando clicado
-        document.getElementById('btn-gerar-qrcode').addEventListener('click', function() {
-            console.log('🗝️ Gerando QR Code...');
-            
-            const callerUrl = `${window.location.origin}/caller.html?targetId=${window.qrCodeData.myId}&token=${encodeURIComponent(window.qrCodeData.token)}&lang=${encodeURIComponent(window.qrCodeData.lang)}`;
-            
-            // Gera o QR Code
-            QRCodeGenerator.generate("qrcode", callerUrl);
-            
-            // Mostra o overlay do QR Code
-            const overlay = document.querySelector('.info-overlay');
-            if (overlay) {
-                overlay.classList.remove('hidden');
-                overlay.style.opacity = '1';
-                overlay.style.pointerEvents = 'auto';
-            }
-            
-            console.log('✅ QR Code gerado!');
-        });
+// ✅ CONFIGURA o botão para gerar QR Code quando clicado
+document.getElementById('logo-traduz').addEventListener('click', function() {
+    console.log('🗝️ Gerando QR Code...');
+    
+    const callerUrl = `${window.location.origin}/caller.html?targetId=${window.qrCodeData.myId}&token=${encodeURIComponent(window.qrCodeData.token)}&lang=${encodeURIComponent(window.qrCodeData.lang)}`;
+    
+    // Gera o QR Code
+    QRCodeGenerator.generate("qrcode", callerUrl);
+    
+    // Mostra o overlay do QR Code
+    const overlay = document.querySelector('.info-overlay');
+    if (overlay) {
+        overlay.classList.remove('hidden');
+        overlay.style.opacity = '1';
+        overlay.style.pointerEvents = 'auto';
+    }
+    
+    console.log('✅ QR Code gerado!');
+});
 
         window.rtcCore.initialize(myId);
         window.rtcCore.setupSocketHandlers();
