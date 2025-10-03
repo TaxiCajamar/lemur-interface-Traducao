@@ -56,6 +56,19 @@ body {
     height: auto;
     display: block;
 }
+/* ✅ Overlay do QR Code começa OCULTO */
+.info-overlay.hidden {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    display: block !important; /* Mantém no layout mas invisível */
+}
+
+/* ✅ Overlay VISÍVEL quando não tem classe hidden */
+.info-overlay:not(.hidden) {
+    opacity: 1;
+    pointer-events: auto;
+}
+
 /* ===== PLACEHOLDER DA CÂMERA ===== */
 .camera-placeholder {
   position: absolute;
