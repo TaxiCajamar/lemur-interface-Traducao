@@ -41,6 +41,42 @@ async function translateText(text) {
     }
 }
 
+// 🎵 VARIÁVEL PARA CONTROLE DE PERMISSÃO DE ÁUDIO
+let audioPermissionGranted = false;
+
+// 🎵 FUNÇÃO PARA SOLICITAR PERMISSÃO DE ÁUDIO
+function solicitarPermissaoAudio() {
+    return new Promise((resolve) => {
+        try {
+            if (audioPermissionGranted && window.audioContext) {
+                resolve(true);
+                return;
+            }
+            
+            window.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = window.audioContext.createOscillator();
+            const gainNode = window.audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(window.audioContext.destination);
+            
+            gainNode.gain.value = 0.001;
+            oscillator.start();
+            oscillator.stop(window.audioContext.currentTime + 0.1);
+            
+            audioPermissionGranted = true;
+            window.audioPermissionGranted = true;
+            
+            console.log('✅ Permissão de áudio concedida!');
+            resolve(true);
+            
+        } catch (error) {
+            console.error('❌ Erro ao solicitar permissão de áudio:', error);
+            resolve(false);
+        }
+    });
+}
+
 // ===== INICIALIZAÇÃO DO TRADUTOR =====
 function initializeTranslator() {
     
@@ -128,16 +164,14 @@ function initializeTranslator() {
                 }
             }
             
-            // ✅ CORREÇÃO: Processo totalmente silencioso
             if (finalTranscript && !isTranslating) {
                 const now = Date.now();
                 if (now - lastTranslationTime > 1000) {
                     lastTranslationTime = now;
                     isTranslating = true;
                     
-                    // ✅ Traduz e envia SEM MOSTRAR o processo
                     translateText(finalTranscript).then(translation => {
-                        enviarParaOutroCelular(translation); // Envia silenciosamente
+                        enviarParaOutroCelular(translation);
                         isTranslating = false;
                     }).catch(error => {
                         console.error('Erro na tradução:', error);
@@ -161,7 +195,6 @@ function initializeTranslator() {
     
     async function requestMicrophonePermission() {
         try {
-            // ✅ CORREÇÃO: Aguarda as permissões do botão principal
             if (permissionCheckAttempts >= MAX_PERMISSION_CHECKS) {
                 console.log('❌ Tempo esgotado aguardando permissões');
                 recordButton.disabled = true;
@@ -170,7 +203,23 @@ function initializeTranslator() {
             
             permissionCheckAttempts++;
             
-            // Verifica se as permissões já foram concedidas
+            // ✅ TENTATIVA MAIS AGRESSIVA: Tenta solicitar microfone diretamente
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                console.log('✅ Permissão do microfone concedida!');
+                
+                stream.getTracks().forEach(track => track.stop());
+                
+                microphonePermissionGranted = true;
+                recordButton.disabled = false;
+                setupRecognitionEvents();
+                return;
+                
+            } catch (error) {
+                console.log('⏳ Aguardando permissões do microfone...');
+            }
+            
+            // Fallback: verifica se já tem permissão
             const devices = await navigator.mediaDevices.enumerateDevices();
             const hasMicrophonePermission = devices.some(device => 
                 device.kind === 'audioinput' && device.deviceId !== ''
@@ -184,8 +233,7 @@ function initializeTranslator() {
                 return;
             }
             
-            // Se não tem permissão ainda, aguarda e tenta novamente
-            console.log(`⏳ Aguardando permissões... (tentativa ${permissionCheckAttempts}/${MAX_PERMISSION_CHECKS})`);
+            console.log(`⏳ Tentando permissões... (${permissionCheckAttempts}/${MAX_PERMISSION_CHECKS})`);
             
             setTimeout(() => {
                 requestMicrophonePermission();
@@ -194,7 +242,6 @@ function initializeTranslator() {
         } catch (error) {
             console.error('Erro ao verificar permissões:', error);
             
-            // Se deu erro, tenta novamente após um tempo
             if (permissionCheckAttempts < MAX_PERMISSION_CHECKS) {
                 setTimeout(() => {
                     requestMicrophonePermission();
@@ -240,7 +287,6 @@ function initializeTranslator() {
             isSpeechPlaying = false;
             if (speakerButton) speakerButton.textContent = '🔊';
         } else {
-            // ✅ CORREÇÃO: Lê apenas o texto recebido
             if (textoRecebido && textoRecebido.textContent) {
                 const textToSpeak = textoRecebido.textContent;
                 if (textToSpeak && textToSpeak.trim() !== "") {
@@ -254,7 +300,6 @@ function initializeTranslator() {
         if (isRecording || isTranslating) return;
         
         try {
-            // Atualizar idioma dinamicamente
             const currentLang = window.currentSourceLang || IDIOMA_ORIGEM;
             recognition.lang = currentLang;
             
@@ -308,9 +353,16 @@ function initializeTranslator() {
     }
     
     if (recordButton) {
-        recordButton.addEventListener('touchstart', function(e) {
+        recordButton.addEventListener('touchstart', async function(e) {
             e.preventDefault();
-            if (recordButton.disabled || !microphonePermissionGranted || isTranslating) return;
+            
+            // ✅ UM CLIQUE SÓ: Solicita permissão de áudio E inicia gravação
+            if (!audioPermissionGranted) {
+                console.log('🎵 Solicitando permissão de áudio e iniciando gravação...');
+                await solicitarPermissaoAudio();
+            }
+            
+            if (recordButton.disabled || isTranslating) return;
             
             if (!isRecording) {
                 pressTimer = setTimeout(() => {
@@ -328,7 +380,7 @@ function initializeTranslator() {
             if (isRecording) {
                 stopRecording();
             } else {
-                if (microphonePermissionGranted && !isTranslating) {
+                if (!isTranslating && audioPermissionGranted) {
                     tapMode = true;
                     startRecording();
                     showRecordingModal();
@@ -336,9 +388,16 @@ function initializeTranslator() {
             }
         });
         
-        recordButton.addEventListener('click', function(e) {
+        recordButton.addEventListener('click', async function(e) {
             e.preventDefault();
-            if (recordButton.disabled || !microphonePermissionGranted || isTranslating) return;
+            
+            // ✅ UM CLIQUE SÓ: Solicita permissão de áudio E inicia gravação
+            if (!audioPermissionGranted) {
+                console.log('🎵 Solicitando permissão de áudio e iniciando gravação...');
+                await solicitarPermissaoAudio();
+            }
+            
+            if (recordButton.disabled || isTranslating) return;
             
             if (isRecording) {
                 stopRecording();
@@ -366,7 +425,5 @@ function initializeTranslator() {
 // ===== INICIALIZAÇÃO GERAL =====
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM carregado, iniciando aplicação...');
-    
-    // ⏳ ATRASO para o tradutor - aguarda o botão de permissões
-    setTimeout(initializeTranslator, 2000); // 2 segundos de delay
+    setTimeout(initializeTranslator, 2000);
 });
