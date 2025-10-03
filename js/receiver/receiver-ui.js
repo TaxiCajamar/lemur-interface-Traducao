@@ -290,23 +290,40 @@ async function iniciarCameraAposPermissoes() {
         };
 
         // ✅ MODIFICAÇÃO 2: CONFIGURA o botão para gerar QR Code quando clicado
-        document.getElementById('logo-traduz').addEventListener('click', function() {
-            console.log('🗝️ Gerando QR Code...');
-            
-            const callerUrl = `${window.location.origin}/caller.html?targetId=${window.qrCodeData.myId}&token=${encodeURIComponent(window.qrCodeData.token)}&lang=${encodeURIComponent(window.qrCodeData.lang)}`;
-            
-            // Gera o QR Code
-            QRCodeGenerator.generate("qrcode", callerUrl);
-            
-            // Mostra o overlay do QR Code
-            const overlay = document.querySelector('.info-overlay');
-            if (overlay) {
-                overlay.classList.remove('hidden');
-            }
-            
-            console.log('✅ QR Code gerado!');
-        });
-
+document.getElementById('logo-traduz').addEventListener('click', function() {
+    // 🔒 BLOQUEIA se WebRTC já estiver conectado
+    const remoteVideo = document.getElementById('remoteVideo');
+    if (remoteVideo && remoteVideo.srcObject) {
+        console.log('❌ WebRTC conectado - Botão bloqueado');
+        
+        // Efeito visual vermelho
+        this.style.backgroundColor = '#ff4444';
+        this.style.color = 'white';
+        
+        // Volta ao normal depois de 1 segundo
+        setTimeout(() => {
+            this.style.backgroundColor = '';
+            this.style.color = '';
+        }, 1000);
+        
+        return; // Impede de gerar QR Code
+    }
+    
+    console.log('🗝️ Gerando QR Code...');
+    
+    const callerUrl = `${window.location.origin}/caller.html?targetId=${window.qrCodeData.myId}&token=${encodeURIComponent(window.qrCodeData.token)}&lang=${encodeURIComponent(window.qrCodeData.lang)}`;
+    
+    // Gera o QR Code
+    QRCodeGenerator.generate("qrcode", callerUrl);
+    
+    // Mostra o overlay do QR Code
+    const overlay = document.querySelector('.info-overlay');
+    if (overlay) {
+        overlay.classList.remove('hidden');
+    }
+    
+    console.log('✅ QR Code gerado!');
+});
         window.rtcCore.initialize(myId);
         window.rtcCore.setupSocketHandlers();
 
