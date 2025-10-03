@@ -418,10 +418,7 @@ async function iniciarCameraAposPermissoes() {
 
             console.log('🎯 Vou traduzir:', idiomaDoCaller, '→', lang);
 
-           window.rtcCore.handleIncomingCall(offer, localStream, (remoteStream) => {
-    remoteStream.getAudioTracks().forEach(track => track.enabled = false);
-
-    const overlay = document.querySelector('.info-overlay');
+          const overlay = document.querySelector('.info-overlay');
     if (overlay) overlay.classList.add('hidden');
 
     const remoteVideo = document.getElementById('remoteVideo');
