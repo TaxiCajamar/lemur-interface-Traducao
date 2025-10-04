@@ -29,9 +29,9 @@ body {
 /* ===== intriçoes ===== */
 .instruction-box {
   position: absolute;
-  top: 80px;
+  top: 100px;
   left: 50px;
-  width: 90%;
+  width: 70%;
   padding: 10px; /* menos espaço interno */
   background: #f9f9f9;
   border-radius: 10px;
@@ -42,10 +42,10 @@ body {
 
 .instruction-item {
   display: flex;
-  align-items: flex-start; /* alinha topo do texto com topo da imagem */
-  gap: 8px; /* menos espaço entre imagem e texto */
-  margin-bottom: 6px; /* reduz espaço entre linhas */
-  line-height: 1.2; /* deixa o texto mais “chatinho” */
+  align-items: baseline; /* alinha pela base do texto e da imagem */
+  gap: 8px;
+  margin-bottom: 4px;
+  line-height: 1.2;
   font-family: 'Segoe UI', sans-serif;
   color: #333;
 }
