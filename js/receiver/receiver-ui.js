@@ -255,6 +255,17 @@ async function iniciarCameraAposPermissoes() {
         const localVideo = document.getElementById('localVideo');
         if (localVideo) {
             localVideo.srcObject = localStream;
+            
+            // ✅ MOSTRA BOTÃO E REMOVE LOADING QUANDO CÂMERA ESTIVER PRONTA
+            const botaoKey = document.getElementById('logo-traduz');
+            if (botaoKey) {
+                botaoKey.style.display = 'block';
+            }
+            
+            const mobileLoading = document.getElementById('mobileLoading');
+            if (mobileLoading) {
+                mobileLoading.style.display = 'none';
+            }
         }
 
         window.rtcCore = new WebRTCCore();
@@ -278,10 +289,6 @@ async function iniciarCameraAposPermissoes() {
 
         window.targetTranslationLang = lang;
 
-        // ✅ MODIFICAÇÃO 1: NÃO gera QR Code automaticamente
-        // const callerUrl = `${window.location.origin}/caller.html?targetId=${myId}&token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
-        // QRCodeGenerator.generate("qrcode", callerUrl);
-
         // ✅ GUARDA as informações para gerar QR Code depois (QUANDO O USUÁRIO CLICAR)
         window.qrCodeData = {
             myId: myId,
@@ -289,30 +296,31 @@ async function iniciarCameraAposPermissoes() {
             lang: lang
         };
 
-        // ✅ MODIFICAÇÃO 2: CONFIGURA o botão para gerar QR Code quando clicado
-document.getElementById('logo-traduz').addEventListener('click', function() {
-    // 🔒 BLOQUEIA se WebRTC já estiver conectado
-    const remoteVideo = document.getElementById('remoteVideo');
-    if (remoteVideo && remoteVideo.srcObject) {
-        console.log('❌ WebRTC conectado - Botão bloqueado');
-        return; // Simplesmente não faz nada
-    }
-    
-    console.log('🗝️ Gerando QR Code...');
-    
-    const callerUrl = `${window.location.origin}/caller.html?targetId=${window.qrCodeData.myId}&token=${encodeURIComponent(window.qrCodeData.token)}&lang=${encodeURIComponent(window.qrCodeData.lang)}`;
-    
-    // Gera o QR Code
-    QRCodeGenerator.generate("qrcode", callerUrl);
-    
-    // Mostra o overlay do QR Code
-    const overlay = document.querySelector('.info-overlay');
-    if (overlay) {
-        overlay.classList.remove('hidden');
-    }
-    
-    console.log('✅ QR Code gerado!');
-});
+        // ✅ CONFIGURA o botão para gerar QR Code quando clicado
+        document.getElementById('logo-traduz').addEventListener('click', function() {
+            // 🔒 BLOQUEIA se WebRTC já estiver conectado
+            const remoteVideo = document.getElementById('remoteVideo');
+            if (remoteVideo && remoteVideo.srcObject) {
+                console.log('❌ WebRTC conectado - Botão bloqueado');
+                return; // Simplesmente não faz nada
+            }
+            
+            console.log('🗝️ Gerando QR Code...');
+            
+            const callerUrl = `${window.location.origin}/caller.html?targetId=${window.qrCodeData.myId}&token=${encodeURIComponent(window.qrCodeData.token)}&lang=${encodeURIComponent(window.qrCodeData.lang)}`;
+            
+            // Gera o QR Code
+            QRCodeGenerator.generate("qrcode", callerUrl);
+            
+            // Mostra o overlay do QR Code
+            const overlay = document.querySelector('.info-overlay');
+            if (overlay) {
+                overlay.classList.remove('hidden');
+            }
+            
+            console.log('✅ QR Code gerado!');
+        });
+
         window.rtcCore.initialize(myId);
         window.rtcCore.setupSocketHandlers();
 
@@ -472,6 +480,13 @@ document.getElementById('logo-traduz').addEventListener('click', function() {
 
     } catch (error) {
         console.error("Erro ao iniciar câmera:", error);
+        
+        // ✅ EM CASO DE ERRO TAMBÉM REMOVE LOADING
+        const mobileLoading = document.getElementById('mobileLoading');
+        if (mobileLoading) {
+            mobileLoading.style.display = 'none';
+        }
+        
         throw error;
     }
 }
