@@ -17,6 +17,14 @@
       opacity: 0 !important;
       pointer-events: none !important;
     }
+    
+    /* Estilo temporário para debug de imagens */
+    img {
+      border: 1px solid transparent;
+    }
+    img:not([src]), img[src=""] {
+      border: 2px solid red !important;
+    }
   </style>
 </head>
 <body>
@@ -33,39 +41,40 @@
     <!-- 👆 Imagem de clique -->
     <img id="click" src="assets/images/click.png" alt="Click" />
 
-    <!-- 🐵 Lemur fixo (oculto até carregar) -->
-    <img id="lemurFixed" src="" style="display: none;" onerror="this.style.display='none'" alt="Lemur Fixo" />
+    <!-- 🐵 Lemur fixo (oculto até carregar) - CORRIGIDO -->
+    <img id="lemurFixed" src="assets/images/lemurBlu.png" style="display: none;" alt="Lemur Fixo" />
 
     <!-- ⏳ Loader de carregamento -->
     <div id="mobileLoading" class="mobile-loader">
       <div class="loader-circle"></div>
     </div>
 
-    <!-- 📋 Bloco de instruções compacto no rodapé -->
-    <div class="instruction-item">
-  <img src="assets/images/hello.png" alt="Hello icon" />
-  <span id="welcome-text">Hi, welcome!</span>
-</div>
-<div class="instruction-item">
-  <img src="assets/images/QRcode.png" alt="QR icon" />
-  <span id="tap-qr">Tap that QR Code</span>
-</div>
-<div class="instruction-item">
-  <img src="assets/images/mobil.png" alt="Mobile icon" />
-  <span id="quick-scan">Quick scan</span>
-</div>
-<div class="instruction-item">
-  <img src="assets/images/mic.png" alt="Mic icon" />
-  <span id="drop-voice">Drop your voice</span>
-</div>
-<div class="instruction-item">
-  <img src="assets/images/trduz.png" alt="Translate icon" />
-  <span id="check-replies">Check the replies</span>
-</div>
-<div class="instruction-item">
-  <img src="assets/images/cam.png" alt="Camera icon" />
-  <span id="flip-cam">Flip the cam and show the vibes</span>
-</div>
+    <!-- 📋 Bloco de instruções compacto no rodapé - CORRIGIDO -->
+    <div class="instructions-container">
+      <div class="instruction-item">
+        <img src="assets/images/hello.png" alt="Hello icon" />
+        <span id="welcome-text">Hi, welcome!</span>
+      </div>
+      <div class="instruction-item">
+        <img src="assets/images/QRcode.png" alt="QR icon" />
+        <span id="tap-qr">Tap that QR Code</span>
+      </div>
+      <div class="instruction-item">
+        <img src="assets/images/mobil.png" alt="Mobile icon" />
+        <span id="quick-scan">Quick scan</span>
+      </div>
+      <div class="instruction-item">
+        <img src="assets/images/mic.png" alt="Mic icon" />
+        <span id="drop-voice">Drop your voice</span>
+      </div>
+      <div class="instruction-item">
+        <img src="assets/images/trduz.png" alt="Translate icon" />
+        <span id="check-replies">Check the replies</span>
+      </div>
+      <div class="instruction-item">
+        <img src="assets/images/cam.png" alt="Camera icon" />
+        <span id="flip-cam">Flip the cam and show the vibes</span>
+      </div>
     </div>
 
     <!-- 🔑 Botão para gerar QR Code -->
@@ -132,6 +141,19 @@
   <script src="https://lemur-signal-ings.onrender.com/socket.io/socket.io.js"></script>
 
   <script>
+    // ✅ DEBUG: Verifica se as imagens existem
+    window.addEventListener('load', function() {
+      const images = document.querySelectorAll('img');
+      images.forEach(img => {
+        if (!img.complete || img.naturalHeight === 0) {
+          console.error('❌ Imagem não carregada:', img.src, img.alt);
+          img.style.border = '2px solid red';
+        } else {
+          console.log('✅ Imagem carregada:', img.src);
+        }
+      });
+    });
+
     // ✅ Libera interface após carregamento
     window.liberarInterface = function () {
       console.log('✅ Interface já está visível');
