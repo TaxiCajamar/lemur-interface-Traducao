@@ -1,37 +1,6 @@
 import { WebRTCCore } from '../../core/webrtc-core.js';
 import { QRCodeGenerator } from '../qrcode/qr-code-utils.js';
 
-// 📷 VARIÁVEIS PARA TROCAR CÂMERA
-let cameraTraseira = false;
-let streamAtual = null;
-
-// 📷 FUNÇÃO PARA TROCAR CÂMERA
-async function trocarCamera() {
-    try {
-        if (streamAtual) {
-            streamAtual.getTracks().forEach(track => track.stop());
-        }
-
-        cameraTraseira = !cameraTraseira;
-        
-        const constraints = {
-            video: { 
-                facingMode: cameraTraseira ? "environment" : "user" 
-            },
-            audio: false
-        };
-
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        streamAtual = stream;
-        
-        const localVideo = document.getElementById('localVideo');
-        localVideo.srcObject = stream;
-
-    } catch (error) {
-        console.error('Erro ao trocar câmera:', error);
-    }
-}
-
 // 🎵 VARIÁVEIS DE ÁUDIO
 let audioContext = null;
 let somDigitacao = null;
@@ -192,6 +161,7 @@ async function aplicarBandeiraLocal(langCode) {
 
         const bandeira = flags[langCode] || flags[langCode.split('-')[0]] || '🔴';
 
+        // ✅ CORREÇÃO: MESMA BANDEIRA NAS DUAS POSIÇÕES
         const languageFlagElement = document.querySelector('.language-flag');
         if (languageFlagElement) languageFlagElement.textContent = bandeira;
 
@@ -227,12 +197,14 @@ async function aplicarBandeiraRemota(langCode) {
 function liberarInterfaceFallback() {
     console.log('🔓 Usando fallback para liberar interface...');
     
+    // Remove tela de loading
     const loadingScreen = document.getElementById('loadingScreen');
     if (loadingScreen) {
         loadingScreen.style.display = 'none';
         console.log('✅ Tela de loading removida');
     }
     
+    // Mostra conteúdo principal
     const elementosEscondidos = document.querySelectorAll('.hidden-until-ready');
     elementosEscondidos.forEach(elemento => {
         elemento.style.display = '';
@@ -279,24 +251,25 @@ async function iniciarCameraAposPermissoes() {
         });
 
         let localStream = stream;
-        streamAtual = stream;
 
         const localVideo = document.getElementById('localVideo');
         if (localVideo) {
             localVideo.srcObject = localStream;
             
-            const mobileLoading = document.getElementById('mobileLoading');
-            if (mobileLoading) {
-                mobileLoading.style.display = 'none';
-            }
+            // ✅ MOSTRA BOTÃO E REMOVE LOADING QUANDO CÂMERA ESTIVER PRONTA
+ const mobileLoading = document.getElementById('mobileLoading');
+if (mobileLoading) {
+    mobileLoading.style.display = 'none';
+}
 
-            setTimeout(() => {
-                const elementoClick = document.getElementById('click');
-                if (elementoClick) {
-                    elementoClick.style.display = 'block';
-                    elementoClick.classList.add('piscar-suave');
-                }
-            }, 500);
+// Aparece 2 segundos após a câmera carregar
+setTimeout(() => {
+    const elementoClick = document.getElementById('click');
+    if (elementoClick) {
+        elementoClick.style.display = 'block';
+        elementoClick.classList.add('piscar-suave'); // Começa a piscar
+    }
+}, 500);
         }
 
         window.rtcCore = new WebRTCCore();
@@ -320,31 +293,37 @@ async function iniciarCameraAposPermissoes() {
 
         window.targetTranslationLang = lang;
 
+        // ✅ GUARDA as informações para gerar QR Code depois (QUANDO O USUÁRIO CLICAR)
         window.qrCodeData = {
             myId: myId,
             token: token,
             lang: lang
         };
 
+        // ✅ CONFIGURA o botão para gerar QR Code quando clicado
         document.getElementById('logo-traduz').addEventListener('click', function() {
            
-            const elementoClick = document.getElementById('click');
-            if (elementoClick) {
-                elementoClick.style.display = 'none';
-            }
+            // ✅ FAZ O #click DESAPARECER
+const elementoClick = document.getElementById('click');
+if (elementoClick) {
+    elementoClick.style.display = 'none';
+}
             
+            // 🔒 BLOQUEIA se WebRTC já estiver conectado
             const remoteVideo = document.getElementById('remoteVideo');
             if (remoteVideo && remoteVideo.srcObject) {
                 console.log('❌ WebRTC conectado - Botão bloqueado');
-                return;
+                return; // Simplesmente não faz nada
             }
             
             console.log('🗝️ Gerando QR Code...');
             
             const callerUrl = `${window.location.origin}/caller.html?targetId=${window.qrCodeData.myId}&token=${encodeURIComponent(window.qrCodeData.token)}&lang=${encodeURIComponent(window.qrCodeData.lang)}`;
             
+            // Gera o QR Code
             QRCodeGenerator.generate("qrcode", callerUrl);
             
+            // Mostra o overlay do QR Code
             const overlay = document.querySelector('.info-overlay');
             if (overlay) {
                 overlay.classList.remove('hidden');
@@ -356,6 +335,7 @@ async function iniciarCameraAposPermissoes() {
         window.rtcCore.initialize(myId);
         window.rtcCore.setupSocketHandlers();
 
+        // 🎤 FUNÇÃO GOOGLE TTS SEPARADA
         async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente) {
             try {
                 console.log('🎤 Iniciando Google TTS para:', mensagem.substring(0, 50) + '...');
@@ -378,6 +358,7 @@ async function iniciarCameraAposPermissoes() {
                 const url = URL.createObjectURL(blob);
                 const audio = new Audio(url);
                 
+                // EVENTO: ÁUDIO COMEÇOU
                 audio.onplay = () => {
                     pararSomDigitacao();
                     
@@ -394,6 +375,7 @@ async function iniciarCameraAposPermissoes() {
                     console.log('🔊 Áudio Google TTS iniciado');
                 };
                 
+                // EVENTO: ÁUDIO TERMINOU
                 audio.onended = () => {
                     console.log('🔚 Áudio Google TTS terminado');
                     if (imagemImpaciente) {
@@ -401,6 +383,7 @@ async function iniciarCameraAposPermissoes() {
                     }
                 };
                 
+                // EVENTO: ERRO NO ÁUDIO
                 audio.onerror = () => {
                     pararSomDigitacao();
                     console.log('❌ Erro no áudio Google TTS');
@@ -418,6 +401,7 @@ async function iniciarCameraAposPermissoes() {
                 
             } catch (error) {
                 console.error('❌ Erro no Google TTS:', error);
+                // Fallback para síntese nativa se necessário
             }
         }
 
@@ -443,6 +427,7 @@ async function iniciarCameraAposPermissoes() {
                 imagemImpaciente.style.display = 'block';
             }
 
+            // 🎤 CHAMADA PARA GOOGLE TTS
             await falarComGoogleTTS(mensagem, elemento, imagemImpaciente);
         });
 
@@ -507,6 +492,7 @@ async function iniciarCameraAposPermissoes() {
     } catch (error) {
         console.error("Erro ao iniciar câmera:", error);
         
+        // ✅ EM CASO DE ERRO TAMBÉM REMOVE LOADING
         const mobileLoading = document.getElementById('mobileLoading');
         if (mobileLoading) {
             mobileLoading.style.display = 'none';
@@ -521,17 +507,23 @@ window.onload = async () => {
     try {
         console.log('🚀 Iniciando aplicação receiver automaticamente...');
         
+        // 1. Obtém o idioma para tradução
         const params = new URLSearchParams(window.location.search);
         const lang = params.get('lang') || navigator.language || 'pt-BR';
         
+        // 2. Traduz as frases fixas PRIMEIRO
         await traduzirFrasesFixas(lang);
         
+        // 3. Inicia áudio
         iniciarAudio();
         
+        // 4. Carrega sons da máquina de escrever
         await carregarSomDigitacao();
         
+        // 5. Solicita TODAS as permissões (câmera + microfone)
         await solicitarTodasPermissoes();
         
+        // 6. Libera interface
         if (typeof window.liberarInterface === 'function') {
             window.liberarInterface();
             console.log('✅ Interface liberada via função global');
@@ -540,9 +532,8 @@ window.onload = async () => {
             console.log('✅ Interface liberada via fallback');
         }
         
+        // 7. Inicia câmera e WebRTC
         await iniciarCameraAposPermissoes();
-        
-        document.getElementById('girar-camera').addEventListener('click', trocarCamera);
         
         console.log('✅ Receiver iniciado com sucesso!');
         
