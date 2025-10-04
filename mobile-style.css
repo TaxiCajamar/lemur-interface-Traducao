@@ -27,32 +27,32 @@ body {
 }
 
 /* ===== intriçoes ===== */
-
 .instruction-box {
-  position: absolute; /* permite movimentar livremente */
-  top: 80px;           /* ajuste conforme necessário */
+  position: absolute;
+  top: 80px;
   left: 50px;
-  width: 90%;;        /* menor largura */
-  padding: 15px;
+  width: 90%;
+  padding: 10px; /* menos espaço interno */
   background: #f9f9f9;
   border-radius: 10px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  font-size: 0.9em;    /* texto mais compacto */
+  font-size: 0.85em; /* texto mais compacto */
   z-index: 100;
- }
+}
+
 .instruction-item {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-  font-size: 1em;
+  align-items: flex-start; /* alinha topo do texto com topo da imagem */
+  gap: 8px; /* menos espaço entre imagem e texto */
+  margin-bottom: 6px; /* reduz espaço entre linhas */
+  line-height: 1.2; /* deixa o texto mais “chatinho” */
   font-family: 'Segoe UI', sans-serif;
   color: #333;
 }
 
 .instruction-item img {
-  width: 28px;
-  height: 28px;
+  width: 24px; /* menor imagem */
+  height: 24px;
   object-fit: contain;
 }
 
