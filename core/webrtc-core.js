@@ -155,6 +155,63 @@ class WebRTCCore {
         this.dataChannel.send(message);
     }
   }
+
+  /**
+   * 🎥 ATUALIZA STREAM DE VÍDEO DURANTA CHAMADA ATIVA
+   * Método seguro para alternar câmeras sem quebrar WebRTC
+   */
+  updateVideoStream(newStream) {
+    return new Promise(async (resolve, reject) => {
+      try {
+        if (!this.peer || this.peer.connectionState !== 'connected') {
+          console.log('❌ WebRTC não está conectado para atualizar stream');
+          reject(new Error('WebRTC não conectado'));
+          return;
+        }
+
+        console.log('🔄 Atualizando stream de vídeo no WebRTC Core...');
+        
+        // Atualiza o stream local
+        this.localStream = newStream;
+        
+        // Obtém a nova track de vídeo
+        const newVideoTrack = newStream.getVideoTracks()[0];
+        
+        if (!newVideoTrack) {
+          reject(new Error('Nenhuma track de vídeo encontrada'));
+          return;
+        }
+
+        // Encontra e atualiza TODOS os senders de vídeo
+        const senders = this.peer.getSenders();
+        let videoSendersUpdated = 0;
+        
+        for (const sender of senders) {
+          if (sender.track && sender.track.kind === 'video') {
+            try {
+              await sender.replaceTrack(newVideoTrack);
+              videoSendersUpdated++;
+              console.log(`✅ Sender de vídeo ${videoSendersUpdated} atualizado`);
+            } catch (error) {
+              console.error('❌ Erro ao atualizar sender:', error);
+            }
+          }
+        }
+
+        if (videoSendersUpdated > 0) {
+          console.log(`✅ ${videoSendersUpdated} senders de vídeo atualizados com sucesso`);
+          resolve(true);
+        } else {
+          console.log('⚠️ Nenhum sender de vídeo encontrado para atualizar');
+          resolve(false);
+        }
+        
+      } catch (error) {
+        console.error('❌ Erro crítico ao atualizar stream:', error);
+        reject(error);
+      }
+    });
+  }
 }
 
 export { WebRTCCore };
