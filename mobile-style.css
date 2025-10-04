@@ -146,15 +146,16 @@ body {
   z-index: 50;
 }
 
-#girar-camera {
+.botao-girar-camera {
     position: absolute;
-    top: 58%;  /* Ajuste conforme necessário */
+    top: 58%;
     left: 50%;
     transform: translate(-50%, -50%);
     width: 15%;
     max-width: 120px;
     height: auto;
     z-index: 40;
+    cursor: pointer;
 }
 
 /* 🏳️ Bandeira do idioma local */
