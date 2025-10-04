@@ -1,6 +1,9 @@
 // core/webrtc-core.js
 import { getIceServers, SIGNALING_SERVER_URL } from './internet-config.js';
 
+// ✅ VERIFICA se a classe já existe antes de declarar
+if (typeof WebRTCCore === 'undefined') {
+
 class WebRTCCore {
   constructor(socketUrl = SIGNALING_SERVER_URL) {
     this.socket = io(socketUrl);
@@ -11,16 +14,19 @@ class WebRTCCore {
     this.dataChannel = null;
     this.onDataChannelMessage = null;
 
-    window.rtcDataChannel = {
+    // ✅ VERIFICA se já existe antes de criar
+    if (!window.rtcDataChannel) {
+      window.rtcDataChannel = {
         send: (message) => {
-            if (this.dataChannel && this.dataChannel.readyState === 'open') {
-                this.dataChannel.send(message);
-            }
+          if (this.dataChannel && this.dataChannel.readyState === 'open') {
+            this.dataChannel.send(message);
+          }
         },
         isOpen: () => {
-            return this.dataChannel && this.dataChannel.readyState === 'open';
+          return this.dataChannel && this.dataChannel.readyState === 'open';
         }
-    };
+      };
+    }
 
     this.iceServers = getIceServers();
   }
@@ -29,18 +35,18 @@ class WebRTCCore {
     if (!this.dataChannel) return;
     
     this.dataChannel.onopen = () => {
-        console.log('DataChannel connected');
+      console.log('DataChannel connected');
     };
 
     this.dataChannel.onmessage = (event) => {
-        console.log('Message received:', event.data);
-        if (this.onDataChannelMessage) {
-            this.onDataChannelMessage(event.data);
-        }
+      console.log('Message received:', event.data);
+      if (this.onDataChannelMessage) {
+        this.onDataChannelMessage(event.data);
+      }
     };
 
     this.dataChannel.onerror = (error) => {
-        console.error('DataChannel error:', error);
+      console.error('DataChannel error:', error);
     };
   }
 
@@ -56,89 +62,89 @@ class WebRTCCore {
     this.setupDataChannelHandlers();
 
     stream.getTracks().forEach(track => {
-        this.peer.addTrack(track, stream);
+      this.peer.addTrack(track, stream);
     });
 
     this.peer.ontrack = event => {
-        if (this.remoteStreamCallback) {
-            this.remoteStreamCallback(event.streams[0]);
-        }
+      if (this.remoteStreamCallback) {
+        this.remoteStreamCallback(event.streams[0]);
+      }
     };
 
     this.peer.onicecandidate = event => {
-        if (event.candidate) {
-            this.socket.emit('ice-candidate', {
-                to: targetId,
-                candidate: event.candidate
-            });
-        }
+      if (event.candidate) {
+        this.socket.emit('ice-candidate', {
+          to: targetId,
+          candidate: event.candidate
+        });
+      }
     };
 
     this.peer.createOffer()
-        .then(offer => this.peer.setLocalDescription(offer))
-        .then(() => {
-            this.socket.emit('call', {
-                to: targetId,
-                offer: this.peer.localDescription,
-                callerLang
-            });
+      .then(offer => this.peer.setLocalDescription(offer))
+      .then(() => {
+        this.socket.emit('call', {
+          to: targetId,
+          offer: this.peer.localDescription,
+          callerLang
         });
+      });
   }
 
   handleIncomingCall(offer, localStream, callback) {
     this.peer = new RTCPeerConnection({ iceServers: this.iceServers });
 
     if (localStream) {
-        localStream.getTracks().forEach(track => {
-            this.peer.addTrack(track, localStream);
-        });
+      localStream.getTracks().forEach(track => {
+        this.peer.addTrack(track, localStream);
+      });
     }
 
     this.peer.ondatachannel = (event) => {
-        this.dataChannel = event.channel;
-        this.setupDataChannelHandlers();
+      this.dataChannel = event.channel;
+      this.setupDataChannelHandlers();
     };
 
     this.peer.ontrack = event => callback(event.streams[0]);
 
     this.peer.onicecandidate = event => {
-        if (event.candidate) {
-            this.socket.emit('ice-candidate', {
-                to: this.currentCaller,
-                candidate: event.candidate
-            });
-        }
+      if (event.candidate) {
+        this.socket.emit('ice-candidate', {
+          to: this.currentCaller,
+          candidate: event.candidate
+        });
+      }
     };
 
     this.peer.setRemoteDescription(new RTCSessionDescription(offer))
-        .then(() => this.peer.createAnswer())
-        .then(answer => this.peer.setLocalDescription(answer))
-        .then(() => {
-            this.socket.emit('answer', {
-                to: this.currentCaller,
-                answer: this.peer.localDescription
-            });
+      .then(() => this.peer.createAnswer())
+      .then(answer => this.peer.setLocalDescription(answer))
+      .then(() => {
+        this.socket.emit('answer', {
+          to: this.currentCaller,
+          answer: this.peer.localDescription
         });
+      });
   }
 
   setupSocketHandlers() {
     this.socket.on('acceptAnswer', data => {
-        if (this.peer) {
-            this.peer.setRemoteDescription(new RTCSessionDescription(data.answer));
-        }
+      if (this.peer) {
+        this.peer.setRemoteDescription(new RTCSessionDescription(data.answer));
+      }
     });
 
     this.socket.on('ice-candidate', candidate => {
-        if (this.peer) {
-            this.peer.addIceCandidate(new RTCIceCandidate(candidate));
-        }
+      if (this.peer) {
+        this.peer.addIceCandidate(new RTCIceCandidate(candidate));
+      }
     });
 
     this.socket.on('incomingCall', data => {
-        this.currentCaller = data.from;
-        if (this.onIncomingCall) {
-            this.onIncomingCall(data.offer, data.callerLang);
-        }
+      this.currentCaller = data.from;
+      if (this.onIncomingCall) {
+        this.onIncomingCall(data.offer, data.callerLang);
+      }
     });
   }
 
@@ -152,7 +158,7 @@ class WebRTCCore {
 
   sendMessage(message) {
     if (this.dataChannel && this.dataChannel.readyState === 'open') {
-        this.dataChannel.send(message);
+      this.dataChannel.send(message);
     }
   }
 
@@ -214,4 +220,11 @@ class WebRTCCore {
   }
 }
 
+// ✅ EXPORT apenas se não existir
+if (typeof window.WebRTCCore === 'undefined') {
+  window.WebRTCCore = WebRTCCore;
+}
+
 export { WebRTCCore };
+
+} // Fim do if typeof WebRTCCore === 'undefined'
