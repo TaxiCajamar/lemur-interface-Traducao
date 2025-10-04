@@ -257,15 +257,18 @@ async function iniciarCameraAposPermissoes() {
             localVideo.srcObject = localStream;
             
             // ✅ MOSTRA BOTÃO E REMOVE LOADING QUANDO CÂMERA ESTIVER PRONTA
-           const elementoClick = document.getElementById('click');
-if (elementoClick) {
-    elementoClick.style.display = 'block';
-}
-
-const mobileLoading = document.getElementById('mobileLoading');
+ const mobileLoading = document.getElementById('mobileLoading');
 if (mobileLoading) {
     mobileLoading.style.display = 'none';
 }
+
+// Aparece 2 segundos após a câmera carregar
+setTimeout(() => {
+    const elementoClick = document.getElementById('click');
+    if (elementoClick) {
+        elementoClick.style.display = 'block';
+    }
+}, 2000);
         }
 
         window.rtcCore = new WebRTCCore();
