@@ -236,17 +236,11 @@ async function traduzirFrasesFixas(lang) {
         console.log(`✅ Traduzido: ${texto} → ${traduzido}`);
       }
     }
+
+    aplicarBandeiraLocal(lang); // ✅ chamada correta dentro do bloco
   } catch (error) {
     console.error("❌ Erro ao traduzir frases fixas:", error);
   }
-}
-
-        
-        aplicarBandeiraLocal(lang);
-        
-    } catch (error) {
-        console.error('❌ Erro ao traduzir frases:', error);
-    }
 }
 
 // 🎥 FUNÇÃO PARA ALTERNAR ENTRE CÂMERAS (CORRIGIDA - ROBUSTA)
