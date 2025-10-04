@@ -40,7 +40,7 @@ body {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
-.botao-key { display: none; } /* Botão começa escondido */
+#click { display: none; } /* Começa escondido */
 
 /* 🗝️ Botão Key - Substitua o estilo #logo-traduz existente */
 
