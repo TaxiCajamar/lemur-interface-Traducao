@@ -215,21 +215,32 @@ function liberarInterfaceFallback() {
 
 // 🌐 TRADUÇÃO DAS FRASES FIXAS (AGORA SEPARADA)
 async function traduzirFrasesFixas(lang) {
-    try {
-        const frasesParaTraduzir = {
-            "translator-label": "Real-time translation.",
-            "qr-modal-title": "This is your online key",
-            "qr-modal-description": "You can ask to scan, share or print on your business card."
-        };
+  try {
+    const frasesParaTraduzir = {
+      "translator-label": "Real-time translation.",
+      "qr-modal-title": "This is your online key",
+      "qr-modal-description": "You can ask to scan, share or print on your business card.",
+      "welcome-text": "Hi, welcome!",
+      "tap-qr": "Tap that QR Code",
+      "quick-scan": "Quick scan",
+      "drop-voice": "Drop your voice",
+      "check-replies": "Check the replies",
+      "flip-cam": "Flip the cam and show the vibes"
+    };
 
-        for (const [id, texto] of Object.entries(frasesParaTraduzir)) {
-            const el = document.getElementById(id);
-            if (el) {
-                const traduzido = await translateText(texto, lang);
-                el.textContent = traduzido;
-                console.log(`✅ Traduzido: ${texto} → ${traduzido}`);
-            }
-        }
+    for (const [id, texto] of Object.entries(frasesParaTraduzir)) {
+      const el = document.getElementById(id);
+      if (el) {
+        const traduzido = await translateText(texto, lang);
+        el.textContent = traduzido;
+        console.log(`✅ Traduzido: ${texto} → ${traduzido}`);
+      }
+    }
+  } catch (error) {
+    console.error("❌ Erro ao traduzir frases fixas:", error);
+  }
+}
+
         
         aplicarBandeiraLocal(lang);
         
