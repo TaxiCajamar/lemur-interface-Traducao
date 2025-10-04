@@ -29,36 +29,36 @@ body {
 /* ===== intruções compactas no rodapé ===== */
 .instruction-box {
   position: absolute;
-  bottom: 8px; /* fixa no fundo do box-principal */
+  bottom: 8px;
   left: 50%;
   transform: translateX(-50%);
-  width: 90%;
-  padding: 6px;
-  background: #f9f9f9;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  font-size: 0.75em; /* ainda mais compacto */
+  width: 280px; /* mais estreita */
+  padding: 10px;
+  background: #ffffff;
+  border: 2px solid #4CAF50; /* borda verde */
+  border-radius: 10px;
+  box-shadow: inset 0 0 10px rgba(0, 128, 0, 0.2); /* sombra interna verde */
+  font-size: 0.8em;
   z-index: 100;
+  text-align: left; /* alinha texto à esquerda */
 }
-
 .instruction-item {
   display: flex;
-  align-items: center; /* alinha pela base da imagem */
-  gap: 6px;
-  margin-bottom: 2px; /* mínimo espaço entre itens */
-  line-height: 1.1;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  line-height: 1.2;
   font-family: 'Segoe UI', sans-serif;
   color: #333;
 }
 
 .instruction-item img {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   object-fit: contain;
 }
 
 /* ===== BOTÃO ALTERNAR CÂMERA ===== */
-
 .camera-toggle-btn {
     position: absolute;
     bottom: 45%;
