@@ -238,6 +238,104 @@ async function traduzirFrasesFixas(lang) {
     }
 }
 
+// 🎥 FUNÇÃO PARA ALTERNAR ENTRE CÂMERAS
+function setupCameraToggle() {
+    const toggleButton = document.getElementById('toggleCamera');
+    let currentCamera = 'user'; // 'user' = frontal, 'environment' = traseira
+    let localStream = window.localStream;
+
+    if (!toggleButton) {
+        console.log('❌ Botão de alternar câmera não encontrado');
+        return;
+    }
+
+    toggleButton.addEventListener('click', async () => {
+        try {
+            console.log('🔄 Alternando câmera...');
+            
+            // Para a stream atual se existir
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+            }
+
+            // Alterna entre frontal e traseira
+            currentCamera = currentCamera === 'user' ? 'environment' : 'user';
+            
+            // Solicita nova stream de vídeo
+            const newStream = await navigator.mediaDevices.getUserMedia({
+                video: { 
+                    facingMode: currentCamera,
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                },
+                audio: false
+            });
+
+            // Atualiza o vídeo local
+            const localVideo = document.getElementById('localVideo');
+            if (localVideo) {
+                localVideo.srcObject = newStream;
+            }
+
+            // Atualiza a stream local global
+            localStream = newStream;
+            window.localStream = newStream;
+
+            // Se WebRTC estiver ativo, atualiza a stream
+            if (window.rtcCore && window.rtcCore.peerConnection) {
+                const videoTrack = newStream.getVideoTracks()[0];
+                const sender = window.rtcCore.peerConnection.getSenders().find(
+                    s => s.track && s.track.kind === 'video'
+                );
+                
+                if (sender) {
+                    await sender.replaceTrack(videoTrack);
+                    console.log('✅ Stream de vídeo atualizada no WebRTC');
+                }
+            }
+
+            console.log(`✅ Câmera alterada para: ${currentCamera === 'user' ? 'Frontal' : 'Traseira'}`);
+
+        } catch (error) {
+            console.error('❌ Erro ao alternar câmera:', error);
+            
+            // Fallback para modo genérico se facingMode não for suportado
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                
+                if (videoDevices.length > 1) {
+                    // Alterna entre dispositivos se houver mais de uma câmera
+                    const newDeviceId = currentCamera === 'user' ? 
+                        videoDevices[1].deviceId : videoDevices[0].deviceId;
+                    
+                    const newStream = await navigator.mediaDevices.getUserMedia({
+                        video: { deviceId: { exact: newDeviceId } },
+                        audio: false
+                    });
+
+                    const localVideo = document.getElementById('localVideo');
+                    if (localVideo) {
+                        localVideo.srcObject = newStream;
+                    }
+
+                    localStream = newStream;
+                    window.localStream = newStream;
+                    
+                    console.log('✅ Câmera alternada para dispositivo alternativo');
+                } else {
+                    alert('Apenas uma câmera disponível neste dispositivo.');
+                }
+            } catch (fallbackError) {
+                console.error('❌ Erro no fallback da câmera:', fallbackError);
+                alert('Não foi possível alternar a câmera. Verifique se há mais de uma câmera disponível.');
+            }
+        }
+    });
+
+    console.log('✅ Botão de alternar câmera configurado');
+}
+
 // ✅ FUNÇÃO PARA INICIAR CÂMERA APÓS PERMISSÕES
 async function iniciarCameraAposPermissoes() {
     try {
@@ -251,26 +349,30 @@ async function iniciarCameraAposPermissoes() {
         });
 
         let localStream = stream;
+        window.localStream = localStream; // Armazena globalmente
 
         const localVideo = document.getElementById('localVideo');
         if (localVideo) {
             localVideo.srcObject = localStream;
             
             // ✅ MOSTRA BOTÃO E REMOVE LOADING QUANDO CÂMERA ESTIVER PRONTA
- const mobileLoading = document.getElementById('mobileLoading');
-if (mobileLoading) {
-    mobileLoading.style.display = 'none';
-}
+            const mobileLoading = document.getElementById('mobileLoading');
+            if (mobileLoading) {
+                mobileLoading.style.display = 'none';
+            }
 
-// Aparece 2 segundos após a câmera carregar
-setTimeout(() => {
-    const elementoClick = document.getElementById('click');
-    if (elementoClick) {
-        elementoClick.style.display = 'block';
-        elementoClick.classList.add('piscar-suave'); // Começa a piscar
-    }
-}, 500);
+            // Aparece 2 segundos após a câmera carregar
+            setTimeout(() => {
+                const elementoClick = document.getElementById('click');
+                if (elementoClick) {
+                    elementoClick.style.display = 'block';
+                    elementoClick.classList.add('piscar-suave'); // Começa a piscar
+                }
+            }, 500);
         }
+
+        // 🎥 CONFIGURA BOTÃO DE ALTERNAR CÂMERA
+        setupCameraToggle();
 
         window.rtcCore = new WebRTCCore();
 
@@ -304,10 +406,10 @@ setTimeout(() => {
         document.getElementById('logo-traduz').addEventListener('click', function() {
            
             // ✅ FAZ O #click DESAPARECER
-const elementoClick = document.getElementById('click');
-if (elementoClick) {
-    elementoClick.style.display = 'none';
-}
+            const elementoClick = document.getElementById('click');
+            if (elementoClick) {
+                elementoClick.style.display = 'none';
+            }
             
             // 🔒 BLOQUEIA se WebRTC já estiver conectado
             const remoteVideo = document.getElementById('remoteVideo');
