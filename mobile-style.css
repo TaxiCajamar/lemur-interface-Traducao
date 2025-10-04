@@ -32,7 +32,7 @@ body {
   position: absolute; /* permite movimentar livremente */
   top: 80px;           /* ajuste conforme necessário */
   left: 50px;
-  width: 100px;        /* menor largura */
+  width: 90%;;        /* menor largura */
   padding: 15px;
   background: #f9f9f9;
   border-radius: 10px;
