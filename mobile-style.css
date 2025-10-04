@@ -42,6 +42,16 @@ body {
 }
 #click { display: none; } /* Começa escondido */
 
+.piscar-suave {
+    animation: piscar 2s infinite;
+}
+
+@keyframes piscar {
+    0% { opacity: 1; }
+    50% { opacity: 0.3; }
+    100% { opacity: 1; }
+}
+
 /* 🗝️ Botão Key - Substitua o estilo #logo-traduz existente */
 
 #logo-traduz.botao-key {
