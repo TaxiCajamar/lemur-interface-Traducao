@@ -26,6 +26,30 @@ body {
   overflow-y: auto;
 }
 
+/* ===== box de instruções ===== */
+.welcome-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1.2em;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.welcome-icon {
+  position: absolute;
+    top: 47%;
+    left: 60%;
+  width: 40px;
+  height: auto;
+    z-index: 35;
+}
+
+.welcome-text {
+  color: #333;
+}
+
+
+
 /* ===== BOTÃO ALTERNAR CÂMERA ===== */
 .camera-toggle-btn {
     position: absolute;
