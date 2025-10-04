@@ -41,8 +41,8 @@ body {
 
 .welcome-icon {
   position: absolute;
-  top: 90%;
-  left: 80%;
+  top: 100%;
+  left: 100%;
   width: 40px;
   height: auto;
     z-index: 35;
