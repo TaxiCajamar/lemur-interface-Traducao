@@ -193,24 +193,50 @@ async function aplicarBandeiraRemota(langCode) {
     }
 }
 
-// ✅ FUNÇÃO PARA LIBERAR INTERFACE (FALLBACK)
+// ✅ FUNÇÃO PARA LIBERAR INTERFACE (MELHORADA E CONFIÁVEL)
 function liberarInterfaceFallback() {
-    console.log('🔓 Usando fallback para liberar interface...');
+    console.log('🔓 Liberando interface...');
     
-    // Remove tela de loading
+    // 1. Remove tela de loading principal
     const loadingScreen = document.getElementById('loadingScreen');
     if (loadingScreen) {
         loadingScreen.style.display = 'none';
-        console.log('✅ Tela de loading removida');
+        console.log('✅ Tela de loading principal removida');
     }
     
-    // Mostra conteúdo principal
+    // 2. Remove loading mobile específico
+    const mobileLoading = document.getElementById('mobileLoading');
+    if (mobileLoading) {
+        mobileLoading.style.display = 'none';
+        console.log('✅ Loading mobile removido');
+    }
+    
+    // 3. Mostra todos os elementos escondidos
     const elementosEscondidos = document.querySelectorAll('.hidden-until-ready');
     elementosEscondidos.forEach(elemento => {
         elemento.style.display = '';
+        elemento.style.visibility = 'visible';
+        elemento.style.opacity = '1';
     });
     
-    console.log(`✅ ${elementosEscondidos.length} elementos liberados`);
+    // 4. Garante que o vídeo local seja mostrado
+    const localVideo = document.getElementById('localVideo');
+    if (localVideo) {
+        localVideo.style.display = 'block';
+    }
+    
+    // 5. Remove qualquer overlay de bloqueio restante
+    const overlays = document.querySelectorAll('.loading-overlay, .permission-overlay');
+    overlays.forEach(overlay => {
+        if (overlay && overlay.parentNode) {
+            overlay.style.display = 'none';
+        }
+    });
+    
+    console.log(`✅ Interface liberada - ${elementosEscondidos.length} elementos ativados`);
+    
+    // Marca globalmente que a interface foi liberada
+    window.interfaceLiberada = true;
 }
 
 // 🌐 TRADUÇÃO DAS FRASES FIXAS (AGORA SEPARADA)
@@ -715,6 +741,9 @@ window.onload = async () => {
     } catch (error) {
         console.error('❌ Erro ao inicializar receiver:', error);
         
+        // ✅ LIBERAR INTERFACE MESMO EM CASO DE ERRO
+        liberarInterfaceFallback();
+        
         if (typeof window.mostrarErroCarregamento === 'function') {
             window.mostrarErroCarregamento('Erro ao solicitar permissões de câmera e microfone');
         } else {
@@ -722,4 +751,12 @@ window.onload = async () => {
             alert('Erro ao inicializar: ' + error.message);
         }
     }
+    
+    // ✅ GARANTIR QUE A INTERFACE SEJA LIBERADA (LINHA ADICIONAL)
+    setTimeout(() => {
+        if (!window.interfaceLiberada) {
+            console.log('🔄 Garantindo liberação da interface...');
+            liberarInterfaceFallback();
+        }
+    }, 5000); // 5 segundos como fallback
 };
