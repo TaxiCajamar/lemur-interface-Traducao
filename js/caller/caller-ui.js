@@ -7,6 +7,98 @@ let somDigitacao = null;
 let audioCarregado = false;
 let permissaoConcedida = false;
 
+// 🔄 FUNÇÃO PARA TROCAR CÂMERA (CORRIGIDA PARA MOBILE)
+async function switchCamera() {
+    try {
+        console.log('🔄 Iniciando troca de câmera...');
+        
+        const switchCameraButton = document.getElementById('switchCamera');
+        const localVideo = document.getElementById('localVideo');
+        
+        if (!localVideo) {
+            throw new Error('Elemento de vídeo local não encontrado');
+        }
+
+        // Mostrar indicador de carregamento
+        if (switchCameraButton) {
+            switchCameraButton.disabled = true;
+            switchCameraButton.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i>';
+        }
+
+        // Parar a câmera atual completamente
+        if (localVideo.srcObject) {
+            const tracks = localVideo.srcObject.getTracks();
+            tracks.forEach(track => {
+                track.stop();
+            });
+            localVideo.srcObject = null;
+        }
+
+        // Pequeno delay para o dispositivo mobile processar
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        // Alternar entre frontal e traseira
+        window.isFrontCamera = !window.isFrontCamera;
+        
+        console.log('📹 Alternando para câmera:', window.isFrontCamera ? 'frontal' : 'traseira');
+
+        // Configurações da câmera para mobile
+        const constraints = {
+            video: {
+                facingMode: window.isFrontCamera ? "user" : "environment",
+                width: { ideal: 640 },
+                height: { ideal: 480 }
+            },
+            audio: false
+        };
+
+        // Obter nova stream
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        localVideo.srcObject = stream;
+
+        // Atualizar stream local no peer connection se existir
+        if (window.peerConnection) {
+            const videoTrack = stream.getVideoTracks()[0];
+            const sender = window.peerConnection.getSenders().find(s => 
+                s.track && s.track.kind === 'video'
+            );
+            if (sender) {
+                await sender.replaceTrack(videoTrack);
+                console.log('✅ Track de vídeo atualizada no peer connection');
+            }
+        }
+
+        console.log('✅ Câmera trocada com sucesso para:', window.isFrontCamera ? 'frontal' : 'traseira');
+
+    } catch (error) {
+        console.error('❌ Erro ao trocar câmera:', error);
+        // Reverter estado em caso de erro
+        window.isFrontCamera = !window.isFrontCamera;
+    } finally {
+        // Restaurar botão
+        const switchCameraButton = document.getElementById('switchCamera');
+        if (switchCameraButton) {
+            switchCameraButton.disabled = false;
+            switchCameraButton.innerHTML = window.isFrontCamera ? 
+                '<i class="fas fa-camera"></i>' : 
+                '<i class="fas fa-camera-rotate"></i>';
+        }
+    }
+}
+
+// ✅ INICIALIZAR BOTÃO DE TROCA DE CÂMERA
+function inicializarBotaoCamera() {
+    const switchCameraButton = document.getElementById('switchCamera');
+    if (switchCameraButton) {
+        // Definir estado inicial da câmera
+        window.isFrontCamera = true;
+        
+        switchCameraButton.addEventListener('click', switchCamera);
+        switchCameraButton.innerHTML = '<i class="fas fa-camera"></i>';
+        console.log('✅ Botão de troca de câmera configurado');
+    }
+}
+
 // 🎵 CARREGAR SOM DE DIGITAÇÃO
 function carregarSomDigitacao() {
     return new Promise((resolve) => {
@@ -193,166 +285,6 @@ async function enviarNotificacaoWakeUp(receiverToken, receiverId, meuId, meuIdio
   }
 }
 
-// 📞 FUNÇÃO: Criar tela de chamada visual (sem textos)
-function criarTelaChamando() {
-  const telaChamada = document.createElement('div');
-  telaChamada.id = 'tela-chamando';
-  telaChamada.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    z-index: 10000;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    color: white;
-  `;
-
-  telaChamada.innerHTML = `
-    <div style="text-align: center; animation: pulse 2s infinite;">
-      <div style="font-size: 80px; margin-bottom: 20px;">📞</div>
-      <div style="font-size: 24px; margin-bottom: 40px; opacity: 0.9;">•••</div>
-    </div>
-    
-    <div id="botao-cancelar" style="
-      position: absolute;
-      bottom: 60px;
-      background: #ff4444;
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 24px;
-      cursor: pointer;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-      transition: transform 0.2s;
-    ">
-      ✕
-    </div>
-
-    <style>
-      @keyframes pulse {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.1); }
-        100% { transform: scale(1); }
-      }
-    </style>
-  `;
-
-  document.body.appendChild(telaChamada);
-
-  document.getElementById('botao-cancelar').addEventListener('click', function() {
-    telaChamada.remove();
-    window.conexaoCancelada = true;
-    console.log('❌ Chamada cancelada pelo usuário');
-  });
-
-  return telaChamada;
-}
-
-// 🔄 FUNÇÃO UNIFICADA: Tentar conexão visual (COM ESPERA INTELIGENTE)
-async function iniciarConexaoVisual(receiverId, receiverToken, meuId, localStream, meuIdioma) {
-  console.log('🚀 Iniciando fluxo visual de conexão...');
-  
-  let conexaoEstabelecida = false;
-  let notificacaoEnviada = false;
-  window.conexaoCancelada = false;
-  
-  // ✅ AGUARDA O WEBRTC ESTAR COMPLETAMENTE INICIALIZADO
-  console.log('⏳ Aguardando inicialização completa do WebRTC...');
-  
-  // Função para verificar se o WebRTC está pronto
-  const aguardarWebRTCPronto = () => {
-    return new Promise((resolve) => {
-      const verificar = () => {
-        if (window.rtcCore && window.rtcCore.isInitialized && typeof window.rtcCore.startCall === 'function') {
-          console.log('✅ WebRTC completamente inicializado');
-          resolve(true);
-        } else {
-          console.log('⏳ Aguardando WebRTC...');
-          setTimeout(verificar, 500);
-        }
-      };
-      verificar();
-    });
-  };
-
-  try {
-    // Aguarda o WebRTC estar pronto antes de qualquer tentativa
-    await aguardarWebRTCPronto();
-
-    console.log('🔇 Fase 1: Tentativas silenciosas (6s)');
-    
-    let tentativasFase1 = 3;
-    const tentarConexaoSilenciosa = async () => {
-      if (conexaoEstabelecida || window.conexaoCancelada) return;
-      
-      if (tentativasFase1 > 0) {
-        console.log(`🔄 Tentativa silenciosa ${4 - tentativasFase1}`);
-        
-        // ✅ VERIFICAÇÃO EXTRA ANTES DE CHAMAR
-        if (window.rtcCore && typeof window.rtcCore.startCall === 'function') {
-          window.rtcCore.startCall(receiverId, localStream, meuIdioma);
-        } else {
-          console.log('⚠️ WebRTC não está pronto, aguardando...');
-        }
-        
-        tentativasFase1--;
-        setTimeout(tentarConexaoSilenciosa, 2000);
-      } else {
-        console.log('📞 Fase 2: Mostrando tela de chamada');
-        const telaChamada = criarTelaChamando();
-        
-        if (!notificacaoEnviada) {
-          console.log('📨 Enviando notificação wake-up...');
-          notificacaoEnviada = await enviarNotificacaoWakeUp(receiverToken, receiverId, meuId, meuIdioma);
-        }
-        
-        const tentarConexaoContinuamente = async () => {
-          if (conexaoEstabelecida || window.conexaoCancelada) return;
-          
-          console.log('🔄 Tentando conexão...');
-          
-          // ✅ VERIFICAÇÃO SEMPRE ANTES DE TENTAR
-          if (window.rtcCore && typeof window.rtcCore.startCall === 'function') {
-            window.rtcCore.startCall(receiverId, localStream, meuIdioma);
-          }
-          
-          setTimeout(tentarConexaoContinuamente, 3000);
-        };
-        
-        tentarConexaoContinuamente();
-      }
-    };
-    
-    // ✅ PEQUENO ATRASO PARA GARANTIR ESTABILIDADE
-    setTimeout(() => {
-      tentarConexaoSilenciosa();
-    }, 1000);
-    
-  } catch (error) {
-    console.error('❌ Erro no fluxo de conexão:', error);
-  }
-  
-  window.rtcCore.setRemoteStreamCallback(stream => {
-    conexaoEstabelecida = true;
-    console.log('✅ Conexão estabelecida com sucesso!');
-    
-    const telaChamada = document.getElementById('tela-chamando');
-    if (telaChamada) telaChamada.remove();
-    
-    stream.getAudioTracks().forEach(track => track.enabled = false);
-    const remoteVideo = document.getElementById('remoteVideo');
-    if (remoteVideo) remoteVideo.srcObject = stream;
-  });
-}
-
 // ✅ FUNÇÃO PARA LIBERAR INTERFACE (FALLBACK)
 function liberarInterfaceFallback() {
     console.log('🔓 Usando fallback para liberar interface...');
@@ -498,6 +430,9 @@ async function iniciarCameraAposPermissoes() {
         document.getElementById('localVideo').srcObject = localStream;
         console.log('✅ Câmera iniciada com sucesso');
 
+        // ✅ CONFIGURAR BOTÃO DE TROCA DE CÂMERA
+        inicializarBotaoCamera();
+
         // ✅ PEQUENA PAUSA PARA ESTABILIZAR
         await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -590,6 +525,102 @@ async function iniciarCameraAposPermissoes() {
         console.error("Erro ao iniciar câmera:", error);
         throw error;
     }
+}
+
+// 🔄 FUNÇÃO UNIFICADA: Tentar conexão visual (COM ESPERA INTELIGENTE)
+async function iniciarConexaoVisual(receiverId, receiverToken, meuId, localStream, meuIdioma) {
+  console.log('🚀 Iniciando fluxo visual de conexão...');
+  
+  let conexaoEstabelecida = false;
+  let notificacaoEnviada = false;
+  window.conexaoCancelada = false;
+  
+  // ✅ AGUARDA O WEBRTC ESTAR COMPLETAMENTE INICIALIZADO
+  console.log('⏳ Aguardando inicialização completa do WebRTC...');
+  
+  // Função para verificar se o WebRTC está pronto
+  const aguardarWebRTCPronto = () => {
+    return new Promise((resolve) => {
+      const verificar = () => {
+        if (window.rtcCore && window.rtcCore.isInitialized && typeof window.rtcCore.startCall === 'function') {
+          console.log('✅ WebRTC completamente inicializado');
+          resolve(true);
+        } else {
+          console.log('⏳ Aguardando WebRTC...');
+          setTimeout(verificar, 500);
+        }
+      };
+      verificar();
+    });
+  };
+
+  try {
+    // Aguarda o WebRTC estar pronto antes de qualquer tentativa
+    await aguardarWebRTCPronto();
+
+    console.log('🔇 Fase 1: Tentativas silenciosas (6s)');
+    
+    let tentativasFase1 = 3;
+    const tentarConexaoSilenciosa = async () => {
+      if (conexaoEstabelecida || window.conexaoCancelada) return;
+      
+      if (tentativasFase1 > 0) {
+        console.log(`🔄 Tentativa silenciosa ${4 - tentativasFase1}`);
+        
+        // ✅ VERIFICAÇÃO EXTRA ANTES DE CHAMAR
+        if (window.rtcCore && typeof window.rtcCore.startCall === 'function') {
+          window.rtcCore.startCall(receiverId, localStream, meuIdioma);
+        } else {
+          console.log('⚠️ WebRTC não está pronto, aguardando...');
+        }
+        
+        tentativasFase1--;
+        setTimeout(tentarConexaoSilenciosa, 2000);
+      } else {
+        console.log('📞 Fase 2: Mostrando tela de chamada');
+        
+        if (!notificacaoEnviada) {
+          console.log('📨 Enviando notificação wake-up...');
+          notificacaoEnviada = await enviarNotificacaoWakeUp(receiverToken, receiverId, meuId, meuIdioma);
+        }
+        
+        const tentarConexaoContinuamente = async () => {
+          if (conexaoEstabelecida || window.conexaoCancelada) return;
+          
+          console.log('🔄 Tentando conexão...');
+          
+          // ✅ VERIFICAÇÃO SEMPRE ANTES DE TENTAR
+          if (window.rtcCore && typeof window.rtcCore.startCall === 'function') {
+            window.rtcCore.startCall(receiverId, localStream, meuIdioma);
+          }
+          
+          setTimeout(tentarConexaoContinuamente, 3000);
+        };
+        
+        tentarConexaoContinuamente();
+      }
+    };
+    
+    // ✅ PEQUENO ATRASO PARA GARANTIR ESTABILIDADE
+    setTimeout(() => {
+      tentarConexaoSilenciosa();
+    }, 1000);
+    
+  } catch (error) {
+    console.error('❌ Erro no fluxo de conexão:', error);
+  }
+  
+  window.rtcCore.setRemoteStreamCallback(stream => {
+    conexaoEstabelecida = true;
+    console.log('✅ Conexão estabelecida com sucesso!');
+    
+    const telaChamada = document.getElementById('tela-chamando');
+    if (telaChamada) telaChamada.remove();
+    
+    stream.getAudioTracks().forEach(track => track.enabled = false);
+    const remoteVideo = document.getElementById('remoteVideo');
+    if (remoteVideo) remoteVideo.srcObject = stream;
+  });
 }
 
 window.onload = async () => {
