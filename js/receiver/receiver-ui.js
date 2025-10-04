@@ -257,15 +257,15 @@ async function iniciarCameraAposPermissoes() {
             localVideo.srcObject = localStream;
             
             // ✅ MOSTRA BOTÃO E REMOVE LOADING QUANDO CÂMERA ESTIVER PRONTA
-            const botaoKey = document.getElementById('logo-traduz');
-            if (botaoKey) {
-                botaoKey.style.display = 'block';
-            }
-            
-            const mobileLoading = document.getElementById('mobileLoading');
-            if (mobileLoading) {
-                mobileLoading.style.display = 'none';
-            }
+           const elementoClick = document.getElementById('click');
+if (elementoClick) {
+    elementoClick.style.display = 'block';
+}
+
+const mobileLoading = document.getElementById('mobileLoading');
+if (mobileLoading) {
+    mobileLoading.style.display = 'none';
+}
         }
 
         window.rtcCore = new WebRTCCore();
