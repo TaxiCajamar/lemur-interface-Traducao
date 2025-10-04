@@ -1,6 +1,37 @@
 import { WebRTCCore } from '../../core/webrtc-core.js';
 import { QRCodeGenerator } from '../qrcode/qr-code-utils.js';
 
+// 📷 VARIÁVEIS PARA TROCAR CÂMERA
+let cameraTraseira = false;
+let streamAtual = null;
+
+// 📷 FUNÇÃO PARA TROCAR CÂMERA
+async function trocarCamera() {
+    try {
+        if (streamAtual) {
+            streamAtual.getTracks().forEach(track => track.stop());
+        }
+
+        cameraTraseira = !cameraTraseira;
+        
+        const constraints = {
+            video: { 
+                facingMode: cameraTraseira ? "environment" : "user" 
+            },
+            audio: false
+        };
+
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        streamAtual = stream;
+        
+        const localVideo = document.getElementById('localVideo');
+        localVideo.srcObject = stream;
+
+    } catch (error) {
+        console.error('Erro ao trocar câmera:', error);
+    }
+}
+
 // 🎵 VARIÁVEIS DE ÁUDIO
 let audioContext = null;
 let somDigitacao = null;
@@ -251,25 +282,26 @@ async function iniciarCameraAposPermissoes() {
         });
 
         let localStream = stream;
+        streamAtual = stream; // ✅ GUARDA A CÂMERA PARA PODER TROCAR
 
         const localVideo = document.getElementById('localVideo');
         if (localVideo) {
             localVideo.srcObject = localStream;
             
             // ✅ MOSTRA BOTÃO E REMOVE LOADING QUANDO CÂMERA ESTIVER PRONTA
- const mobileLoading = document.getElementById('mobileLoading');
-if (mobileLoading) {
-    mobileLoading.style.display = 'none';
-}
+            const mobileLoading = document.getElementById('mobileLoading');
+            if (mobileLoading) {
+                mobileLoading.style.display = 'none';
+            }
 
-// Aparece 2 segundos após a câmera carregar
-setTimeout(() => {
-    const elementoClick = document.getElementById('click');
-    if (elementoClick) {
-        elementoClick.style.display = 'block';
-        elementoClick.classList.add('piscar-suave'); // Começa a piscar
-    }
-}, 500);
+            // Aparece 2 segundos após a câmera carregar
+            setTimeout(() => {
+                const elementoClick = document.getElementById('click');
+                if (elementoClick) {
+                    elementoClick.style.display = 'block';
+                    elementoClick.classList.add('piscar-suave'); // Começa a piscar
+                }
+            }, 500);
         }
 
         window.rtcCore = new WebRTCCore();
@@ -304,10 +336,10 @@ setTimeout(() => {
         document.getElementById('logo-traduz').addEventListener('click', function() {
            
             // ✅ FAZ O #click DESAPARECER
-const elementoClick = document.getElementById('click');
-if (elementoClick) {
-    elementoClick.style.display = 'none';
-}
+            const elementoClick = document.getElementById('click');
+            if (elementoClick) {
+                elementoClick.style.display = 'none';
+            }
             
             // 🔒 BLOQUEIA se WebRTC já estiver conectado
             const remoteVideo = document.getElementById('remoteVideo');
@@ -534,6 +566,9 @@ window.onload = async () => {
         
         // 7. Inicia câmera e WebRTC
         await iniciarCameraAposPermissoes();
+        
+        // 📷 ADICIONA EVENTO DO BOTÃO DE TROCAR CÂMERA
+        document.getElementById('girar-camera').addEventListener('click', trocarCamera);
         
         console.log('✅ Receiver iniciado com sucesso!');
         
