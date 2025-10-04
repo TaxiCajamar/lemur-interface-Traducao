@@ -34,10 +34,7 @@
         <button id="logo-traduz" class="botao-key">
             <img src="assets/images/key.png" alt="Gerar QR Code">
         </button>
-
-        <!-- BOTÃO GIRAR CÂMERA SIMPLES -->
-<img id="trocar-camera-btn" src="assets/images/girar-camera.png" alt="Trocar Câmera" class="botao-girar-camera">
-       
+        
         <!-- Sub Titulo --> 
         <div class="translator-label" id="translator-label">
             Real-time translation.
@@ -53,11 +50,12 @@
             <video id="remoteVideo" autoplay playsinline></video>
 
             <!-- 🎥 Vídeo local em PiP -->
-<div class="pip-local-wrapper">
-    <video id="localVideo" autoplay muted playsinline></video>
-</div>
+            <div class="pip-local-wrapper">
+                <video id="localVideo" autoplay muted playsinline></video>
+            </div>
+        </div>
 
-       <!-- 🧾 Overlay com QR Code - COMEÇA OCULTO -->
+        <!-- 🧾 Overlay com QR Code - COMEÇA OCULTO -->
         <div class="info-overlay hidden"> 
             <h2 id="qr-modal-title">This is your online key</h2>
             <div id="qrcode" class="qrcode-container"></div>
