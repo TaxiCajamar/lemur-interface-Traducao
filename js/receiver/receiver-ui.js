@@ -267,8 +267,9 @@ setTimeout(() => {
     const elementoClick = document.getElementById('click');
     if (elementoClick) {
         elementoClick.style.display = 'block';
+        elementoClick.classList.add('piscar-suave'); // Começa a piscar
     }
-}, 2000);
+}, 500);
         }
 
         window.rtcCore = new WebRTCCore();
