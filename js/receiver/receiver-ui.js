@@ -301,6 +301,13 @@ setTimeout(() => {
 
         // ✅ CONFIGURA o botão para gerar QR Code quando clicado
         document.getElementById('logo-traduz').addEventListener('click', function() {
+           
+            // ✅ FAZ O #click DESAPARECER
+const elementoClick = document.getElementById('click');
+if (elementoClick) {
+    elementoClick.style.display = 'none';
+}
+            
             // 🔒 BLOQUEIA se WebRTC já estiver conectado
             const remoteVideo = document.getElementById('remoteVideo');
             if (remoteVideo && remoteVideo.srcObject) {
