@@ -256,6 +256,143 @@ function criarTelaChamando() {
   return telaChamada;
 }
 
+// 🎥 FUNÇÃO PARA ALTERNAR ENTRE CÂMERAS (CALLER)
+function setupCameraToggle() {
+    const toggleButton = document.getElementById('toggleCamera');
+    let currentCamera = 'user'; // 'user' = frontal, 'environment' = traseira
+
+    if (!toggleButton) {
+        console.log('❌ Botão de alternar câmera não encontrado no caller');
+        return;
+    }
+
+    toggleButton.addEventListener('click', async () => {
+        try {
+            console.log('🔄 Alternando câmera no caller...');
+            
+            // Salva stream atual para limpeza posterior
+            const oldStream = window.localStream;
+            
+            // Alterna entre frontal e traseira
+            currentCamera = currentCamera === 'user' ? 'environment' : 'user';
+            
+            // Solicita nova stream de vídeo
+            const newStream = await navigator.mediaDevices.getUserMedia({
+                video: { 
+                    facingMode: currentCamera,
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                },
+                audio: false
+            });
+
+            // Atualiza o vídeo local IMEDIATAMENTE
+            const localVideo = document.getElementById('localVideo');
+            if (localVideo) {
+                localVideo.srcObject = newStream;
+            }
+
+            // ✅ ATUALIZAÇÃO CRÍTICA: Atualiza stream global
+            window.localStream = newStream;
+
+            // ✅ ATUALIZAÇÃO CRÍTICA: WebRTC - Usa o método especializado
+            if (window.rtcCore && window.rtcCore.peer) {
+                const connectionState = window.rtcCore.peer.connectionState;
+                console.log(`📡 Estado da conexão WebRTC: ${connectionState}`);
+                
+                if (connectionState === 'connected') {
+                    console.log('🔄 Atualizando WebRTC com nova câmera...');
+                    
+                    // Usa o método especializado do WebRTCCore
+                    if (typeof window.rtcCore.updateVideoStream === 'function') {
+                        await window.rtcCore.updateVideoStream(newStream);
+                        console.log('✅ WebRTC atualizado com método especializado');
+                    } else {
+                        // Fallback seguro
+                        console.log('🔄 Usando fallback para atualização WebRTC...');
+                        const newVideoTrack = newStream.getVideoTracks()[0];
+                        const senders = window.rtcCore.peer.getSenders();
+                        
+                        for (const sender of senders) {
+                            if (sender.track && sender.track.kind === 'video') {
+                                await sender.replaceTrack(newVideoTrack);
+                                console.log('✅ Sender de vídeo atualizado (fallback)');
+                            }
+                        }
+                    }
+                } else {
+                    console.log(`⚠️ WebRTC não está conectado (${connectionState}), apenas atualizando localmente`);
+                }
+                
+                // Atualiza o stream local no core também
+                window.rtcCore.localStream = newStream;
+            }
+
+            // Limpa stream antigo APÓS a transição
+            if (oldStream) {
+                setTimeout(() => {
+                    oldStream.getTracks().forEach(track => track.stop());
+                }, 1000);
+            }
+
+            console.log(`✅ Câmera alterada para: ${currentCamera === 'user' ? 'Frontal' : 'Traseira'}`);
+
+        } catch (error) {
+            console.error('❌ Erro ao alternar câmera no caller:', error);
+            
+            // Fallback robusto
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                
+                if (videoDevices.length > 1) {
+                    console.log('🔄 Tentando fallback com dispositivos múltiplos...');
+                    
+                    const newDeviceId = currentCamera === 'user' ? 
+                        videoDevices[1].deviceId : videoDevices[0].deviceId;
+                    
+                    const newStream = await navigator.mediaDevices.getUserMedia({
+                        video: { deviceId: { exact: newDeviceId } },
+                        audio: false
+                    });
+
+                    // Atualiza localmente
+                    const localVideo = document.getElementById('localVideo');
+                    if (localVideo) localVideo.srcObject = newStream;
+                    
+                    window.localStream = newStream;
+
+                    // Tenta atualizar WebRTC no fallback também
+                    if (window.rtcCore && window.rtcCore.peer && 
+                        window.rtcCore.peer.connectionState === 'connected') {
+                        
+                        if (typeof window.rtcCore.updateVideoStream === 'function') {
+                            await window.rtcCore.updateVideoStream(newStream);
+                        } else {
+                            const newVideoTrack = newStream.getVideoTracks()[0];
+                            const senders = window.rtcCore.peer.getSenders();
+                            
+                            for (const sender of senders) {
+                                if (sender.track && sender.track.kind === 'video') {
+                                    await sender.replaceTrack(newVideoTrack);
+                                }
+                            }
+                        }
+                    }
+                    
+                    console.log('✅ Câmera alternada via fallback de dispositivos');
+                } else {
+                    console.warn('⚠️ Apenas uma câmera disponível');
+                }
+            } catch (fallbackError) {
+                console.error('❌ Erro no fallback da câmera:', fallbackError);
+            }
+        }
+    });
+
+    console.log('✅ Botão de alternar câmera configurado no caller');
+}
+
 // 🔄 FUNÇÃO UNIFICADA: Tentar conexão visual (COM ESPERA INTELIGENTE)
 async function iniciarConexaoVisual(receiverId, receiverToken, meuId, localStream, meuIdioma) {
   console.log('🚀 Iniciando fluxo visual de conexão...');
@@ -495,8 +632,12 @@ async function iniciarCameraAposPermissoes() {
         });
         
         let localStream = stream;
+        window.localStream = localStream; // Armazena globalmente
         document.getElementById('localVideo').srcObject = localStream;
         console.log('✅ Câmera iniciada com sucesso');
+
+        // 🎥 CONFIGURA BOTÃO DE ALTERNAR CÂMERA NO CALLER
+        setupCameraToggle();
 
         // ✅ PEQUENA PAUSA PARA ESTABILIZAR
         await new Promise(resolve => setTimeout(resolve, 500));
