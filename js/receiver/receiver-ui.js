@@ -1,6 +1,44 @@
 import { WebRTCCore } from '../../core/webrtc-core.js';
 import { QRCodeGenerator } from '../qrcode/qr-code-utils.js';
 
+// 📷 FUNÇÃO PARA TROCAR CÂMERA FRONTAL/TRASEIRA
+let cameraTraseira = false;
+let streamAtual = null;
+
+async function trocarCamera() {
+    try {
+        if (streamAtual) {
+            streamAtual.getTracks().forEach(track => track.stop());
+        }
+
+        cameraTraseira = !cameraTraseira;
+        
+        const constraints = {
+            video: { 
+                facingMode: cameraTraseira ? "environment" : "user" 
+            },
+            audio: false
+        };
+
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        streamAtual = stream;
+        
+        const localVideo = document.getElementById('localVideo');
+        localVideo.srcObject = stream;
+
+    } catch (error) {
+        console.error('Erro ao trocar câmera:', error);
+    }
+}
+
+// Adicione o evento de clique
+document.addEventListener('DOMContentLoaded', function() {
+    const botaoCamera = document.getElementById('trocarCamera');
+    if (botaoCamera) {
+        botaoCamera.addEventListener('click', trocarCamera);
+    }
+});
+
 // 🎵 VARIÁVEIS DE ÁUDIO
 let audioContext = null;
 let somDigitacao = null;
@@ -251,25 +289,26 @@ async function iniciarCameraAposPermissoes() {
         });
 
         let localStream = stream;
+        streamAtual = stream; // Guarda para poder trocar depois 
 
         const localVideo = document.getElementById('localVideo');
         if (localVideo) {
             localVideo.srcObject = localStream;
             
             // ✅ MOSTRA BOTÃO E REMOVE LOADING QUANDO CÂMERA ESTIVER PRONTA
- const mobileLoading = document.getElementById('mobileLoading');
-if (mobileLoading) {
-    mobileLoading.style.display = 'none';
-}
+            const mobileLoading = document.getElementById('mobileLoading');
+            if (mobileLoading) {
+                mobileLoading.style.display = 'none';
+            }
 
-// Aparece 2 segundos após a câmera carregar
-setTimeout(() => {
-    const elementoClick = document.getElementById('click');
-    if (elementoClick) {
-        elementoClick.style.display = 'block';
-        elementoClick.classList.add('piscar-suave'); // Começa a piscar
-    }
-}, 500);
+            // Aparece 2 segundos após a câmera carregar
+            setTimeout(() => {
+                const elementoClick = document.getElementById('click');
+                if (elementoClick) {
+                    elementoClick.style.display = 'block';
+                    elementoClick.classList.add('piscar-suave'); // Começa a piscar
+                }
+            }, 500);
         }
 
         window.rtcCore = new WebRTCCore();
@@ -304,10 +343,10 @@ setTimeout(() => {
         document.getElementById('logo-traduz').addEventListener('click', function() {
            
             // ✅ FAZ O #click DESAPARECER
-const elementoClick = document.getElementById('click');
-if (elementoClick) {
-    elementoClick.style.display = 'none';
-}
+            const elementoClick = document.getElementById('click');
+            if (elementoClick) {
+                elementoClick.style.display = 'none';
+            }
             
             // 🔒 BLOQUEIA se WebRTC já estiver conectado
             const remoteVideo = document.getElementById('remoteVideo');
