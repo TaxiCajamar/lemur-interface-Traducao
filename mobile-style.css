@@ -124,8 +124,8 @@ body {
 
 #logo-traduz.botao-key {
      position: absolute;
-    top: 47%;
-    left: 65%;
+    top: 45%;
+    left: 64%;
     width: 15%;
     max-width: 120px;
     height: auto;
@@ -201,8 +201,8 @@ body {
 
 #click {
   position: absolute;
-  top: 53%;
-  left: 66%;
+  top: 52%;
+  left: 64%;
   transform: translate(-50%, -50%);
   width: 15%;
   max-width: 120px;
