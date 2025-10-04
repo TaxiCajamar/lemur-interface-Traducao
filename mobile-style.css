@@ -32,8 +32,8 @@ body {
   bottom: 8px;
   left: 50%;
   transform: translateX(-50%);
-  width: 240px; /* mais estreita */
-  padding: 10px;
+  width: 220px; /* mais estreita */
+  padding: 4px 8px 4px 8px; /* top, right, bottom, left */
   background: #ffffff;
   border: 2px solid #4CAF50; /* borda verde */
   border-radius: 10px;
