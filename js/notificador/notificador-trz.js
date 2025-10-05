@@ -205,11 +205,7 @@ function initializeTranslator() {
             showRecordingModal(); // Abre modal completo
             timerInterval = setInterval(updateTimer, 1000); // Inicia contador
             
-            // ✅ ATUALIZA TEXTO DO MODAL
-            if (recordingText) {
-                recordingText.textContent = "Gravando... Fale agora!";
-            }
-            
+                       
             console.log('🎤 Gravação INICIADA com interface completa');
             
         } catch (error) {
