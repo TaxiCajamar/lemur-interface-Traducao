@@ -524,15 +524,15 @@ async function iniciarConexaoVisual(receiverId, receiverToken, meuId, localStrea
   });
 }
 
-// ✅ FUNÇÃO PARA LIBERAR INTERFACE (FALLBACK)
+// ✅ FUNÇÃO PARA LIBERAR INTERFACE (FALLBACK) - CORRIGIDA
 function liberarInterfaceFallback() {
     console.log('🔓 Usando fallback para liberar interface...');
     
-    // Remove tela de loading (IGUAL AO RECEIVER)
+    // ✅ CORREÇÃO: Remove o loader correto (mobileLoading) - IGUAL AO RECEIVER
     const mobileLoading = document.getElementById('mobileLoading');
     if (mobileLoading) {
         mobileLoading.style.display = 'none';
-        console.log('✅ Tela de loading removida');
+        console.log('✅ Loader mobileLoading removido');
     }
     
     console.log('✅ Interface liberada via fallback');
@@ -662,15 +662,22 @@ async function iniciarCameraAposPermissoes() {
         });
         
         let localStream = stream;
-        window.localStream = localStream; // Armazena globalmente
-        document.getElementById('localVideo').srcObject = localStream;
-        console.log('✅ Câmera iniciada com sucesso');
+window.localStream = localStream; // Armazena globalmente
+document.getElementById('localVideo').srcObject = localStream;
+console.log('✅ Câmera iniciada com sucesso');
 
-        // 🎥 CONFIGURA BOTÃO DE ALTERNAR CÂMERA NO CALLER
-        setupCameraToggle();
+// 🎥 CONFIGURA BOTÃO DE ALTERNAR CÂMERA NO CALLER
+setupCameraToggle();
 
-        // ✅ PEQUENA PAUSA PARA ESTABILIZAR
-        await new Promise(resolve => setTimeout(resolve, 500));
+// ✅ CORREÇÃO: REMOVE LOADING QUANDO CÂMERA ESTIVER PRONTA (IGUAL AO RECEIVER)
+const mobileLoading = document.getElementById('mobileLoading');
+if (mobileLoading) {
+    mobileLoading.style.display = 'none';
+    console.log('✅ Loader removido - câmera pronta');
+}
+
+// ✅ PEQUENA PAUSA PARA ESTABILIZAR
+await new Promise(resolve => setTimeout(resolve, 500));
 
         console.log('🌐 Inicializando WebRTC...');
         window.rtcCore = new WebRTCCore();
