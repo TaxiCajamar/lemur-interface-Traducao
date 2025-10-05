@@ -227,48 +227,40 @@ function initializeTranslator() {
         console.log('⏹️ Gravação PARADA - interface completa fechada');
     }
 
-    // ===== RECONHECIMENTO DE VOZ (TRADUÇÃO DINÂMICA) =====
-    function setupRecognitionEvents() {
-        recognition.onstart = function() {
-            console.log('🎤 Reconhecimento de voz INICIADO');
-        };
+    // ===== RECONHECIMENTO DE VOZ SILENCIOSO (IGUAL AOS OUTROS) =====
+function setupRecognitionEvents() {
+    recognition.onstart = function() {
+        console.log('🎤 Reconhecimento de voz INICIADO (modo silencioso)');
+    };
+    
+    recognition.onresult = function(event) {
+        const transcript = event.results[0][0].transcript;
+        console.log('🎯 Texto falado (não mostrado na tela):', transcript);
         
-        recognition.onresult = function(event) {
-            const transcript = event.results[0][0].transcript;
-            console.log('🎯 Texto falado para tradução dinâmica:', transcript);
+        // ✅ TRADUZ E ENVIA SILENCIOSAMENTE (IGUAL AOS OUTROS ARQUIVOS)
+        translateText(transcript).then(translation => {
+            console.log('🌐 Texto traduzido e enviado silenciosamente:', translation);
+            enviarParaOutroCelular(translation);
             
-            // ✅ TRADUZ DINAMICAMENTE O QUE O USUÁRIO FALOU
-            translateText(transcript).then(translation => {
-                console.log('🌐 Texto traduzido dinamicamente:', translation);
-                enviarParaOutroCelular(translation);
-                
-                // ✅ FEEDBACK VISUAL DE SUCESSO
-                if (translatedText) {
-                    translatedText.textContent = "✅ " + translation;
-                    translatedText.style.color = '#00ff00';
-                    
-                    setTimeout(() => {
-                        if (translatedText) {
-                            translatedText.textContent = "";
-                            translatedText.style.color = '';
-                        }
-                    }, 3000);
-                }
-            }).catch(error => {
-                console.error('❌ Erro na tradução dinâmica:', error);
-            });
-        };
-        
-        recognition.onerror = function(event) {
-            console.log('❌ Erro reconhecimento de voz dinâmico:', event.error);
-            stopRecording();
-        };
-        
-        recognition.onend = function() {
-            console.log('🔴 Reconhecimento de voz dinâmico finalizado');
-            stopRecording();
-        };
-    }
+            // ❌❌❌ REMOVIDO COMPLETAMENTE: Não mostra nada na tela!
+            // O usuário NÃO precisa ver o que falou
+            // Apenas o destinatário recebe a mensagem traduzida
+            
+        }).catch(error => {
+            console.error('❌ Erro na tradução dinâmica:', error);
+        });
+    };
+    
+    recognition.onerror = function(event) {
+        console.log('❌ Erro reconhecimento de voz dinâmico:', event.error);
+        stopRecording();
+    };
+    
+    recognition.onend = function() {
+        console.log('🔴 Reconhecimento de voz dinâmico finalizado');
+        stopRecording();
+    };
+}
     
     // ✅ EVENTOS DO BOTÃO (IGUAL AOS OUTROS ARQUIVOS)
     if (recordButton) {
