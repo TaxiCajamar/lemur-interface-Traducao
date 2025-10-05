@@ -525,12 +525,12 @@ async function iniciarCameraAposPermissoes() {
         window.rtcCore = new WebRTCCore();
 
         const url = window.location.href;
-const urlParts = url.split('?');
-const queryParams = urlParts[1] ? urlParts[1].split('&') : [];
+        const urlParts = url.split('?');
+        const queryParams = urlParts[1] ? urlParts[1].split('&') : [];
 
-const myId = queryParams[0] && !queryParams[0].includes('=') 
-    ? queryParams[0] 
-    : crypto.randomUUID().substr(0, 8);
+        const myId = queryParams[0] && !queryParams[0].includes('=') 
+            ? queryParams[0] 
+            : crypto.randomUUID().substr(0, 8);
 
         const params = new URLSearchParams(window.location.search);
         const token = params.get('token') || '';
@@ -539,7 +539,7 @@ const myId = queryParams[0] && !queryParams[0].includes('=')
         window.targetTranslationLang = lang;
 
         // ✅ CONFIGURAÇÃO SIMPLIFICADA SEM QR CODE (VERSÃO CORRIGIDA)
-        console.log('🚀 Sessão Receiver Iniciada:', {
+        console.log('🚀 Sessão Notificador Iniciada:', {
             id: myId,
             lang: lang,
             token: token ? 'Presente' : 'Não informado'
@@ -668,7 +668,7 @@ const myId = queryParams[0] && !queryParams[0].includes('=')
             if (!localStream) return;
 
             console.log('🎯 Caller fala:', idiomaDoCaller);
-            console.log('🎯 Eu (receiver) entendo:', lang);
+            console.log('🎯 Eu (notificador) entendo:', lang);
 
             window.sourceTranslationLang = idiomaDoCaller;
             window.targetTranslationLang = lang;
@@ -727,23 +727,7 @@ const myId = queryParams[0] && !queryParams[0].includes('=')
 
         // ✅ INICIA O OBSERVADOR PARA ESCONDER O CLICK QUANDO CONECTAR
         esconderClickQuandoConectar();
-        
-// ✅✅✅ INÍCIO DA ADIÇÃO ✅✅✅
 
-// 🚀 CONEXÃO AUTOMÁTICA QUANDO TEM targetId
-const receiverId = params.get('targetId') || '';
-if (receiverId) {
-    console.log('🎯 Modo Receiver - Iniciando conexão com:', receiverId);
-    
-    setTimeout(() => {
-        if (window.rtcCore && typeof window.rtcCore.startCall === 'function') {
-            window.rtcCore.startCall(receiverId, localStream, lang);
-            console.log('📞 Chamada iniciada para:', receiverId);
-        }
-    }, 1000);
-}
-
-// ✅✅✅ FIM DA ADIÇÃO ✅✅✅
     } catch (error) {
         console.error("Erro ao iniciar câmera:", error);
         
@@ -760,7 +744,7 @@ if (receiverId) {
 // 🚀 INICIALIZAÇÃO AUTOMÁTICA (SEM BOTÃO DE PERMISSÕES)
 window.onload = async () => {
     try {
-        console.log('🚀 Iniciando aplicação receiver automaticamente...');
+        console.log('🚀 Iniciando aplicação NOTIFICADOR automaticamente...');
         
         // 1. Obtém o idioma para tradução
         const params = new URLSearchParams(window.location.search);
@@ -790,10 +774,10 @@ window.onload = async () => {
         // 7. Inicia câmera e WebRTC
         await iniciarCameraAposPermissoes();
         
-        console.log('✅ Receiver iniciado com sucesso!');
+        console.log('✅ NOTIFICADOR iniciado com sucesso!');
         
     } catch (error) {
-        console.error('❌ Erro ao inicializar receiver:', error);
+        console.error('❌ Erro ao inicializar NOTIFICADOR:', error);
         
         if (typeof window.mostrarErroCarregamento === 'function') {
             window.mostrarErroCarregamento('Erro ao solicitar permissões de câmera e microfone');
