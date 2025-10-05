@@ -456,6 +456,37 @@ function setupCameraToggle() {
     console.log('✅ Botão de alternar câmera configurado com tratamento robusto');
 }
 
+// ✅ FUNÇÃO PARA ESCONDER O BOTÃO CLICK QUANDO WEBRTC CONECTAR
+function esconderClickQuandoConectar() {
+    const elementoClick = document.getElementById('click');
+    const remoteVideo = document.getElementById('remoteVideo');
+    
+    if (!elementoClick || !remoteVideo) return;
+    
+    // Observa mudanças no remoteVideo para detectar conexão
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'srcObject') {
+                if (remoteVideo.srcObject) {
+                    // WebRTC conectou - esconde o botão click DEFINITIVAMENTE
+                    elementoClick.style.display = 'none';
+                    elementoClick.classList.remove('piscar-suave');
+                    console.log('🔗 WebRTC conectado - botão Click removido');
+                    observer.disconnect(); // Para de observar
+                }
+            }
+        });
+    });
+    
+    // Começa a observar o remoteVideo
+    observer.observe(remoteVideo, {
+        attributes: true,
+        attributeFilter: ['srcObject']
+    });
+    
+    console.log('👀 Observando conexão WebRTC para esconder botão Click');
+}
+
 // ✅ FUNÇÃO PARA INICIAR CÂMERA APÓS PERMISSÕES
 async function iniciarCameraAposPermissoes() {
     try {
@@ -522,14 +553,10 @@ async function iniciarCameraAposPermissoes() {
             lang: lang
         };
 
-        // ✅ CONFIGURA o botão para gerar QR Code quando clicado
+        // ✅ CONFIGURA o botão para gerar QR Code quando clicado (CORRIGIDO)
         document.getElementById('logo-traduz').addEventListener('click', function() {
-            
-            // ✅ FAZ O #click DESAPARECER
-            const elementoClick = document.getElementById('click');
-            if (elementoClick) {
-                elementoClick.style.display = 'none';
-            }
+            // ❌ REMOVIDA a parte que esconde o #click aqui!
+            // O #click só deve desaparecer quando WebRTC conectar
             
             // 🔄 VERIFICA SE JÁ EXISTE UM QR CODE ATIVO
             const overlay = document.querySelector('.info-overlay');
@@ -701,6 +728,14 @@ async function iniciarCameraAposPermissoes() {
                 const remoteVideo = document.getElementById('remoteVideo');
                 if (remoteVideo) {
                     remoteVideo.srcObject = remoteStream;
+                    
+                    // ✅ AGORA SIM: Esconde o botão Click quando WebRTC conectar
+                    const elementoClick = document.getElementById('click');
+                    if (elementoClick) {
+                        elementoClick.style.display = 'none';
+                        elementoClick.classList.remove('piscar-suave');
+                        console.log('🔗 WebRTC conectado - botão Click removido permanentemente');
+                    }
                 }
 
                 window.targetTranslationLang = idiomaDoCaller || lang;
@@ -738,6 +773,9 @@ async function iniciarCameraAposPermissoes() {
                 initializeTranslator();
             }
         }, 1000);
+
+        // ✅ INICIA O OBSERVADOR PARA ESCONDER O CLICK QUANDO CONECTAR
+        esconderClickQuandoConectar();
 
     } catch (error) {
         console.error("Erro ao iniciar câmera:", error);
