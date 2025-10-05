@@ -360,30 +360,69 @@ async function iniciarConexaoWebRTCAntiga(localStream) {
     }
 }
 
-// ✅ SOLICITA PERMISSÕES (CORRIGIDA - SEM DESTRUIR STREAM)
+// ✅✅✅ SOLICITAR TODAS AS PERMISSÕES (CORRIGIDA - COM MICROFONE)
 async function solicitarTodasPermissoes() {
     try {
-        console.log('🎯 Solicitando permissões de câmera...');
+        console.log('🎯 SOLICITANDO PERMISSÕES DE CÂMERA E MICROFONE...');
         
-        // ✅ SOLICITA APENAS CÂMERA (NÃO PRECISA DE MICROFONE)
+        // ✅ SOLICITA CÂMERA E MICROFONE PARA GARANTIR OS POPUPS
         const stream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: false  // ✅ APENAS VÍDEO - NÃO PRECISA DE MICROFONE
+            video: {
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                frameRate: { ideal: 30 }
+            },
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true
+            }
         });
         
-        console.log('✅ Permissões de câmera concedidas!');
+        console.log('✅✅✅ PERMISSÕES CONCEDIDAS! Popups apareceram com sucesso');
         
-        // ✅✅✅ CORREÇÃO: NÃO DESTRÓI O STREAM
-        // NÃO FAZ: stream.getTracks().forEach(track => track.stop());
+        // Para a stream imediatamente após conseguir permissão
+        stream.getTracks().forEach(track => {
+            track.stop();
+            console.log(`⏹️ Track ${track.kind} parada`);
+        });
         
-        return stream; // ✅ RETORNA STREAM PARA REUTILIZAR
+        return true;
         
     } catch (error) {
-        console.error('❌ Erro nas permissões:', error);
+        console.error('❌❌❌ ERRO NAS PERMISSÕES:', error);
+        
+        // ✅ Tenta fallback se o erro for específico
+        if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+            console.log('🔄 Tentando fallback para permissões básicas...');
+            return await tentarPermissoesFallback();
+        }
+        
         throw error;
     }
 }
 
+// ✅✅✅ FALLBACK PARA PERMISSÕES
+async function tentarPermissoesFallback() {
+    try {
+        console.log('🔄 Tentando fallback de permissões...');
+        
+        // Tentativa mais simples
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true
+        });
+        
+        console.log('✅ Fallback de permissões funcionou!');
+        
+        stream.getTracks().forEach(track => track.stop());
+        return true;
+        
+    } catch (fallbackError) {
+        console.error('❌ Fallback também falhou:', fallbackError);
+        throw fallbackError;
+    }
+}
 // ✅ FUNÇÃO PARA INICIAR CÂMERA (APENAS VÍDEO)
 async function iniciarCameraComStream(stream) {
     try {
