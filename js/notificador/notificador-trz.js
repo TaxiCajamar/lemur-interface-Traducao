@@ -1,23 +1,34 @@
-// ===== TRADUTOR SIMPLIFICADO PARA NOTIFICADOR =====
+// ===== TRADUTOR DINÂMICO + BANDEIRAS PARA NOTIFICADOR =====
 function initializeTranslator() {
-    const recordButton = document.getElementById('recordButton');
-    const translatedText = document.getElementById('translatedText');
+    console.log('🎯 Inicializando tradutor DINÂMICO para notificador...');
+    
+    // ✅ BUSCA INTELIGENTE DO BOTÃO DE MICROFONE
+    let recordButton = document.getElementById('recordButton');
+    
+    // ✅ SE NÃO ENCONTRAR, USA OS MESMOS SELETORES DOS OUTROS ARQUIVOS
+    if (!recordButton) {
+        console.log('🔍 Procurando botão de microfone alternativo...');
+        // Tenta os mesmos seletores que funcionam no caller e receiver
+        recordButton = document.querySelector('.voice-button, .mic-button, [class*="record"]');
+    }
+    
+    // ✅ ELEMENTOS PARA TRADUÇÃO DINÂMICA
+    const translatedText = document.getElementById('texto-recebido'); // Mesmo elemento do WebRTC
     const speakerButton = document.getElementById('speakerButton');
     const currentLanguageFlag = document.getElementById('currentLanguageFlag');
-    const worldButton = document.getElementById('worldButton');
-    const languageDropdown = document.getElementById('languageDropdown');
-    const languageOptions = document.querySelectorAll('.language-option');
     
-    if (!recordButton || !translatedText) {
-        setTimeout(initializeTranslator, 300);
+    // ✅ VERIFICAÇÃO - SE NÃO ENCONTRAR BOTÃO, PARA AQUI
+    if (!recordButton) {
+        console.log('❌ Botão de microfone não encontrado para tradução dinâmica');
+        console.log('📋 Botões disponíveis:', document.querySelectorAll('button'));
         return;
     }
     
-    translatedText.textContent = "🎤";
-    
+    console.log('✅ Botão de microfone encontrado:', recordButton);
+
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-        translatedText.textContent = "❌ Navegador não suportado";
+        if (translatedText) translatedText.textContent = "❌ Navegador não suportado";
         recordButton.style.display = 'none';
         return;
     }
@@ -26,20 +37,34 @@ function initializeTranslator() {
     recognition.continuous = false;
     recognition.interimResults = false;
     
-    let currentLang = 'pt-BR';
+    // ✅ USA OS MESMOS IDIOMAS DOS OUTROS ARQUIVOS
+    let currentLang = window.targetTranslationLang || 'pt-BR';
     let isRecording = false;
     let microphonePermissionGranted = false;
     
-    // ===== FUNÇÃO SIMPLES PARA ENVIAR TEXTO =====
-    function enviarParaOutroCelular(texto) {
-        if (window.rtcDataChannel && window.rtcDataChannel.readyState === 'open') {
-            window.rtcDataChannel.send(texto);
-            console.log('✅ Texto enviado:', texto);
-        } else {
-            console.log('⏳ Canal não disponível');
+    // ===== FUNÇÃO PARA BUSCAR BANDEIRA (IGUAL AOS OUTROS) =====
+    async function getBandeiraDoJson(langCode) {
+        try {
+            const response = await fetch('assets/bandeiras/language-flags.json');
+            const flags = await response.json();
+            return flags[langCode] || flags[langCode.split('-')[0]] || '🎌';
+        } catch (error) {
+            console.error('Erro ao carregar bandeiras:', error);
+            return '🎌';
         }
     }
 
+    // ===== FUNÇÃO PARA ENVIAR TEXTO (IGUAL AOS OUTROS) =====
+    function enviarParaOutroCelular(texto) {
+        if (window.rtcCore && window.rtcCore.dataChannel && window.rtcCore.dataChannel.readyState === 'open') {
+            window.rtcCore.dataChannel.send(texto);
+            console.log('✅ Texto traduzido enviado:', texto);
+        } else {
+            console.log('⏳ Canal WebRTC não disponível para tradução dinâmica');
+        }
+    }
+
+    // ===== TRADUÇÃO DINÂMICA (O QUE USUÁRIO FALA) =====
     async function translateText(text) {
         try {
             const response = await fetch('https://chat-tradutor-bvvx.onrender.com/translate', {
@@ -55,56 +80,37 @@ function initializeTranslator() {
             return result.translatedText || text;
             
         } catch (error) {
+            console.error('Erro na tradução dinâmica:', error);
             return text;
         }
     }
 
-    // ===== BOTÃO MUNDO SIMPLIFICADO =====
-    async function getBandeira(langCode) {
+    // ===== CONFIGURAÇÃO DE BANDEIRAS (IGUAL AOS OUTROS) =====
+    async function setupBandeiras() {
         try {
-            const response = await fetch('./assets/bandeiras/language-flags.json');
-            const flags = await response.json();
-            return flags[langCode] || flags[langCode.split('-')[0]] || '🎌';
+            const bandeira = await getBandeiraDoJson(currentLang);
+            if (currentLanguageFlag) {
+                currentLanguageFlag.textContent = bandeira;
+            }
+            console.log('🏳️ Bandeira configurada:', bandeira, 'para idioma:', currentLang);
         } catch (error) {
-            return '🎌';
+            console.error('Erro ao configurar bandeira:', error);
         }
     }
-    
-    // Configuração inicial
-    getBandeira(currentLang).then(bandeira => {
-        if (currentLanguageFlag) currentLanguageFlag.textContent = bandeira;
-    });
 
-    // Eventos do botão mundo
-    if (worldButton && languageDropdown) {
-        worldButton.addEventListener('click', function(e) {
-            e.stopPropagation();
-            languageDropdown.classList.toggle('show');
-        });
-
-        document.addEventListener('click', function() {
-            languageDropdown.classList.remove('show');
-        });
-
-        languageOptions.forEach(option => {
-            option.addEventListener('click', async function() {
-                currentLang = this.getAttribute('data-lang');
-                
-                const bandeira = await getBandeira(currentLang);
-                if (currentLanguageFlag) currentLanguageFlag.textContent = bandeira;
-                
-                languageDropdown.classList.remove('show');
-                window.currentSourceLang = currentLang;
-                
-                console.log('🌎 Idioma alterado para:', currentLang);
-            });
-        });
-    }
-
-    // ===== PERMISSÃO DO MICROFONE =====
+    // ===== PERMISSÃO DO MICROFONE (MESMA LÓGICA DOS OUTROS) =====
     async function requestMicrophonePermission() {
         try {
-            // Verifica se já tem permissão
+            // ✅ USA A MESMA PERMISSÃO GLOBAL DOS OUTROS ARQUIVOS
+            if (window.permissoesConcedidas) {
+                microphonePermissionGranted = true;
+                recordButton.disabled = false;
+                setupRecognitionEvents();
+                console.log('✅ Microfone autorizado (permissão global)');
+                return;
+            }
+
+            // ✅ VERIFICA DISPOSITIVOS (MESMA LÓGICA)
             const devices = await navigator.mediaDevices.enumerateDevices();
             const hasMicrophonePermission = devices.some(device => 
                 device.kind === 'audioinput' && device.deviceId !== ''
@@ -113,13 +119,12 @@ function initializeTranslator() {
             if (hasMicrophonePermission) {
                 microphonePermissionGranted = true;
                 recordButton.disabled = false;
-                translatedText.textContent = "🎤";
                 setupRecognitionEvents();
-                console.log('✅ Microfone já autorizado');
+                console.log('✅ Microfone autorizado (verificação dispositivos)');
                 return;
             }
 
-            // Solicita permissão
+            // ✅ SOLICITA PERMISSÃO (MESMO MÉTODO)
             const stream = await navigator.mediaDevices.getUserMedia({ 
                 audio: {
                     echoCancellation: true,
@@ -128,95 +133,108 @@ function initializeTranslator() {
                 }
             });
             
-            // Para a stream imediatamente (só precisamos da permissão)
             stream.getTracks().forEach(track => track.stop());
             
             microphonePermissionGranted = true;
             recordButton.disabled = false;
-            translatedText.textContent = "🎤";
             setupRecognitionEvents();
             
-            console.log('✅ Permissão de microfone concedida');
+            console.log('✅ Permissão de microfone concedida para tradução dinâmica');
             
         } catch (error) {
-            console.error('❌ Erro permissão microfone:', error);
-            translatedText.textContent = "🚫";
+            console.error('❌ Erro permissão microfone para tradução dinâmica:', error);
             recordButton.disabled = true;
         }
     }
 
-    // ===== RECONHECIMENTO DE VOZ =====
+    // ===== RECONHECIMENTO DE VOZ (TRADUÇÃO DINÂMICA) =====
     function setupRecognitionEvents() {
+        recognition.onstart = function() {
+            console.log('🎤 Iniciando tradução DINÂMICA...');
+            isRecording = true;
+        };
+        
         recognition.onresult = function(event) {
             const transcript = event.results[0][0].transcript;
+            console.log('🎯 Texto falado para tradução dinâmica:', transcript);
             
-            if (translatedText) {
-                translatedText.textContent = "🔄";
-            }
-            
+            // ✅ TRADUZ DINAMICAMENTE O QUE O USUÁRIO FALOU
             translateText(transcript).then(translation => {
+                console.log('🌐 Texto traduzido dinamicamente:', translation);
                 enviarParaOutroCelular(translation);
-                
-                if (translatedText) {
-                    translatedText.textContent = "✅";
-                    setTimeout(() => {
-                        if (translatedText) translatedText.textContent = "🎤";
-                    }, 1000);
-                }
             }).catch(error => {
-                console.error('Erro:', error);
-                if (translatedText) translatedText.textContent = "🎤";
+                console.error('❌ Erro na tradução dinâmica:', error);
             });
         };
         
         recognition.onerror = function(event) {
-            console.log('Erro reconhecimento:', event.error);
-            if (translatedText) translatedText.textContent = "🎤";
+            console.log('❌ Erro reconhecimento de voz dinâmico:', event.error);
             isRecording = false;
         };
         
         recognition.onend = function() {
+            console.log('🔴 Reconhecimento de voz dinâmico finalizado');
             isRecording = false;
         };
     }
     
-    // Evento simples do botão de gravar
+    // ✅ EVENTO DO BOTÃO (MESMA LÓGICA DOS OUTROS)
     recordButton.addEventListener('click', function() {
-        if (isRecording || !microphonePermissionGranted) return;
+        console.log('🎤 Botão de tradução dinâmica clicado');
+        
+        if (isRecording) {
+            recognition.stop();
+            return;
+        }
+        
+        if (!microphonePermissionGranted) {
+            requestMicrophonePermission();
+            return;
+        }
         
         try {
             recognition.lang = window.currentSourceLang || currentLang;
             recognition.start();
-            isRecording = true;
-            
-            if (translatedText) translatedText.textContent = "🎙️";
+            console.log('🎤 Iniciando tradução dinâmica...');
             
         } catch (error) {
-            console.error('Erro ao gravar:', error);
-            if (translatedText) translatedText.textContent = "🎤";
+            console.error('❌ Erro ao iniciar tradução dinâmica:', error);
             isRecording = false;
         }
     });
     
-    // Botão speaker simples
+    // ✅ BOTÃO SPEAKER (MESMA LÓGICA)
     if (speakerButton) {
         speakerButton.addEventListener('click', function() {
             const textoRecebido = document.getElementById("texto-recebido");
             if (textoRecebido && textoRecebido.textContent && window.speechSynthesis) {
                 const utterance = new SpeechSynthesisUtterance(textoRecebido.textContent);
                 utterance.lang = window.targetTranslationLang || 'pt-BR';
+                utterance.rate = 0.9;
                 window.speechSynthesis.speak(utterance);
             }
         });
     }
     
-    // ✅ SOLICITA PERMISSÃO DO MICROFONE
-    requestMicrophonePermission();
+    // ✅ INICIALIZAÇÃO
+    console.log('🚀 Tradutor dinâmico notificador carregando...');
     
-    console.log('✅ Tradutor Notificador inicializado');
+    // Configura bandeiras
+    setupBandeiras();
+    
+    // Solicita permissão com delay
+    setTimeout(() => {
+        requestMicrophonePermission();
+    }, 1000);
+    
+    console.log('✅ Tradutor DINÂMICO Notificador inicializado!');
 }
 
 // ===== INICIALIZAÇÃO =====
 document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(initializeTranslator, 500);
+    console.log('📄 DOM carregado - inicializando tradutor dinâmico...');
+    
+    setTimeout(() => {
+        initializeTranslator();
+    }, 1500);
 });
