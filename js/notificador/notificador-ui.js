@@ -1,10 +1,16 @@
 import { WebRTCCore } from '../../core/webrtc-core.js';
 
-// 🎵 VARIÁVEIS DE ÁUDIO
+// 🎵 VARIÁVEIS DE ÁUDIO E GRAVAÇÃO
 let audioContext = null;
 let somDigitacao = null;
 let audioCarregado = false;
 let permissaoConcedida = false;
+
+// 🎤 SISTEMA DE GRAVAÇÃO (FALTANTE NO NOTIFICADOR)
+let gravando = false;
+let recognition = null;
+let mediaRecorder = null;
+let audioChunks = [];
 
 // 🎯 CONTROLE DO TOGGLE DAS INSTRUÇÕES
 function setupInstructionToggle() {
@@ -124,7 +130,7 @@ async function solicitarTodasPermissoes() {
         
         const stream = await navigator.mediaDevices.getUserMedia({
             video: true,
-            audio: true
+            audio: true  // ✅ AGORA solicita áudio também para gravação
         });
         
         console.log('✅ Permissões concedidas para notificador!');
@@ -142,6 +148,151 @@ async function solicitarTodasPermissoes() {
         window.permissoesConcedidas = false;
         throw error;
     }
+}
+
+// 🎤 🆕 SISTEMA DE GRAVAÇÃO DE VOZ (FALTANTE)
+function inicializarReconhecimentoVoz() {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        console.log('❌ Reconhecimento de voz não suportado');
+        return null;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRecognition();
+    
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = window.targetTranslationLang || 'pt-BR';
+
+    recognition.onstart = function() {
+        console.log('🎤 Reconhecimento de voz iniciado');
+        gravando = true;
+        atualizarUIgravacao(true);
+    };
+
+    recognition.onresult = function(event) {
+        let textoInterim = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            if (event.results[i].isFinal) {
+                const textoFinal = event.results[i][0].transcript;
+                console.log('📝 Texto reconhecido:', textoFinal);
+                enviarMensagemTexto(textoFinal);
+            } else {
+                textoInterim += event.results[i][0].transcript;
+            }
+        }
+        
+        // Atualiza UI com texto interim
+        if (textoInterim) {
+            const elementoTexto = document.getElementById('texto-recebido');
+            if (elementoTexto) {
+                elementoTexto.textContent = textoInterim;
+                elementoTexto.style.color = '#ffff00';
+            }
+        }
+    };
+
+    recognition.onerror = function(event) {
+        console.log('❌ Erro no reconhecimento:', event.error);
+        gravando = false;
+        atualizarUIgravacao(false);
+    };
+
+    recognition.onend = function() {
+        console.log('🔴 Reconhecimento de voz finalizado');
+        gravando = false;
+        atualizarUIgravacao(false);
+    };
+
+    return recognition;
+}
+
+// 🆕 FUNÇÃO PARA ENVIAR MENSAGEM DE TEXTO
+function enviarMensagemTexto(texto) {
+    if (!texto || !texto.trim()) return;
+    
+    console.log('📤 Enviando mensagem:', texto);
+    
+    if (window.rtcCore && window.rtcCore.dataChannel && window.rtcCore.dataChannel.readyState === 'open') {
+        window.rtcCore.dataChannel.send(texto);
+        
+        // Feedback visual
+        const elementoTexto = document.getElementById('texto-recebido');
+        if (elementoTexto) {
+            elementoTexto.textContent = "✓ Mensagem enviada: " + texto;
+            elementoTexto.style.color = '#00ff00';
+            setTimeout(() => {
+                elementoTexto.textContent = '';
+            }, 3000);
+        }
+    } else {
+        console.log('❌ Canal de dados não disponível');
+        alert('Conexão não estabelecida. Aguarde...');
+    }
+}
+
+// 🆕 ATUALIZAR UI DA GRAVAÇÃO
+function atualizarUIgravacao(gravando) {
+    const botaoMicrofone = document.querySelector('.voice-button'); // ou o seletor correto
+    const elementoTexto = document.getElementById('texto-recebido');
+    
+    if (gravando) {
+        if (botaoMicrofone) botaoMicrofone.style.backgroundColor = '#ff4444';
+        if (elementoTexto) {
+            elementoTexto.textContent = "🎤 Gravando... Fale agora!";
+            elementoTexto.style.color = '#ffff00';
+        }
+    } else {
+        if (botaoMicrofone) botaoMicrofone.style.backgroundColor = '';
+        if (elementoTexto) {
+            elementoTexto.textContent = "";
+        }
+    }
+}
+
+// 🆕 CONFIGURAR BOTÃO DE MICROFONE (CRÍTICO!)
+function setupBotaoMicrofone() {
+    const botaoMicrofone = document.getElementById('voiceButton'); // Ajuste o seletor conforme seu HTML
+    
+    if (!botaoMicrofone) {
+        console.log('❌ Botão de microfone não encontrado');
+        return;
+    }
+
+    console.log('🎤 Configurando botão de microfone...');
+
+    botaoMicrofone.addEventListener('click', function() {
+        if (gravando) {
+            // Parar gravação
+            if (recognition) {
+                recognition.stop();
+            }
+            console.log('⏹️ Parando gravação...');
+        } else {
+            // Iniciar gravação
+            if (!recognition) {
+                recognition = inicializarReconhecimentoVoz();
+            }
+            
+            if (recognition) {
+                try {
+                    recognition.start();
+                    console.log('🎤 Iniciando gravação...');
+                } catch (error) {
+                    console.log('❌ Erro ao iniciar gravação:', error);
+                    // Tenta reinicializar
+                    recognition = inicializarReconhecimentoVoz();
+                    if (recognition) {
+                        recognition.start();
+                    }
+                }
+            } else {
+                alert('Reconhecimento de voz não suportado neste navegador.');
+            }
+        }
+    });
+
+    console.log('✅ Botão de microfone configurado com sucesso');
 }
 
 // 🎯 FUNÇÃO PARA OBTER IDIOMA COMPLETO
@@ -301,7 +452,6 @@ function setupCameraToggle() {
                 audio: false
             });
 
-            // Atualiza o vídeo local
             const localVideo = document.getElementById('localVideo');
             if (localVideo) {
                 localVideo.srcObject = newStream;
@@ -342,7 +492,6 @@ function setupLogoTradutor() {
             return;
         }
         
-        // Pega as informações atualizadas da sessão
         const myId = window.currentSessionId || 'Não disponível';
         const lang = window.targetTranslationLang || 'pt-BR';
         
@@ -378,11 +527,15 @@ function esconderClickQuandoConectar() {
     });
 }
 
-// 🎤 FUNÇÃO GOOGLE TTS
+// 🎤 ✅✅✅ SISTEMA HÍBRIDO TTS CORRIGIDO (COM FALLBACK)
 async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente) {
+    // ✅ PRIMEIRO: Tenta Google TTS (RÁPIDO)
     try {
-        console.log('🎤 Iniciando Google TTS...');
+        console.log('🎤 Tentando Google TTS...');
         
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // Timeout de 5 segundos
+
         const resposta = await fetch('https://chat-tradutor.onrender.com/speak', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -390,10 +543,15 @@ async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente) {
                 text: mensagem,
                 languageCode: window.targetTranslationLang || 'pt-BR',
                 gender: 'FEMALE'
-            })
+            }),
+            signal: controller.signal
         });
 
-        if (!resposta.ok) throw new Error('Erro na API de voz');
+        clearTimeout(timeoutId);
+
+        if (!resposta.ok) {
+            throw new Error('Erro na API de voz');
+        }
 
         const blob = await resposta.blob();
         const url = URL.createObjectURL(blob);
@@ -410,30 +568,79 @@ async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente) {
             if (imagemImpaciente) {
                 imagemImpaciente.style.display = 'none';
             }
+            console.log('🔊 Áudio Google TTS iniciado (RÁPIDO)');
         };
         
         audio.onended = () => {
+            console.log('🔚 Áudio Google TTS terminado');
             if (imagemImpaciente) {
                 imagemImpaciente.style.display = 'none';
             }
         };
         
         audio.onerror = () => {
-            pararSomDigitacao();
-            if (elemento) {
-                elemento.style.animation = 'none';
-                elemento.style.backgroundColor = '';
-                elemento.style.border = '';
-            }
-            if (imagemImpaciente) {
-                imagemImpaciente.style.display = 'none';
-            }
+            throw new Error('Erro no áudio Google TTS');
         };
 
         await audio.play();
+        return; // ✅ SUCESSO - para aqui
         
     } catch (error) {
-        console.error('❌ Erro no Google TTS:', error);
+        console.log('🔄 Google TTS falhou, usando fallback nativo:', error);
+        
+        // ✅ FALLBACK: Síntese de voz do navegador
+        try {
+            if ('speechSynthesis' in window) {
+                pararSomDigitacao();
+                
+                if (elemento) {
+                    elemento.style.animation = 'none';
+                    elemento.style.backgroundColor = '';
+                    elemento.style.border = '';
+                    elemento.textContent = mensagem;
+                }
+                if (imagemImpaciente) {
+                    imagemImpaciente.style.display = 'none';
+                }
+                
+                const utterance = new SpeechSynthesisUtterance(mensagem);
+                utterance.lang = window.targetTranslationLang || 'pt-BR';
+                utterance.rate = 0.9;
+                utterance.pitch = 1;
+                
+                // Carrega as vozes disponíveis
+                await new Promise((resolve) => {
+                    const vozes = speechSynthesis.getVoices();
+                    if (vozes.length > 0) {
+                        resolve();
+                    } else {
+                        speechSynthesis.addEventListener('voiceschanged', resolve);
+                    }
+                });
+                
+                const vozes = speechSynthesis.getVoices();
+                const vozPreferida = vozes.find(voz => 
+                    voz.lang.startsWith((window.targetTranslationLang || 'pt').split('-')[0])
+                );
+                
+                if (vozPreferida) {
+                    utterance.voice = vozPreferida;
+                }
+                
+                utterance.onend = () => {
+                    console.log('🔚 Áudio nativo terminado');
+                };
+                
+                speechSynthesis.speak(utterance);
+                console.log('🔊 Áudio nativo iniciado (fallback)');
+            }
+        } catch (fallbackError) {
+            console.error('❌ Fallback nativo também falhou:', fallbackError);
+            // Pelo menos mostra o texto
+            if (elemento) {
+                elemento.textContent = mensagem;
+            }
+        }
     }
 }
 
@@ -478,7 +685,10 @@ async function iniciarCameraAposPermissoes() {
         // 3. Configura toggle da câmera
         setupCameraToggle();
 
-        // 4. Configura WebRTC
+        // 4. 🆕 CONFIGURA BOTÃO DE MICROFONE
+        setupBotaoMicrofone();
+
+        // 5. Configura WebRTC
         console.log('🌐 Inicializando WebRTC...');
         window.rtcCore = new WebRTCCore();
 
@@ -500,14 +710,14 @@ async function iniciarCameraAposPermissoes() {
 
         console.log('🚀 Sessão Notificador Iniciada:', { id: myId, lang: lang });
 
-        // 5. ✅ CONFIGURA O CLIQUE NO LOGO APÓS TUDO ESTAR PRONTO
+        // 6. Configura o clique no logo APÓS TUDO ESTAR PRONTO
         setupLogoTradutor();
 
-        // 6. Inicializa WebRTC
+        // 7. Inicializa WebRTC
         window.rtcCore.initialize(myId);
         window.rtcCore.setupSocketHandlers();
 
-        // 7. Configura callbacks do WebRTC
+        // 8. Configura callbacks do WebRTC
         window.rtcCore.setDataChannelCallback(async (mensagem) => {
             console.log('📩 Mensagem recebida via WebRTC:', mensagem);
             iniciarSomDigitacao();
@@ -568,7 +778,7 @@ async function iniciarCameraAposPermissoes() {
             });
         };
 
-        // 8. Configura observador para esconder click quando conectar
+        // 9. Configura observador para esconder click quando conectar
         esconderClickQuandoConectar();
 
         console.log('✅ Notificador completamente inicializado');
