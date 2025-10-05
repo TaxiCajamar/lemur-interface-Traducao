@@ -741,10 +741,10 @@ async function iniciarCameraAposPermissoes() {
     }
 }
 
-// 🚀 INICIALIZAÇÃO AUTOMÁTICA (SEM BOTÃO DE PERMISSÕES)
+// 🚀 INICIALIZAÇÃO AUTOMÁTICA (MESMA LÓGICA DO RECEIVER E CALLER)
 window.onload = async () => {
     try {
-        console.log('🚀 Iniciando aplicação NOTIFICADOR automaticamente...');
+        console.log('🚀 Iniciando aplicação notificador automaticamente...');
         
         // 1. Obtém o idioma para tradução
         const params = new URLSearchParams(window.location.search);
@@ -774,10 +774,10 @@ window.onload = async () => {
         // 7. Inicia câmera e WebRTC
         await iniciarCameraAposPermissoes();
         
-        console.log('✅ NOTIFICADOR iniciado com sucesso!');
+        console.log('✅ Notificador iniciado com sucesso!');
         
     } catch (error) {
-        console.error('❌ Erro ao inicializar NOTIFICADOR:', error);
+        console.error('❌ Erro ao inicializar notificador:', error);
         
         if (typeof window.mostrarErroCarregamento === 'function') {
             window.mostrarErroCarregamento('Erro ao solicitar permissões de câmera e microfone');
