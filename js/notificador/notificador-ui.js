@@ -664,44 +664,48 @@ async function iniciarCameraAposPermissoes() {
             await falarComGoogleTTS(mensagem, elemento, imagemImpaciente);
         });
 
-        window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
-            if (!localStream) return;
+       window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
+    if (!localStream) return;
 
-            console.log('🎯 Caller fala:', idiomaDoCaller);
-            console.log('🎯 Eu (notificador) entendo:', lang);
+    console.log('🎯 Caller fala:', idiomaDoCaller);
+    console.log('🎯 Eu (notificador) entendo:', lang);
 
-            window.sourceTranslationLang = idiomaDoCaller;
-            window.targetTranslationLang = lang;
+    window.sourceTranslationLang = idiomaDoCaller;
+    window.targetTranslationLang = lang;
 
-            console.log('🎯 Vou traduzir:', idiomaDoCaller, '→', lang);
+    console.log('🎯 Vou traduzir:', idiomaDoCaller, '→', lang);
 
-            window.rtcCore.handleIncomingCall(offer, localStream, (remoteStream) => {
-                remoteStream.getAudioTracks().forEach(track => track.enabled = false);
+    window.rtcCore.handleIncomingCall(offer, localStream, (remoteStream) => {
+        remoteStream.getAudioTracks().forEach(track => track.enabled = false);
 
-                const remoteVideo = document.getElementById('remoteVideo');
-                if (remoteVideo) {
-                    remoteVideo.srcObject = remoteStream;
-                    
-                    // ✅ AGORA SIM: Esconde o botão Click quando WebRTC conectar
-                    const elementoClick = document.getElementById('click');
-                    if (elementoClick) {
-                        elementoClick.style.display = 'none';
-                        elementoClick.classList.remove('piscar-suave');
-                        console.log('🔗 WebRTC conectado - botão Click removido permanentemente');
-                    }
-                }
+        // ✅ CORREÇÃO: REMOVER QUALQUER OVERLAY (igual ao receiver)
+        const overlay = document.querySelector('.info-overlay');
+        if (overlay) overlay.classList.add('hidden');
 
-                window.targetTranslationLang = idiomaDoCaller || lang;
-                console.log('🎯 Idioma definido para tradução:', window.targetTranslationLang);
+        const remoteVideo = document.getElementById('remoteVideo');
+        if (remoteVideo) {
+            remoteVideo.srcObject = remoteStream;
+            
+            // ✅ CORREÇÃO: ESCONDER BOTÃO CLICK (igual ao receiver)
+            const elementoClick = document.getElementById('click');
+            if (elementoClick) {
+                elementoClick.style.display = 'none';
+                elementoClick.classList.remove('piscar-suave');
+                console.log('🔗 WebRTC conectado - botão Click removido permanentemente');
+            }
+        }
 
-                if (idiomaDoCaller) {
-                    aplicarBandeiraRemota(idiomaDoCaller);
-                } else {
-                    const remoteLangElement = document.querySelector('.remoter-Lang');
-                    if (remoteLangElement) remoteLangElement.textContent = '🔴';
-                }
-            });
-        };
+        window.targetTranslationLang = idiomaDoCaller || lang;
+        console.log('🎯 Idioma definido para tradução:', window.targetTranslationLang);
+
+        if (idiomaDoCaller) {
+            aplicarBandeiraRemota(idiomaDoCaller);
+        } else {
+            const remoteLangElement = document.querySelector('.remoter-Lang');
+            if (remoteLangElement) remoteLangElement.textContent = '🔴';
+        }
+    });
+};
 
         const frasesParaTraduzir = {
             "translator-label": "Real-time translation."
