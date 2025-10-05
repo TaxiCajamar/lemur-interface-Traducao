@@ -576,9 +576,17 @@ async function iniciarConexaoVisual(receiverId, receiverToken, meuId, localStrea
     console.error('❌ Erro no fluxo de conexão:', error);
   }
   
-  window.rtcCore.setRemoteStreamCallback(stream => {
+ window.rtcCore.setRemoteStreamCallback(stream => {
     conexaoEstabelecida = true;
     console.log('✅ Conexão estabelecida com sucesso!');
+    
+    // ✅ FECHA A CAIXA DE INSTRUÇÕES QUANDO CONECTAR
+    const instructionBox = document.getElementById('instructionBox');
+    if (instructionBox) {
+        instructionBox.classList.remove('expandido');
+        instructionBox.classList.add('recolhido');
+        console.log('📖 Instruções fechadas (WebRTC conectado)');
+    }
     
     const telaChamada = document.getElementById('tela-chamando');
     if (telaChamada) telaChamada.remove();
@@ -586,7 +594,7 @@ async function iniciarConexaoVisual(receiverId, receiverToken, meuId, localStrea
     stream.getAudioTracks().forEach(track => track.enabled = false);
     const remoteVideo = document.getElementById('remoteVideo');
     if (remoteVideo) remoteVideo.srcObject = stream;
-  });
+});
 }
 
 // ✅ FUNÇÃO PARA LIBERAR INTERFACE (FALLBACK) - CORRIGIDA
