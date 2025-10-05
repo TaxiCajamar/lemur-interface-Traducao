@@ -525,17 +525,12 @@ async function iniciarCameraAposPermissoes() {
         window.rtcCore = new WebRTCCore();
 
         const url = window.location.href;
-        const fixedId = url.split('?')[1] || crypto.randomUUID().substr(0, 8);
+const urlParts = url.split('?');
+const queryParams = urlParts[1] ? urlParts[1].split('&') : [];
 
-        function fakeRandomUUID(fixedValue) {
-            return {
-                substr: function(start, length) {
-                    return fixedValue.substr(start, length);
-                }
-            };
-        }
-
-        const myId = fakeRandomUUID(fixedId).substr(0, 8);
+const myId = queryParams[0] && !queryParams[0].includes('=') 
+    ? queryParams[0] 
+    : crypto.randomUUID().substr(0, 8);
 
         const params = new URLSearchParams(window.location.search);
         const token = params.get('token') || '';
@@ -732,7 +727,23 @@ async function iniciarCameraAposPermissoes() {
 
         // ✅ INICIA O OBSERVADOR PARA ESCONDER O CLICK QUANDO CONECTAR
         esconderClickQuandoConectar();
+        
+// ✅✅✅ INÍCIO DA ADIÇÃO ✅✅✅
 
+// 🚀 CONEXÃO AUTOMÁTICA QUANDO TEM targetId
+const receiverId = params.get('targetId') || '';
+if (receiverId) {
+    console.log('🎯 Modo Receiver - Iniciando conexão com:', receiverId);
+    
+    setTimeout(() => {
+        if (window.rtcCore && typeof window.rtcCore.startCall === 'function') {
+            window.rtcCore.startCall(receiverId, localStream, lang);
+            console.log('📞 Chamada iniciada para:', receiverId);
+        }
+    }, 1000);
+}
+
+// ✅✅✅ FIM DA ADIÇÃO ✅✅✅
     } catch (error) {
         console.error("Erro ao iniciar câmera:", error);
         
