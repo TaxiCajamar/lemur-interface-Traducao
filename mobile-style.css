@@ -26,38 +26,133 @@ body {
   overflow-y: auto;
 }
 
-/* ===== intruções compactas no rodapé ===== */
+/* ===== INSTRUÇÕES COMPACTAS NO RODAPÉ - RESPONSIVO ===== */
 .instruction-box {
   position: absolute;
-  bottom: 8px;
+  bottom: 1%; /* porcentagem em relação à altura da tela */
   left: 50%;
   transform: translateX(-50%);
-  width: 220px; /* mais estreita */
-  padding: 4px 8px 4px 8px; /* top, right, bottom, left */
+  width: 85%; /* largura responsiva */
+  max-width: 300px; /* largura máxima para telas grandes */
+  min-width: 200px; /* largura mínima */
+  padding: 1% 2%; /* padding em porcentagem */
   background: #ffffff;
-  border: 2px solid #4CAF50; /* borda verde */
-  border-radius: 10px;
-  box-shadow: inset 0 0 10px rgba(0, 128, 0, 0.2); /* sombra interna verde */
-  font-size: 0.8em;
+  border: 2px solid #4CAF50;
+  border-radius: 12px;
+  box-shadow: inset 0 0 10px rgba(0, 128, 0, 0.2);
+  font-size: 0.9em; /* tamanho base relativo */
   z-index: 100;
-  text-align: left; /* alinha texto à esquerda */
+  text-align: left;
+  transition: all 0.3s ease; /* transição suave */
+  overflow: hidden; /* esconde conteúdo quando recolhido */
 }
+
+/* Estado recolhido */
+.instruction-box.recolhido {
+  height: 40px; /* altura do botão quando recolhido */
+  width: 50px; /* largura menor quando recolhido */
+  cursor: pointer;
+}
+
+/* Estado expandido */
+.instruction-box.expandido {
+  height: auto; /* altura automática quando expandido */
+  max-height: 200px; /* altura máxima */
+}
+
 .instruction-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 2px;
-  line-height: 1.0;
+  gap: 3%; /* gap em porcentagem */
+  margin-bottom: 1%;
+  line-height: 1.2;
   font-family: 'Segoe UI', sans-serif;
   color: #333;
+  transition: opacity 0.3s ease;
+}
+
+/* Esconde os itens quando recolhido */
+.instruction-box.recolhido .instruction-item {
+  opacity: 0;
+  display: none;
+}
+
+/* Mostra os itens quando expandido */
+.instruction-box.expandido .instruction-item {
+  opacity: 1;
+  display: flex;
 }
 
 .instruction-item img {
-  width: 22px;
-  height: 22px;
+  width: 24px; /* tamanho fixo mínimo */
+  height: 24px;
   object-fit: contain;
+  flex-shrink: 0; /* não deixa encolher */
 }
 
+/* Botão de fechar/expandir */
+.instruction-toggle {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: #4CAF50;
+  font-weight: bold;
+  z-index: 101;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+}
+
+.instruction-toggle:hover {
+  background-color: rgba(76, 175, 80, 0.1);
+}
+
+/* Ícone do botão quando recolhido */
+.instruction-box.recolhido .instruction-toggle::after {
+  content: "?";
+  font-size: 14px;
+}
+
+/* Ícone do botão quando expandido */
+.instruction-box.expandido .instruction-toggle::after {
+  content: "×";
+  font-size: 18px;
+}
+
+/* Efeito de hover para indicar que é clicável */
+.instruction-box.recolhido:hover {
+  background: #f8fff8;
+  border-color: #45a049;
+}
+
+/* Media queries para ajustes em telas específicas */
+@media (max-width: 480px) {
+  .instruction-box {
+    width: 90%;
+    font-size: 0.8em;
+    bottom: 0.5%;
+  }
+  
+  .instruction-item img {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+@media (min-width: 768px) {
+  .instruction-box {
+    width: 70%;
+    font-size: 1em;
+  }
+}
 /* ===== BOTÃO ALTERNAR CÂMERA ===== */
 .camera-toggle-btn {
     position: absolute;
