@@ -676,32 +676,45 @@ document.getElementById('logo-traduz').addEventListener('click', function() {
             }
         }
 
-        window.rtcCore.setDataChannelCallback(async (mensagem) => {
-            iniciarSomDigitacao();
+       window.rtcCore.setDataChannelCallback(async (mensagem) => {
+    iniciarSomDigitacao();
 
-            console.log('📩 Mensagem recebida:', mensagem);
+    console.log('📩 Mensagem recebida:', mensagem);
 
-            const elemento = document.getElementById('texto-recebido');
-            const imagemImpaciente = document.getElementById('lemurFixed');
-            
-            if (elemento) {
-                elemento.textContent = "";
-                elemento.style.opacity = '1';
-                elemento.style.transition = 'opacity 0.5s ease';
-                
-                elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
-                elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
-                elemento.style.border = '2px solid #ff0000';
-            }
+    const elemento = document.getElementById('texto-recebido');
+    const imagemImpaciente = document.getElementById('lemurFixed');
+    
+    if (elemento) {
+        elemento.textContent = "";
+        elemento.style.opacity = '1';
+        elemento.style.transition = 'opacity 0.5s ease';
+        
+        elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
+        elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
+        elemento.style.border = '2px solid #ff0000';
+    }
 
-            if (imagemImpaciente) {
-                imagemImpaciente.style.display = 'block';
-            }
+    if (imagemImpaciente) {
+        imagemImpaciente.style.display = 'block';
+    }
 
-            // 🎤 CHAMADA PARA GOOGLE TTS
+    // ✅ SISTEMA HÍBRIDO: Primeiro tenta Google TTS, depois fallback nativo
+    try {
+        // Verificação se o texto existe (igual ao caller)
+        if (mensagem && mensagem.trim() !== '') {
+            console.log('🎯 Tentando Google TTS primeiro...');
             await falarComGoogleTTS(mensagem, elemento, imagemImpaciente);
-        });
-
+        }
+    } catch (error) {
+        console.error('❌ Google TTS falhou, usando fallback nativo:', error);
+        // Fallback para síntese de voz do navegador se necessário
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(mensagem);
+            utterance.lang = window.targetTranslationLang || 'pt-BR';
+            speechSynthesis.speak(utterance);
+        }
+    }
+});
         window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
             if (!localStream) return;
 
