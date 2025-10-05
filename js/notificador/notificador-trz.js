@@ -8,14 +8,18 @@ function initializeTranslator() {
     // ✅ SE NÃO ENCONTRAR, USA OS MESMOS SELETORES DOS OUTROS ARQUIVOS
     if (!recordButton) {
         console.log('🔍 Procurando botão de microfone alternativo...');
-        // Tenta os mesmos seletores que funcionam no caller e receiver
         recordButton = document.querySelector('.voice-button, .mic-button, [class*="record"]');
     }
     
-    // ✅ ELEMENTOS PARA TRADUÇÃO DINÂMICA
-    const translatedText = document.getElementById('texto-recebido'); // Mesmo elemento do WebRTC
+    // ✅ ELEMENTOS PARA OS EFEITOS VISUAIS COMPLETOS
+    const translatedText = document.getElementById('texto-recebido');
     const speakerButton = document.getElementById('speakerButton');
     const currentLanguageFlag = document.getElementById('currentLanguageFlag');
+    const recordingModal = document.getElementById('recordingModal');
+    const recordingTimer = document.getElementById('recordingTimer');
+    const recordingDot = document.querySelector('.recording-dot');
+    const recordingText = document.querySelector('.recording-text');
+    const sendButton = document.getElementById('sendButton');
     
     // ✅ VERIFICAÇÃO - SE NÃO ENCONTRAR BOTÃO, PARA AQUI
     if (!recordButton) {
@@ -24,7 +28,13 @@ function initializeTranslator() {
         return;
     }
     
-    console.log('✅ Botão de microfone encontrado:', recordButton);
+    console.log('✅ Elementos encontrados:', {
+        recordButton: !!recordButton,
+        recordingModal: !!recordingModal,
+        recordingTimer: !!recordingTimer,
+        recordingDot: !!recordingDot,
+        sendButton: !!sendButton
+    });
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -41,6 +51,10 @@ function initializeTranslator() {
     let currentLang = window.targetTranslationLang || 'pt-BR';
     let isRecording = false;
     let microphonePermissionGranted = false;
+    let recordingStartTime = 0;
+    let timerInterval = null;
+    let pressTimer;
+    let tapMode = false;
     
     // ===== FUNÇÃO PARA BUSCAR BANDEIRA (IGUAL AOS OUTROS) =====
     async function getBandeiraDoJson(langCode) {
@@ -147,11 +161,80 @@ function initializeTranslator() {
         }
     }
 
+    // ===== FUNÇÕES PARA OS EFEITOS VISUAIS COMPLETOS =====
+    function showRecordingModal() {
+        if (recordingModal) {
+            recordingModal.classList.add('visible');
+            console.log('📱 Modal de gravação ABERTO com todos os elementos');
+        }
+    }
+    
+    function hideRecordingModal() {
+        if (recordingModal) {
+            recordingModal.classList.remove('visible');
+            console.log('📱 Modal de gravação FECHADO');
+        }
+    }
+    
+    function updateTimer() {
+        if (!recordingTimer) return;
+        
+        const elapsedSeconds = Math.floor((Date.now() - recordingStartTime) / 1000);
+        const minutes = Math.floor(elapsedSeconds / 60);
+        const seconds = elapsedSeconds % 60;
+        
+        recordingTimer.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        
+        // Para automaticamente após 30 segundos (igual aos outros)
+        if (elapsedSeconds >= 30) {
+            stopRecording();
+        }
+    }
+    
+    function startRecording() {
+        if (isRecording) return;
+        
+        try {
+            recognition.lang = window.currentSourceLang || currentLang;
+            recognition.start();
+            isRecording = true;
+            recordingStartTime = Date.now();
+            
+            // ✅ APLICA TODOS OS EFEITOS VISUAIS (IGUAL AOS OUTROS)
+            recordButton.classList.add('recording'); // Fica VERDE
+            showRecordingModal(); // Abre modal completo
+            timerInterval = setInterval(updateTimer, 1000); // Inicia contador
+            
+            // ✅ ATUALIZA TEXTO DO MODAL
+            if (recordingText) {
+                recordingText.textContent = "Gravando... Fale agora!";
+            }
+            
+            console.log('🎤 Gravação INICIADA com interface completa');
+            
+        } catch (error) {
+            console.error('❌ Erro ao iniciar gravação:', error);
+            stopRecording();
+        }
+    }
+    
+    function stopRecording() {
+        if (!isRecording) return;
+        
+        isRecording = false;
+        
+        // ✅ REMOVE TODOS OS EFEITOS VISUAIS (IGUAL AOS OUTROS)
+        recordButton.classList.remove('recording'); // Volta ao normal
+        hideRecordingModal(); // Fecha modal
+        clearInterval(timerInterval); // Para timer
+        
+        console.log('⏹️ Gravação PARADA - interface completa fechada');
+    }
+
     // ===== RECONHECIMENTO DE VOZ (TRADUÇÃO DINÂMICA) =====
     function setupRecognitionEvents() {
         recognition.onstart = function() {
-            console.log('🎤 Iniciando tradução DINÂMICA...');
-            isRecording = true;
+            console.log('🎤 Reconhecimento de voz INICIADO');
         };
         
         recognition.onresult = function(event) {
@@ -162,6 +245,19 @@ function initializeTranslator() {
             translateText(transcript).then(translation => {
                 console.log('🌐 Texto traduzido dinamicamente:', translation);
                 enviarParaOutroCelular(translation);
+                
+                // ✅ FEEDBACK VISUAL DE SUCESSO
+                if (translatedText) {
+                    translatedText.textContent = "✅ " + translation;
+                    translatedText.style.color = '#00ff00';
+                    
+                    setTimeout(() => {
+                        if (translatedText) {
+                            translatedText.textContent = "";
+                            translatedText.style.color = '';
+                        }
+                    }, 3000);
+                }
             }).catch(error => {
                 console.error('❌ Erro na tradução dinâmica:', error);
             });
@@ -169,39 +265,62 @@ function initializeTranslator() {
         
         recognition.onerror = function(event) {
             console.log('❌ Erro reconhecimento de voz dinâmico:', event.error);
-            isRecording = false;
+            stopRecording();
         };
         
         recognition.onend = function() {
             console.log('🔴 Reconhecimento de voz dinâmico finalizado');
-            isRecording = false;
+            stopRecording();
         };
     }
     
-    // ✅ EVENTO DO BOTÃO (MESMA LÓGICA DOS OUTROS)
-    recordButton.addEventListener('click', function() {
-        console.log('🎤 Botão de tradução dinâmica clicado');
-        
-        if (isRecording) {
-            recognition.stop();
-            return;
-        }
-        
-        if (!microphonePermissionGranted) {
-            requestMicrophonePermission();
-            return;
-        }
-        
-        try {
-            recognition.lang = window.currentSourceLang || currentLang;
-            recognition.start();
-            console.log('🎤 Iniciando tradução dinâmica...');
+    // ✅ EVENTOS DO BOTÃO (IGUAL AOS OUTROS ARQUIVOS)
+    if (recordButton) {
+        recordButton.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            if (recordButton.disabled || !microphonePermissionGranted) return;
             
-        } catch (error) {
-            console.error('❌ Erro ao iniciar tradução dinâmica:', error);
-            isRecording = false;
-        }
-    });
+            if (!isRecording) {
+                pressTimer = setTimeout(() => {
+                    tapMode = false;
+                    startRecording();
+                    showRecordingModal();
+                }, 300);
+            }
+        });
+        
+        recordButton.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            clearTimeout(pressTimer);
+            
+            if (isRecording) {
+                stopRecording();
+            } else {
+                if (microphonePermissionGranted) {
+                    tapMode = true;
+                    startRecording();
+                    showRecordingModal();
+                }
+            }
+        });
+
+        recordButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (recordButton.disabled || !microphonePermissionGranted) return;
+            
+            if (isRecording) {
+                stopRecording();
+            } else {
+                startRecording();
+                showRecordingModal();
+            }
+        });
+    }
+    
+    // ✅ BOTÃO DE ENVIAR NO MODAL (PARA GRAVAÇÃO)
+    if (sendButton) {
+        sendButton.addEventListener('click', stopRecording);
+    }
     
     // ✅ BOTÃO SPEAKER (MESMA LÓGICA)
     if (speakerButton) {
@@ -212,6 +331,8 @@ function initializeTranslator() {
                 utterance.lang = window.targetTranslationLang || 'pt-BR';
                 utterance.rate = 0.9;
                 window.speechSynthesis.speak(utterance);
+                
+                console.log('🔊 Reproduzindo áudio do texto recebido');
             }
         });
     }
@@ -227,7 +348,7 @@ function initializeTranslator() {
         requestMicrophonePermission();
     }, 1000);
     
-    console.log('✅ Tradutor DINÂMICO Notificador inicializado!');
+    console.log('✅ Tradutor DINÂMICO Notificador inicializado com interface completa!');
 }
 
 // ===== INICIALIZAÇÃO =====
