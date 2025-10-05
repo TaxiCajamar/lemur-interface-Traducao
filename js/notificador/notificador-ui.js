@@ -224,7 +224,7 @@ function iniciarAudio() {
     oscillator.stop(audioContext.currentTime + 0.1);
 }
 
-// 🎤 SOLICITAR TODAS AS PERMISSÕES DE UMA VEZ
+// 🎤 SOLICITAR TODAS AS PERMISSÕES DE UMA VEZ (DO CÓDIGO NOVO)
 async function solicitarTodasPermissoes() {
     try {
         console.log('🎯 SOLICITANDO PERMISSÕES DE CÂMERA E MICROFONE...');
@@ -269,7 +269,7 @@ async function solicitarTodasPermissoes() {
     }
 }
 
-// ✅ FALLBACK PARA PERMISSÕES
+// ✅ FALLBACK PARA PERMISSÕES (DO CÓDIGO NOVO)
 async function tentarPermissoesFallback() {
     try {
         console.log('🔄 Tentando fallback de permissões...');
@@ -292,7 +292,7 @@ async function tentarPermissoesFallback() {
     }
 }
 
-// ✅ FUNÇÃO PARA LIBERAR INTERFACE IMEDIATAMENTE
+// ✅ FUNÇÃO PARA LIBERAR INTERFACE IMEDIATAMENTE (DO CÓDIGO NOVO)
 function liberarInterfaceImediatamente() {
     console.log('🔓 LIBERANDO INTERFACE - REMOVENDO LOADER...');
     
@@ -388,7 +388,7 @@ async function aplicarBandeiraRemota(langCode) {
     }
 }
 
-// 🎤 FUNÇÃO GOOGLE TTS SEPARADA
+// 🎤 FUNÇÃO GOOGLE TTS SEPARADA (DO CÓDIGO NOVO)
 async function falarComGoogleTTS(mensagem, elemento) {
     try {
         const resposta = await fetch('https://chat-tradutor.onrender.com/speak', {
@@ -440,42 +440,15 @@ async function falarComGoogleTTS(mensagem, elemento) {
     }
 }
 
-// ✅✅✅ FUNÇÃO PARA INICIAR CÂMERA E WEBRTC (USANDO A LÓGICA DO ARQUIVO ANTIGO)
-async function iniciarCameraEWebRTC() {
+// ✅✅✅ CONEXÃO WEBRTC DO CÓDIGO ANTIGO (QUE FUNCIONA 100%)
+async function iniciarConexaoWebRTCAntiga(localStream) {
     try {
-        if (!permissaoConcedida) {
-            throw new Error('Permissões não concedidas');
-        }
-
-        console.log('📹 Iniciando câmera após permissões concedidas...');
+        console.log('🌐 INICIANDO CONEXÃO WEBRTC (MÉTODO ANTIGO)...');
         
-        // ✅ SOLICITA APENAS CÂMERA (igual ao arquivo antigo)
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-            video: {
-                width: { ideal: 1280 },
-                height: { ideal: 720 }
-            },
-            audio: false
-        });
-        
-        let localStream = stream;
-        window.localStream = localStream;
-        
-        const localVideo = document.getElementById('localVideo');
-        if (localVideo) {
-            localVideo.srcObject = localStream;
-        }
-        
-        console.log('✅ Câmera iniciada com sucesso');
-
-        // Configura botão de alternar câmera
-        setupCameraToggle();
-
-        // ✅ INICIALIZAÇÃO WEBRTC SIMPLES E DIRETA (igual ao arquivo antigo)
-        console.log('🌐 Inicializando WebRTC...');
+        // ✅ INICIALIZA WEBRTC (EXATAMENTE COMO NO CÓDIGO ANTIGO)
         window.rtcCore = new WebRTCCore();
 
-        // ✅ EXTRAI PARÂMETROS DA URL (igual ao arquivo antigo)
+        // ✅ EXTRAI PARÂMETROS DA URL (EXATAMENTE COMO NO CÓDIGO ANTIGO)
         const url = window.location.href;
         const urlParts = url.split('?');
         const queryParams = urlParts[1] ? urlParts[1].split('&') : [];
@@ -492,10 +465,8 @@ async function iniciarCameraEWebRTC() {
 
         window.targetTranslationLang = lang;
 
-        // ✅✅✅ CONFIGURAÇÃO DIRETA DO DATACHANNEL (igual ao arquivo antigo)
+        // ✅✅✅ CONFIGURAÇÃO DIRETA DO DATACHANNEL (EXATAMENTE COMO NO CÓDIGO ANTIGO)
         window.rtcCore.setDataChannelCallback(async (mensagem) => {
-            iniciarSomDigitacao();
-
             console.log('📩 Mensagem recebida:', mensagem);
 
             const elemento = document.getElementById('texto-recebido');
@@ -509,11 +480,11 @@ async function iniciarCameraEWebRTC() {
                 elemento.style.border = '2px solid #ff0000';
             }
 
-            // 🎤 USA GOOGLE TTS (mais confiável que speechSynthesis)
+            // 🎤 USA GOOGLE TTS 
             await falarComGoogleTTS(mensagem, elemento);
         });
 
-        // ✅✅✅ CONFIGURAÇÃO DIRETA DO INCOMING CALL (igual ao arquivo antigo)
+        // ✅✅✅ CONFIGURAÇÃO DIRETA DO INCOMING CALL (EXATAMENTE COMO NO CÓDIGO ANTIGO)
         window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
             if (!localStream) return;
 
@@ -542,18 +513,10 @@ async function iniciarCameraEWebRTC() {
                     const remoteLangElement = document.querySelector('.remoter-Lang');
                     if (remoteLangElement) remoteLangElement.textContent = '🔴';
                 }
-
-                // ✅ FECHA INSTRUÇÕES AO CONECTAR
-                const instructionBox = document.getElementById('instructionBox');
-                if (instructionBox) {
-                    instructionBox.classList.remove('expandido');
-                    instructionBox.classList.add('recolhido');
-                    console.log('📖 Instruções fechadas (WebRTC conectado)');
-                }
             });
         };
 
-        // ✅✅✅ INICIALIZAÇÃO DIRETA (igual ao arquivo antigo)
+        // ✅✅✅ INICIALIZAÇÃO DIRETA (EXATAMENTE COMO NO CÓDIGO ANTIGO)
         window.rtcCore.initialize(myId);
         window.rtcCore.setupSocketHandlers();
 
@@ -585,7 +548,7 @@ async function iniciarCameraEWebRTC() {
         if (receiverId) {
             console.log('🎯 Modo Receiver - Iniciando conexão com:', receiverId);
             
-            // ✅ CONEXÃO DIRETA E SIMPLES (igual ao arquivo antigo)
+            // ✅ CONEXÃO DIRETA (EXATAMENTE COMO NO CÓDIGO ANTIGO)
             setTimeout(() => {
                 if (window.rtcCore && typeof window.rtcCore.startCall === 'function') {
                     window.rtcCore.startCall(receiverId, localStream, lang);
@@ -594,7 +557,50 @@ async function iniciarCameraEWebRTC() {
             }, 1000);
         }
 
-        console.log('✅✅✅ CÂMERA E WEBRTC INICIALIZADOS COM SUCESSO!');
+        console.log('✅✅✅ CONEXÃO WEBRTC ANTIGA INICIALIZADA COM SUCESSO!');
+
+    } catch (error) {
+        console.error("❌ Erro na conexão WebRTC antiga:", error);
+        throw error;
+    }
+}
+
+// ✅ FUNÇÃO PARA INICIAR CÂMERA (DO CÓDIGO NOVO) + CONEXÃO WEBRTC (DO CÓDIGO ANTIGO)
+async function iniciarCameraEWebRTC() {
+    try {
+        if (!permissaoConcedida) {
+            throw new Error('Permissões não concedidas');
+        }
+
+        console.log('📹 Iniciando câmera após permissões concedidas...');
+        
+        // ✅ SOLICITA APENAS CÂMERA (DO CÓDIGO NOVO)
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: {
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            },
+            audio: false
+        });
+        
+        let localStream = stream;
+        window.localStream = localStream;
+        
+        const localVideo = document.getElementById('localVideo');
+        if (localVideo) {
+            localVideo.srcObject = localStream;
+        }
+        
+        console.log('✅ Câmera iniciada com sucesso');
+
+        // Configura botão de alternar câmera (DO CÓDIGO NOVO)
+        setupCameraToggle();
+
+        // ✅ PEQUENA PAUSA PARA ESTABILIZAR
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // ✅✅✅ CHAMA A CONEXÃO WEBRTC DO CÓDIGO ANTIGO (QUE FUNCIONA)
+        await iniciarConexaoWebRTCAntiga(localStream);
 
     } catch (error) {
         console.error("❌ Erro ao iniciar câmera e WebRTC:", error);
@@ -602,13 +608,13 @@ async function iniciarCameraEWebRTC() {
     }
 }
 
-// 🚀✅✅✅ INICIALIZAÇÃO UNIFICADA
+// 🚀✅✅✅ INICIALIZAÇÃO: PERMISSÕES MODERNAS + CONEXÃO WEBRTC ANTIGA
 window.onload = async () => {
     try {
-        // ✅ CONFIGURA TOGGLE DAS INSTRUÇÕES
+        // ✅ CONFIGURA TOGGLE DAS INSTRUÇÕES (DO CÓDIGO NOVO)
         setupInstructionToggle();
         
-        // ✅ BOTÃO INTERATIVO PARA PERMISSÕES
+        // ✅ BOTÃO INTERATIVO PARA PERMISSÕES (DO CÓDIGO NOVO)
         const permissaoButton = document.createElement('button');
         permissaoButton.innerHTML = `
             <span style="font-size: 32px;">🎤📹🎧</span><br>
@@ -648,22 +654,22 @@ window.onload = async () => {
                 permissaoButton.style.background = '#ff9800';
                 permissaoButton.disabled = true;
                 
-                // 1. Inicia áudio
+                // 1. Inicia áudio (DO CÓDIGO NOVO)
                 iniciarAudio();
                 
-                // 2. Carrega sons
+                // 2. Carrega sons (DO CÓDIGO NOVO)
                 await carregarSomDigitacao();
                 
-                // 3. Solicita permissões
+                // 3. Solicita permissões (DO CÓDIGO NOVO)
                 await solicitarTodasPermissoes();
                 
-                // 4. Remove botão
+                // 4. Remove botão (DO CÓDIGO NOVO)
                 permissaoButton.remove();
                 
-                // 5. Libera interface
+                // 5. Libera interface (DO CÓDIGO NOVO)
                 liberarInterfaceImediatamente();
                 
-                // 6. ✅ INICIA CÂMERA E WEBRTC COM A LÓGICA DO ARQUIVO ANTIGO
+                // 6. ✅ INICIA CÂMERA + CONEXÃO WEBRTC ANTIGA
                 await iniciarCameraEWebRTC();
                 
                 console.log('✅✅✅ FLUXO COMPLETO CONCLUÍDO COM SUCESSO!');
