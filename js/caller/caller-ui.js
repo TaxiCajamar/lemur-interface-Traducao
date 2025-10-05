@@ -258,8 +258,14 @@ async function enviarNotificacaoWakeUp(receiverToken, receiverId, meuId, meuIdio
   }
 }
 
-// 📞 FUNÇÃO: Criar tela de chamada visual (sem textos)
+// 📞 FUNÇÃO: Criar tela de chamada visual COM IMAGEM DO LEMUR
 function criarTelaChamando() {
+  // Primeiro, mostra a imagem do lemur
+  const lemurWaiting = document.getElementById('lemurWaiting');
+  if (lemurWaiting) {
+    lemurWaiting.style.display = 'block';
+  }
+
   const telaChamada = document.createElement('div');
   telaChamada.id = 'tela-chamando';
   telaChamada.style.cssText = `
@@ -268,21 +274,16 @@ function criarTelaChamando() {
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    z-index: 10000;
+    background: rgba(102, 126, 234, 0.3); /* Violeta com 30% de transparência */
+    z-index: 9997;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    color: white;
   `;
 
+  // Botão de cancelar apenas
   telaChamada.innerHTML = `
-    <div style="text-align: center; animation: pulse 2s infinite;">
-      <div style="font-size: 80px; margin-bottom: 20px;">📞</div>
-      <div style="font-size: 24px; margin-bottom: 40px; opacity: 0.9;">•••</div>
-    </div>
-    
     <div id="botao-cancelar" style="
       position: absolute;
       bottom: 60px;
@@ -297,22 +298,19 @@ function criarTelaChamando() {
       cursor: pointer;
       box-shadow: 0 4px 15px rgba(0,0,0,0.3);
       transition: transform 0.2s;
+      z-index: 9999;
     ">
       ✕
     </div>
-
-    <style>
-      @keyframes pulse {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.1); }
-        100% { transform: scale(1); }
-      }
-    </style>
   `;
 
   document.body.appendChild(telaChamada);
 
   document.getElementById('botao-cancelar').addEventListener('click', function() {
+    // Esconde a imagem do lemur ao cancelar
+    if (lemurWaiting) {
+      lemurWaiting.style.display = 'none';
+    }
     telaChamada.remove();
     window.conexaoCancelada = true;
     console.log('❌ Chamada cancelada pelo usuário');
@@ -579,6 +577,12 @@ async function iniciarConexaoVisual(receiverId, receiverToken, meuId, localStrea
  window.rtcCore.setRemoteStreamCallback(stream => {
     conexaoEstabelecida = true;
     console.log('✅ Conexão estabelecida com sucesso!');
+    
+    // ✅ ESCONDE A IMAGEM DO LEMUR AO CONECTAR
+    const lemurWaiting = document.getElementById('lemurWaiting');
+    if (lemurWaiting) {
+        lemurWaiting.style.display = 'none';
+    }
     
     // ✅ FECHA A CAIXA DE INSTRUÇÕES QUANDO CONECTAR
     const instructionBox = document.getElementById('instructionBox');
