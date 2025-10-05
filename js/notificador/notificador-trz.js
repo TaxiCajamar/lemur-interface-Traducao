@@ -1,62 +1,39 @@
-// ===== TRADUTOR DINÂMICO + BANDEIRAS PARA NOTIFICADOR =====
+// ===== TRADUTOR PARA NOTIFICADOR - MESMA ESTRUTURA DO CALLER =====
 function initializeTranslator() {
-    console.log('🎯 Inicializando tradutor DINÂMICO para notificador...');
+    // ===== CONFIGURAÇÃO =====
+    let IDIOMA_ORIGEM = navigator.language || 'pt-BR';
+    const urlParams = new URLSearchParams(window.location.search);
+    const IDIOMA_DESTINO = urlParams.get('lang') || 'en';
+    const IDIOMA_FALA = urlParams.get('lang') || 'en-US';
     
-    // ✅ BUSCA INTELIGENTE DO BOTÃO DE MICROFONE
-    let recordButton = document.getElementById('recordButton');
-    
-    // ✅ SE NÃO ENCONTRAR, USA OS MESMOS SELETORES DOS OUTROS ARQUIVOS
-    if (!recordButton) {
-        console.log('🔍 Procurando botão de microfone alternativo...');
-        recordButton = document.querySelector('.voice-button, .mic-button, [class*="record"]');
-    }
-    
-    // ✅ ELEMENTOS PARA OS EFEITOS VISUAIS COMPLETOS
-    const translatedText = document.getElementById('texto-recebido');
-    const speakerButton = document.getElementById('speakerButton');
-    const currentLanguageFlag = document.getElementById('currentLanguageFlag');
+    // ===== ELEMENTOS DOM =====
+    const recordButton = document.getElementById('recordButton');
     const recordingModal = document.getElementById('recordingModal');
     const recordingTimer = document.getElementById('recordingTimer');
-    const recordingDot = document.querySelector('.recording-dot');
-    const recordingText = document.querySelector('.recording-text');
     const sendButton = document.getElementById('sendButton');
+    const speakerButton = document.getElementById('speakerButton');
+    const currentLanguageFlag = document.getElementById('currentLanguageFlag');
+    const textoRecebido = document.getElementById('texto-recebido');
     
-    // ✅ VERIFICAÇÃO - SE NÃO ENCONTRAR BOTÃO, PARA AQUI
-    if (!recordButton) {
-        console.log('❌ Botão de microfone não encontrado para tradução dinâmica');
-        console.log('📋 Botões disponíveis:', document.querySelectorAll('button'));
+    // ⭐ VERIFICA SE ELEMENTOS CRÍTICOS EXISTEM
+    if (!currentLanguageFlag || !recordButton || !textoRecebido) {
+        console.log('Aguardando elementos do DOM...');
+        setTimeout(initializeTranslator, 300);
         return;
     }
     
-    console.log('✅ Elementos encontrados:', {
-        recordButton: !!recordButton,
-        recordingModal: !!recordingModal,
-        recordingTimer: !!recordingTimer,
-        recordingDot: !!recordingDot,
-        sendButton: !!sendButton
-    });
+    // ===== FUNÇÃO SIMPLES PARA ENVIAR TEXTO =====
+    function enviarParaOutroCelular(texto) {
+        if (window.rtcCore && window.rtcCore.dataChannel && window.rtcCore.dataChannel.readyState === 'open') {
+            window.rtcCore.dataChannel.send(texto);
+            console.log('✅ Texto enviado:', texto);
+        } else {
+            console.log('⏳ Canal não disponível ainda. Tentando novamente...');
+            setTimeout(() => enviarParaOutroCelular(texto), 1000);
+        }
+    }
 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-        if (translatedText) translatedText.textContent = "❌ Navegador não suportado";
-        recordButton.style.display = 'none';
-        return;
-    }
-    
-    let recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    
-    // ✅ USA OS MESMOS IDIOMAS DOS OUTROS ARQUIVOS
-    let currentLang = window.targetTranslationLang || 'pt-BR';
-    let isRecording = false;
-    let microphonePermissionGranted = false;
-    let recordingStartTime = 0;
-    let timerInterval = null;
-    let pressTimer;
-    let tapMode = false;
-    
-    // ===== FUNÇÃO PARA BUSCAR BANDEIRA (IGUAL AOS OUTROS) =====
+    // ===== FUNÇÃO PARA BUSCAR BANDEIRA DO JSON =====
     async function getBandeiraDoJson(langCode) {
         try {
             const response = await fetch('assets/bandeiras/language-flags.json');
@@ -68,77 +45,90 @@ function initializeTranslator() {
         }
     }
 
-    // ===== FUNÇÃO PARA ENVIAR TEXTO (IGUAL AOS OUTROS) =====
-    function enviarParaOutroCelular(texto) {
-        if (window.rtcCore && window.rtcCore.dataChannel && window.rtcCore.dataChannel.readyState === 'open') {
-            window.rtcCore.dataChannel.send(texto);
-            console.log('✅ Texto traduzido enviado:', texto);
-        } else {
-            console.log('⏳ Canal WebRTC não disponível para tradução dinâmica');
-        }
+    // ===== CONFIGURAÇÃO INICIAL =====
+    getBandeiraDoJson(IDIOMA_ORIGEM).then(bandeira => {
+        currentLanguageFlag.textContent = bandeira;
+    });
+    
+    // ===== VERIFICAÇÃO DE SUPORTE =====
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechSynthesis = window.speechSynthesis;
+    
+    if (!SpeechRecognition) {
+        if (recordButton) recordButton.style.display = 'none';
+        return;
     }
-
-    // ===== TRADUÇÃO DINÂMICA (O QUE USUÁRIO FALA) =====
-    async function translateText(text) {
-        try {
-            const response = await fetch('https://chat-tradutor-bvvx.onrender.com/translate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    text: text,
-                    targetLang: window.targetTranslationLang || 'en'
-                })
-            });
-
-            const result = await response.json();
-            return result.translatedText || text;
+    
+    if (!SpeechSynthesis && speakerButton) {
+        speakerButton.style.display = 'none';
+    }
+    
+    let recognition = new SpeechRecognition();
+    recognition.lang = IDIOMA_ORIGEM;
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    
+    // ===== VARIÁVEIS DE ESTADO =====
+    let isRecording = false;
+    let isTranslating = false;
+    let recordingStartTime = 0;
+    let timerInterval = null;
+    let pressTimer;
+    let tapMode = false;
+    let isSpeechPlaying = false;
+    let microphonePermissionGranted = false;
+    let lastTranslationTime = 0;
+    
+    // ===== FUNÇÕES PRINCIPAIS =====
+    function setupRecognitionEvents() {
+        recognition.onresult = function(event) {
+            let finalTranscript = '';
+            let interimTranscript = '';
             
-        } catch (error) {
-            console.error('Erro na tradução dinâmica:', error);
-            return text;
-        }
-    }
-
-    // ===== CONFIGURAÇÃO DE BANDEIRAS (IGUAL AOS OUTROS) =====
-    async function setupBandeiras() {
-        try {
-            const bandeira = await getBandeiraDoJson(currentLang);
-            if (currentLanguageFlag) {
-                currentLanguageFlag.textContent = bandeira;
-            }
-            console.log('🏳️ Bandeira configurada:', bandeira, 'para idioma:', currentLang);
-        } catch (error) {
-            console.error('Erro ao configurar bandeira:', error);
-        }
-    }
-
-    // ===== PERMISSÃO DO MICROFONE (MESMA LÓGICA DOS OUTROS) =====
-    async function requestMicrophonePermission() {
-        try {
-            // ✅ USA A MESMA PERMISSÃO GLOBAL DOS OUTROS ARQUIVOS
-            if (window.permissoesConcedidas) {
-                microphonePermissionGranted = true;
-                recordButton.disabled = false;
-                setupRecognitionEvents();
-                console.log('✅ Microfone autorizado (permissão global)');
-                return;
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                if (event.results[i].isFinal) {
+                    finalTranscript += event.results[i][0].transcript;
+                } else {
+                    interimTranscript += event.results[i][0].transcript;
+                }
             }
 
-            // ✅ VERIFICA DISPOSITIVOS (MESMA LÓGICA)
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const hasMicrophonePermission = devices.some(device => 
-                device.kind === 'audioinput' && device.deviceId !== ''
-            );
+            // ✅ CORREÇÃO: Processo totalmente silencioso
+            if (finalTranscript && !isTranslating) {
+                const now = Date.now();
+                if (now - lastTranslationTime > 1000) {
+                    lastTranslationTime = now;
+                    isTranslating = true;
+                    
+                    // ✅ Traduz e envia SEM MOSTRAR o processo
+                    translateText(finalTranscript).then(translation => {
+                        enviarParaOutroCelular(translation); // Envia silenciosamente
+                        isTranslating = false;
+                    }).catch(error => {
+                        console.error('Erro na tradução:', error);
+                        isTranslating = false;
+                    });
+                }
+            }
+        };
+        
+        recognition.onerror = function(event) {
+            console.log('Erro recognition:', event.error);
+            stopRecording();
+        };
+        
+        recognition.onend = function() {
+            if (isRecording) {
+                stopRecording();
+            }
+        };
+    }
+
+    // ✅ FUNÇÃO DE PERMISSÃO DO MICROFONE APENAS NO CLIQUE
+    async function requestMicrophonePermissionOnClick() {
+        try {
+            console.log('🎤 Solicitando permissão de microfone...');
             
-            if (hasMicrophonePermission) {
-                microphonePermissionGranted = true;
-                recordButton.disabled = false;
-                setupRecognitionEvents();
-                console.log('✅ Microfone autorizado (verificação dispositivos)');
-                return;
-            }
-
-            // ✅ SOLICITA PERMISSÃO (MESMO MÉTODO)
             const stream = await navigator.mediaDevices.getUserMedia({ 
                 audio: {
                     echoCancellation: true,
@@ -147,69 +137,132 @@ function initializeTranslator() {
                 }
             });
             
-            stream.getTracks().forEach(track => track.stop());
+            // ✅ PARA O STREAM IMEDIATAMENTE (só precisamos da permissão)
+            setTimeout(() => {
+                stream.getTracks().forEach(track => track.stop());
+            }, 100);
             
             microphonePermissionGranted = true;
             recordButton.disabled = false;
             setupRecognitionEvents();
             
-            console.log('✅ Permissão de microfone concedida para tradução dinâmica');
+            console.log('✅ Microfone autorizado via clique');
+            return true;
             
         } catch (error) {
-            console.error('❌ Erro permissão microfone para tradução dinâmica:', error);
+            console.error('❌ Permissão de microfone negada:', error);
             recordButton.disabled = true;
-        }
-    }
-
-    // ===== FUNÇÕES PARA OS EFEITOS VISUAIS COMPLETOS =====
-    function showRecordingModal() {
-        if (recordingModal) {
-            recordingModal.classList.add('visible');
-            console.log('📱 Modal de gravação ABERTO com todos os elementos');
+            
+            // Mostra alerta para usuário
+            alert('Para usar o tradutor de voz, permita o acesso ao microfone quando solicitado.');
+            return false;
         }
     }
     
-    function hideRecordingModal() {
-        if (recordingModal) {
-            recordingModal.classList.remove('visible');
-            console.log('📱 Modal de gravação FECHADO');
+    async function translateText(text) {
+        try {
+            const trimmedText = text.trim().slice(0, 500);
+            if (!trimmedText) return "";
+            
+            const response = await fetch('https://chat-tradutor-bvvx.onrender.com/translate', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-Request-Source': 'web-translator'
+                },
+                body: JSON.stringify({ 
+                    text: trimmedText, 
+                    targetLang: IDIOMA_DESTINO,
+                    source: 'integrated-translator',
+                    sessionId: window.currentSessionId || 'default-session'
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            if (speakerButton) speakerButton.disabled = false;
+            
+            return result.translatedText || "";
+            
+        } catch (error) {
+            console.error('Erro na tradução:', error);
+            return "";
         }
     }
     
-    function updateTimer() {
-        if (!recordingTimer) return;
+    function speakText(text) {
+        if (!SpeechSynthesis || !text) return;
         
-        const elapsedSeconds = Math.floor((Date.now() - recordingStartTime) / 1000);
-        const minutes = Math.floor(elapsedSeconds / 60);
-        const seconds = elapsedSeconds % 60;
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = IDIOMA_FALA;
+        utterance.rate = 0.9;
+        utterance.volume = 0.8;
         
-        recordingTimer.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        utterance.onstart = function() {
+            isSpeechPlaying = true;
+            if (speakerButton) speakerButton.textContent = '⏹';
+        };
         
-        // Para automaticamente após 30 segundos (igual aos outros)
-        if (elapsedSeconds >= 30) {
-            stopRecording();
+        utterance.onend = function() {
+            isSpeechPlaying = false;
+            if (speakerButton) speakerButton.textContent = '🔊';
+        };
+        
+        utterance.onerror = function() {
+            isSpeechPlaying = false;
+            if (speakerButton) speakerButton.textContent = '🔊';
+        };
+        
+        window.speechSynthesis.speak(utterance);
+    }
+    
+    function toggleSpeech() {
+        if (!SpeechSynthesis) return;
+        
+        if (isSpeechPlaying) {
+            window.speechSynthesis.cancel();
+            isSpeechPlaying = false;
+            if (speakerButton) speakerButton.textContent = '🔊';
+        } else {
+            // ✅ CORREÇÃO: Lê apenas o texto recebido
+            if (textoRecebido && textoRecebido.textContent) {
+                const textToSpeak = textoRecebido.textContent;
+                if (textToSpeak && textToSpeak.trim() !== "") {
+                    speakText(textToSpeak);
+                }
+            }
         }
     }
     
-    function startRecording() {
-        if (isRecording) return;
+    async function startRecording() {
+        if (isRecording || isTranslating) return;
         
         try {
-            recognition.lang = window.currentSourceLang || currentLang;
+            // ✅ SOLICITA PERMISSÃO APENAS NA PRIMEIRA VEZ
+            if (!microphonePermissionGranted) {
+                const permitted = await requestMicrophonePermissionOnClick();
+                if (!permitted) return; // Se usuário negou, para aqui
+            }
+            
             recognition.start();
             isRecording = true;
+            
+            if (recordButton) recordButton.classList.add('recording');
             recordingStartTime = Date.now();
+            updateTimer();
+            timerInterval = setInterval(updateTimer, 1000);
             
-            // ✅ APLICA TODOS OS EFEITOS VISUAIS (IGUAL AOS OUTROS)
-            recordButton.classList.add('recording'); // Fica VERDE
-            showRecordingModal(); // Abre modal completo
-            timerInterval = setInterval(updateTimer, 1000); // Inicia contador
-            
-                       
-            console.log('🎤 Gravação INICIADA com interface completa');
+            if (speakerButton) {
+                speakerButton.disabled = true;
+                speakerButton.textContent = '🔇';
+            }
             
         } catch (error) {
-            console.error('❌ Erro ao iniciar gravação:', error);
+            console.error('Erro ao iniciar gravação:', error);
             stopRecording();
         }
     }
@@ -218,55 +271,37 @@ function initializeTranslator() {
         if (!isRecording) return;
         
         isRecording = false;
-        
-        // ✅ REMOVE TODOS OS EFEITOS VISUAIS (IGUAL AOS OUTROS)
-        recordButton.classList.remove('recording'); // Volta ao normal
-        hideRecordingModal(); // Fecha modal
-        clearInterval(timerInterval); // Para timer
-        
-        console.log('⏹️ Gravação PARADA - interface completa fechada');
+        if (recordButton) recordButton.classList.remove('recording');
+        clearInterval(timerInterval);
+        hideRecordingModal();
+    }
+    
+    function showRecordingModal() {
+        if (recordingModal) recordingModal.classList.add('visible');
+    }
+    
+    function hideRecordingModal() {
+        if (recordingModal) recordingModal.classList.remove('visible');
+    }
+    
+    function updateTimer() {
+        const elapsedSeconds = Math.floor((Date.now() - recordingStartTime) / 1000);
+        const minutes = Math.floor(elapsedSeconds / 60);
+        const seconds = elapsedSeconds % 60;
+        if (recordingTimer) {
+            recordingTimer.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        if (elapsedSeconds >= 30) {
+            stopRecording();
+        }
     }
 
-    // ===== RECONHECIMENTO DE VOZ SILENCIOSO (IGUAL AOS OUTROS) =====
-function setupRecognitionEvents() {
-    recognition.onstart = function() {
-        console.log('🎤 Reconhecimento de voz INICIADO (modo silencioso)');
-    };
-    
-    recognition.onresult = function(event) {
-        const transcript = event.results[0][0].transcript;
-        console.log('🎯 Texto falado (não mostrado na tela):', transcript);
-        
-        // ✅ TRADUZ E ENVIA SILENCIOSAMENTE (IGUAL AOS OUTROS ARQUIVOS)
-        translateText(transcript).then(translation => {
-            console.log('🌐 Texto traduzido e enviado silenciosamente:', translation);
-            enviarParaOutroCelular(translation);
-            
-            // ❌❌❌ REMOVIDO COMPLETAMENTE: Não mostra nada na tela!
-            // O usuário NÃO precisa ver o que falou
-            // Apenas o destinatário recebe a mensagem traduzida
-            
-        }).catch(error => {
-            console.error('❌ Erro na tradução dinâmica:', error);
-        });
-    };
-    
-    recognition.onerror = function(event) {
-        console.log('❌ Erro reconhecimento de voz dinâmico:', event.error);
-        stopRecording();
-    };
-    
-    recognition.onend = function() {
-        console.log('🔴 Reconhecimento de voz dinâmico finalizado');
-        stopRecording();
-    };
-}
-    
-    // ✅ EVENTOS DO BOTÃO (IGUAL AOS OUTROS ARQUIVOS)
+    // ===== EVENTOS =====
     if (recordButton) {
         recordButton.addEventListener('touchstart', function(e) {
             e.preventDefault();
-            if (recordButton.disabled || !microphonePermissionGranted) return;
+            if (recordButton.disabled || isTranslating) return;
             
             if (!isRecording) {
                 pressTimer = setTimeout(() => {
@@ -284,7 +319,7 @@ function setupRecognitionEvents() {
             if (isRecording) {
                 stopRecording();
             } else {
-                if (microphonePermissionGranted) {
+                if (!isTranslating) {
                     tapMode = true;
                     startRecording();
                     showRecordingModal();
@@ -294,7 +329,7 @@ function setupRecognitionEvents() {
 
         recordButton.addEventListener('click', function(e) {
             e.preventDefault();
-            if (recordButton.disabled || !microphonePermissionGranted) return;
+            if (recordButton.disabled || isTranslating) return;
             
             if (isRecording) {
                 stopRecording();
@@ -305,45 +340,22 @@ function setupRecognitionEvents() {
         });
     }
     
-    // ✅ BOTÃO DE ENVIAR NO MODAL (PARA GRAVAÇÃO)
     if (sendButton) {
         sendButton.addEventListener('click', stopRecording);
     }
     
-    // ✅ BOTÃO SPEAKER (MESMA LÓGICA)
     if (speakerButton) {
-        speakerButton.addEventListener('click', function() {
-            const textoRecebido = document.getElementById("texto-recebido");
-            if (textoRecebido && textoRecebido.textContent && window.speechSynthesis) {
-                const utterance = new SpeechSynthesisUtterance(textoRecebido.textContent);
-                utterance.lang = window.targetTranslationLang || 'pt-BR';
-                utterance.rate = 0.9;
-                window.speechSynthesis.speak(utterance);
-                
-                console.log('🔊 Reproduzindo áudio do texto recebido');
-            }
-        });
+        speakerButton.addEventListener('click', toggleSpeech);
     }
     
-    // ✅ INICIALIZAÇÃO
-    console.log('🚀 Tradutor dinâmico notificador carregando...');
+    // ✅ CONFIGURAÇÃO INICIAL (SEM SOLICITAR MICROFONE AUTOMATICAMENTE)
+    console.log('Tradutor Notificador inicializado - Microfone será solicitado no primeiro clique');
     
-    // Configura bandeiras
-    setupBandeiras();
-    
-    // Solicita permissão com delay
-    setTimeout(() => {
-        requestMicrophonePermission();
-    }, 1000);
-    
-    console.log('✅ Tradutor DINÂMICO Notificador inicializado com interface completa!');
+    // ✅ HABILITA O BOTÃO (a permissão será solicitada no clique)
+    recordButton.disabled = false;
 }
 
-// ===== INICIALIZAÇÃO =====
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('📄 DOM carregado - inicializando tradutor dinâmico...');
-    
-    setTimeout(() => {
-        initializeTranslator();
-    }, 1500);
+    console.log('DOM carregado, iniciando tradutor notificador...');
+    setTimeout(initializeTranslator, 800);
 });
