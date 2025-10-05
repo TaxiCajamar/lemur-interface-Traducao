@@ -160,11 +160,10 @@ async function aplicarBandeiraRemota(langCode) {
     }
 }
 
-// ✅ FUNÇÃO PARA LIBERAR INTERFACE (CORRIGIDA - GARANTE QUE PARA O LOADING)
+// ✅ FUNÇÃO PARA LIBERAR INTERFACE (CORRIGIDA)
 function liberarInterfaceFallback() {
     console.log('🔓 Removendo tela de loading...');
     
-    // ✅ TENTA VÁRIOS ELEMENTOS DE LOADING POSSÍVEIS
     const loadingSelectors = [
         '#loadingScreen',
         '.loading',
@@ -176,45 +175,20 @@ function liberarInterfaceFallback() {
         '#mobileLoading'
     ];
     
-    let loadingRemoved = false;
-    
     loadingSelectors.forEach(selector => {
         const element = document.querySelector(selector);
         if (element) {
             element.style.display = 'none';
             console.log(`✅ Loading removido: ${selector}`);
-            loadingRemoved = true;
         }
     });
     
-    // ✅ SE NÃO ENCONTROU NENHUM LOADING ESPECÍFICO, TENTA REMOVER POR CLASSE/ID COMUNS
-    if (!loadingRemoved) {
-        const allElements = document.querySelectorAll('*');
-        allElements.forEach(element => {
-            const id = element.id || '';
-            const className = element.className || '';
-            
-            if (id.includes('loading') || id.includes('loader') || 
-                className.includes('loading') || className.includes('loader') ||
-                className.includes('spinner')) {
-                element.style.display = 'none';
-                console.log('✅ Loading genérico removido');
-                loadingRemoved = true;
-            }
-        });
-    }
-    
-    // ✅ LIBERA ELEMENTOS ESCONDIDOS
     const elementosEscondidos = document.querySelectorAll('.hidden-until-ready');
     elementosEscondidos.forEach(elemento => {
         elemento.style.display = '';
     });
     
     console.log(`✅ ${elementosEscondidos.length} elementos liberados`);
-    
-    if (!loadingRemoved) {
-        console.log('⚠️ Nenhum elemento de loading específico encontrado');
-    }
 }
 
 // 🎤 FUNÇÃO GOOGLE TTS SEPARADA
@@ -277,10 +251,10 @@ async function falarComGoogleTTS(mensagem, elemento) {
     }
 }
 
-// ✅✅✅ CONEXÃO WEBRTC ROBUSTA (MÉTODO ANTIGO QUE FUNCIONA 100%)
+// ✅✅✅ CONEXÃO WEBRTC ROBUSTA (APENAS VÍDEO - SEM ÁUDIO)
 async function iniciarConexaoWebRTCAntiga(localStream) {
     try {
-        console.log('🌐 INICIANDO CONEXÃO WEBRTC (MÉTODO ROBUSTO)...');
+        console.log('🌐 INICIANDO CONEXÃO WEBRTC (APENAS VÍDEO)...');
         
         // ✅ INICIALIZA WEBRTC
         window.rtcCore = new WebRTCCore();
@@ -302,9 +276,9 @@ async function iniciarConexaoWebRTCAntiga(localStream) {
 
         window.targetTranslationLang = lang;
 
-        // ✅✅✅ CONFIGURAÇÃO DIRETA DO DATACHANNEL
+        // ✅✅✅ CONFIGURAÇÃO DO DATACHANNEL (APENAS TEXTO)
         window.rtcCore.setDataChannelCallback(async (mensagem) => {
-            console.log('📩 Mensagem recebida:', mensagem);
+            console.log('📩 Mensagem de texto recebida:', mensagem);
 
             const elemento = document.getElementById('texto-recebido');
             if (elemento) {
@@ -317,11 +291,11 @@ async function iniciarConexaoWebRTCAntiga(localStream) {
                 elemento.style.border = '2px solid #ff0000';
             }
 
-            // 🎤 USA GOOGLE TTS 
+            // 🎤 USA GOOGLE TTS (SÍNTESE DE VOZ - NÃO É A VOZ DO USUÁRIO)
             await falarComGoogleTTS(mensagem, elemento);
         });
 
-        // ✅✅✅ CONFIGURAÇÃO DIRETA DO INCOMING CALL
+        // ✅✅✅ CONFIGURAÇÃO DO INCOMING CALL
         window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
             if (!localStream) return;
 
@@ -334,6 +308,7 @@ async function iniciarConexaoWebRTCAntiga(localStream) {
             console.log('🎯 Vou traduzir:', idiomaDoCaller, '→', lang);
 
             window.rtcCore.handleIncomingCall(offer, localStream, (remoteStream) => {
+                // ✅ WEBRTC APENAS VÍDEO - DESABILITA ÁUDIO REMOTO
                 remoteStream.getAudioTracks().forEach(track => track.enabled = false);
 
                 const remoteVideo = document.getElementById('remoteVideo');
@@ -353,7 +328,7 @@ async function iniciarConexaoWebRTCAntiga(localStream) {
             });
         };
 
-        // ✅✅✅ INICIALIZAÇÃO DIRETA
+        // ✅✅✅ INICIALIZAÇÃO
         window.rtcCore.initialize(myId);
         window.rtcCore.setupSocketHandlers();
 
@@ -368,7 +343,7 @@ async function iniciarConexaoWebRTCAntiga(localStream) {
         if (receiverId) {
             console.log('🎯 Modo Receiver - Iniciando conexão com:', receiverId);
             
-            // ✅ CONEXÃO DIRETA
+            // ✅ CONEXÃO DIRETA (APENAS VÍDEO)
             setTimeout(() => {
                 if (window.rtcCore && typeof window.rtcCore.startCall === 'function') {
                     window.rtcCore.startCall(receiverId, localStream, lang);
@@ -377,7 +352,7 @@ async function iniciarConexaoWebRTCAntiga(localStream) {
             }, 1000);
         }
 
-        console.log('✅✅✅ CONEXÃO WEBRTC ROBUSTA INICIALIZADA COM SUCESSO!');
+        console.log('✅✅✅ CONEXÃO WEBRTC (APENAS VÍDEO) INICIALIZADA!');
 
     } catch (error) {
         console.error("❌ Erro na conexão WebRTC:", error);
@@ -385,12 +360,36 @@ async function iniciarConexaoWebRTCAntiga(localStream) {
     }
 }
 
-// ✅ FUNÇÃO PARA INICIAR CÂMERA COM STREAM EXISTENTE (SEM DUPLICIDADE)
+// ✅ SOLICITA PERMISSÕES (CORRIGIDA - SEM DESTRUIR STREAM)
+async function solicitarTodasPermissoes() {
+    try {
+        console.log('🎯 Solicitando permissões de câmera...');
+        
+        // ✅ SOLICITA APENAS CÂMERA (NÃO PRECISA DE MICROFONE)
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false  // ✅ APENAS VÍDEO - NÃO PRECISA DE MICROFONE
+        });
+        
+        console.log('✅ Permissões de câmera concedidas!');
+        
+        // ✅✅✅ CORREÇÃO: NÃO DESTRÓI O STREAM
+        // NÃO FAZ: stream.getTracks().forEach(track => track.stop());
+        
+        return stream; // ✅ RETORNA STREAM PARA REUTILIZAR
+        
+    } catch (error) {
+        console.error('❌ Erro nas permissões:', error);
+        throw error;
+    }
+}
+
+// ✅ FUNÇÃO PARA INICIAR CÂMERA (APENAS VÍDEO)
 async function iniciarCameraComStream(stream) {
     try {
-        console.log('📹 Iniciando câmera com stream existente...');
+        console.log('📹 Iniciando câmera (apenas vídeo)...');
 
-        // ✅ REUTILIZA o stream já obtido
+        // ✅ REUTILIZA o stream de vídeo
         window.localStream = stream;
 
         const localVideo = document.getElementById('localVideo');
@@ -398,10 +397,10 @@ async function iniciarCameraComStream(stream) {
             localVideo.srcObject = stream;
         }
 
-        // ✅ INICIA CONEXÃO WEBRTC ROBUSTA
+        // ✅ INICIA CONEXÃO WEBRTC (APENAS VÍDEO)
         await iniciarConexaoWebRTCAntiga(stream);
 
-        // ✅ CONFIGURA TRADUÇÕES E INTERFACE
+        // ✅ CONFIGURA TRADUÇÕES
         const url = window.location.href;
         const urlParts = url.split('?');
         const queryParams = urlParts[1] ? urlParts[1].split('&') : [];
@@ -428,7 +427,7 @@ async function iniciarCameraComStream(stream) {
 
         aplicarBandeiraLocal(lang);
 
-        console.log('✅ Câmera e WebRTC iniciados com sucesso!');
+        console.log('✅ Câmera e WebRTC (apenas vídeo) iniciados!');
 
     } catch (error) {
         console.error("Erro ao iniciar câmera:", error);
@@ -436,11 +435,10 @@ async function iniciarCameraComStream(stream) {
     }
 }
 
-// 🛡️ TRATAMENTO DE ERRO PARA PERMISSÕES
+// 🛡️ TRATAMENTO DE ERRO
 function mostrarErroPermissoes() {
     console.log('❌ Mostrando erro de permissões...');
     
-    // ✅ GARANTE QUE O LOADING SOME MESMO EM CASO DE ERRO
     liberarInterfaceFallback();
     
     const errorDiv = document.createElement('div');
@@ -462,8 +460,8 @@ function mostrarErroPermissoes() {
     
     errorDiv.innerHTML = `
         <div style="background: #f44336; padding: 30px; border-radius: 15px; max-width: 400px;">
-            <h3 style="margin: 0 0 15px 0;">Permissões Necessárias</h3>
-            <p style="margin: 0 0 20px 0;">Por favor, permita acesso à câmera e microfone para usar o aplicativo.</p>
+            <h3 style="margin: 0 0 15px 0;">Permissão de Câmera Necessária</h3>
+            <p style="margin: 0 0 20px 0;">Por favor, permita acesso à câmera para usar o aplicativo.</p>
             <button onclick="location.reload()" style="
                 background: white;
                 color: #f44336;
@@ -479,43 +477,32 @@ function mostrarErroPermissoes() {
     document.body.appendChild(errorDiv);
 }
 
-// 🚀 INICIALIZAÇÃO AUTOMÁTICA CORRIGIDA (SEM BOTÃO, SEM DUPLICIDADE)
+// 🚀 INICIALIZAÇÃO AUTOMÁTICA CORRIGIDA
 window.onload = async () => {
     try {
-        console.log('🚀 Iniciando aplicação automaticamente...');
+        console.log('🚀 Iniciando aplicação (apenas vídeo)...');
         
-        // 1. Pré-carrega recursos (áudio, traduções)
+        // 1. Pré-carrega recursos
         await carregarSomDigitacao();
-        iniciarAudio(); // Desbloqueia contexto de áudio
+        iniciarAudio(); // Desbloqueia áudio do navegador
         
-        // 2. ✅ UMA ÚNICA solicitação de permissões
-        console.log('🎯 Solicitando permissões de câmera e microfone...');
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: true
-        });
+        // 2. ✅ SOLICITA APENAS CÂMERA (NÃO PRECISA DE MICROFONE)
+        const stream = await solicitarTodasPermissoes();
         
         console.log('✅ Permissões concedidas!');
         
-        // 3. ✅ REMOVE LOADING IMEDIATAMENTE APÓS PERMISSÕES
+        // 3. ✅ Remove loading
         liberarInterfaceFallback();
         
-        // 4. ✅ Inicia câmera COM O MESMO STREAM (sem nova solicitação)
+        // 4. ✅ Inicia câmera COM O MESMO STREAM
         await iniciarCameraComStream(stream);
         
-        console.log('✅ Aplicação iniciada com sucesso!');
+        console.log('✅ Aplicação iniciada (WebRTC apenas vídeo)!');
         
     } catch (error) {
         console.error('❌ Erro ao solicitar permissões:', error);
         
-        // ✅ GARANTE QUE O LOADING SOME MESMO EM CASO DE ERRO
         liberarInterfaceFallback();
-        
-        // Fallback para caso de rejeição
-        if (typeof window.mostrarErroCarregamento === 'function') {
-            window.mostrarErroCarregamento('Erro ao solicitar permissões de câmera e microfone');
-        } else {
-            mostrarErroPermissoes();
-        }
+        mostrarErroPermissoes();
     }
 };
