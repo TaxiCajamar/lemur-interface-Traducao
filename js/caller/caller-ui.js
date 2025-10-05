@@ -48,14 +48,14 @@ function setupInstructionToggle() {
 async function traduzirFrasesFixas(lang) {
   try {
     const frasesParaTraduzir = {
-      "translator-label": "Real-time translation.",
-      "welcome-text": "Hi, welcome!",
-      "tap-qr": "Tap that QR Code",
-      "quick-scan": "Quick scan",
-      "drop-voice": "Drop your voice",
-      "check-replies": "Check the replies",
-      "flip-cam": "Flip the cam and show the vibes"
-    };
+  "translator-label": "Real-time translation.",
+  "welcome-text": "Welcome! Let's begin.",
+  "tap-qr": "Tap the QR code to start.",
+  "quick-scan": "Scan the QR code with your camera.",
+  "drop-voice": "Speak clearly into the microphone.",
+  "check-replies": "Read the translated replies below.",
+  "flip-cam": "Flip the camera. Share!"
+};
 
     for (const [id, texto] of Object.entries(frasesParaTraduzir)) {
       const el = document.getElementById(id);
