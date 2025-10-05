@@ -543,17 +543,31 @@ async function iniciarCameraAposPermissoes() {
 
         window.targetTranslationLang = lang;
 
-        // ✅ CONFIGURAÇÃO SIMPLIFICADA SEM QR CODE
+        // ✅ CONFIGURAÇÃO SIMPLIFICADA SEM QR CODE (VERSÃO CORRIGIDA)
         console.log('🚀 Sessão Receiver Iniciada:', {
             id: myId,
             lang: lang,
             token: token ? 'Presente' : 'Não informado'
         });
 
-        // Configura clique no logo para mostrar informações da sessão
+        // ✅ CORREÇÃO CRÍTICA: CONFIGURA CLIQUE NO LOGO COM VERIFICAÇÃO WEBRTC
         document.getElementById('logo-traduz').addEventListener('click', function() {
-            console.log('🎯 Sessão ativa - ID:', myId);
-            alert(`Sessão Ativa!\nID: ${myId}\nIdioma: ${lang}`);
+            console.log('🎯 Logo clicado - Sessão ativa');
+            
+            // ✅ MANTÉM A VERIFICAÇÃO IMPORTANTE DO WEBRTC
+            const remoteVideo = document.getElementById('remoteVideo');
+            const isConnected = remoteVideo && remoteVideo.srcObject;
+            
+            if (isConnected) {
+                console.log('🔗 WebRTC já conectado - Mostrando informações da sessão');
+                alert('✅ Chamada ativa!\nVocê já está conectado com outra pessoa.');
+                return; // ⬅️ ESTE RETURN É CRÍTICO!
+            }
+            
+            // ✅ APENAS MOSTRA INFORMAÇÕES DA SESSÃO (SEM QR CODE)
+            alert(`Sessão Ativa!\nID: ${myId}\nIdioma: ${lang}\n\nOutra pessoa pode se conectar com você usando este ID.`);
+            
+            console.log('✅ Informações da sessão mostradas');
         });
 
         window.rtcCore.initialize(myId);
