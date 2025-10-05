@@ -7,6 +7,71 @@ let somDigitacao = null;
 let audioCarregado = false;
 let permissaoConcedida = false;
 
+// 🎯 CONTROLE DO TOGGLE DAS INSTRUÇÕES (IGUAL AO RECEIVER)
+function setupInstructionToggle() {
+    const instructionBox = document.getElementById('instructionBox');
+    const toggleButton = document.getElementById('instructionToggle');
+    
+    if (!instructionBox || !toggleButton) return;
+    
+    // Estado inicial: expandido
+    let isExpanded = true;
+    
+    toggleButton.addEventListener('click', function(e) {
+        e.stopPropagation(); // Impede que o clique propague para o box
+        
+        isExpanded = !isExpanded;
+        
+        if (isExpanded) {
+            instructionBox.classList.remove('recolhido');
+            instructionBox.classList.add('expandido');
+            console.log('📖 Instruções expandidas');
+        } else {
+            instructionBox.classList.remove('expandido');
+            instructionBox.classList.add('recolhido');
+            console.log('📖 Instruções recolhidas');
+        }
+    });
+    
+    // Opcional: fechar ao clicar fora (se quiser)
+    document.addEventListener('click', function(e) {
+        if (!instructionBox.contains(e.target) && isExpanded) {
+            instructionBox.classList.remove('expandido');
+            instructionBox.classList.add('recolhido');
+            isExpanded = false;
+            console.log('📖 Instruções fechadas (clique fora)');
+        }
+    });
+}
+
+// 🌐 TRADUÇÃO DAS FRASES FIXAS (IGUAL AO RECEIVER)
+async function traduzirFrasesFixas(lang) {
+  try {
+    const frasesParaTraduzir = {
+      "translator-label": "Real-time translation.",
+      "welcome-text": "Hi, welcome!",
+      "tap-qr": "Tap that QR Code",
+      "quick-scan": "Quick scan",
+      "drop-voice": "Drop your voice",
+      "check-replies": "Check the replies",
+      "flip-cam": "Flip the cam and show the vibes"
+    };
+
+    for (const [id, texto] of Object.entries(frasesParaTraduzir)) {
+      const el = document.getElementById(id);
+      if (el) {
+        const traduzido = await translateText(texto, lang);
+        el.textContent = traduzido;
+        console.log(`✅ Traduzido: ${texto} → ${traduzido}`);
+      }
+    }
+
+    aplicarBandeiraLocal(lang);
+  } catch (error) {
+    console.error("❌ Erro ao traduzir frases fixas:", error);
+  }
+}
+
 // 🎵 CARREGAR SOM DE DIGITAÇÃO
 function carregarSomDigitacao() {
     return new Promise((resolve) => {
@@ -662,22 +727,22 @@ async function iniciarCameraAposPermissoes() {
         });
         
         let localStream = stream;
-window.localStream = localStream; // Armazena globalmente
-document.getElementById('localVideo').srcObject = localStream;
-console.log('✅ Câmera iniciada com sucesso');
+        window.localStream = localStream; // Armazena globalmente
+        document.getElementById('localVideo').srcObject = localStream;
+        console.log('✅ Câmera iniciada com sucesso');
 
-// 🎥 CONFIGURA BOTÃO DE ALTERNAR CÂMERA NO CALLER
-setupCameraToggle();
+        // 🎥 CONFIGURA BOTÃO DE ALTERNAR CÂMERA NO CALLER
+        setupCameraToggle();
 
-// ✅ CORREÇÃO: REMOVE LOADING QUANDO CÂMERA ESTIVER PRONTA (IGUAL AO RECEIVER)
-const mobileLoading = document.getElementById('mobileLoading');
-if (mobileLoading) {
-    mobileLoading.style.display = 'none';
-    console.log('✅ Loader removido - câmera pronta');
-}
+        // ✅ CORREÇÃO: REMOVE LOADING QUANDO CÂMERA ESTIVER PRONTA (IGUAL AO RECEIVER)
+        const mobileLoading = document.getElementById('mobileLoading');
+        if (mobileLoading) {
+            mobileLoading.style.display = 'none';
+            console.log('✅ Loader removido - câmera pronta');
+        }
 
-// ✅ PEQUENA PAUSA PARA ESTABILIZAR
-await new Promise(resolve => setTimeout(resolve, 500));
+        // ✅ PEQUENA PAUSA PARA ESTABILIZAR
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         console.log('🌐 Inicializando WebRTC...');
         window.rtcCore = new WebRTCCore();
@@ -770,7 +835,7 @@ await new Promise(resolve => setTimeout(resolve, 500));
     }
 }
 
-// 🚀 INICIALIZAÇÃO AUTOMÁTICA (IGUAL AO RECEIVER - SEM BOTÃO DE PERMISSÕES)
+// 🚀 INICIALIZAÇÃO AUTOMÁTICA (ATUALIZADA COM NOVAS FUNCIONALIDADES)
 window.onload = async () => {
     try {
         console.log('🚀 Iniciando aplicação caller automaticamente...');
@@ -779,16 +844,22 @@ window.onload = async () => {
         const params = new URLSearchParams(window.location.search);
         const lang = params.get('lang') || navigator.language || 'pt-BR';
         
-        // 2. Inicia áudio
+        // 2. Traduz as frases fixas PRIMEIRO (NOVO)
+        await traduzirFrasesFixas(lang);
+        
+        // 3. Inicia áudio
         iniciarAudio();
         
-        // 3. Carrega sons da máquina de escrever
+        // 4. Carrega sons da máquina de escrever
         await carregarSomDigitacao();
         
-        // 4. Solicita TODAS as permissões (câmera + microfone) - AUTOMÁTICO
+        // 5. Solicita TODAS as permissões (câmera + microfone) - AUTOMÁTICO
         await solicitarTodasPermissoes();
         
-        // 5. Libera interface (remove loading)
+        // 6. Configura o toggle das instruções (NOVO)
+        setupInstructionToggle();
+        
+        // 7. Libera interface (remove loading)
         if (typeof window.liberarInterface === 'function') {
             window.liberarInterface();
             console.log('✅ Interface liberada via função global');
@@ -797,7 +868,7 @@ window.onload = async () => {
             console.log('✅ Interface liberada via fallback');
         }
         
-        // 6. Inicia câmera e WebRTC
+        // 8. Inicia câmera e WebRTC (já inclui setupCameraToggle)
         await iniciarCameraAposPermissoes();
         
         console.log('✅ Caller iniciado com sucesso!');
