@@ -796,14 +796,14 @@ window.onload = async () => {
         
         console.log('✅ Notificador iniciado com sucesso!');
         
-        } catch (error) {
-        console.error('❌ Erro no notificador:', error);
+            } catch (error) {
+        console.error('❌ Erro ao inicializar notificador:', error);
         
-        // ✅ MENSAGEM MAIS SIMPLES PARA MOBILE
-        if (error.message.includes('Timeout')) {
-            alert('📱 Câmera lenta no mobile. Recarregue a página.');
+        if (typeof window.mostrarErroCarregamento === 'function') {
+            window.mostrarErroCarregamento('Erro ao solicitar permissões de câmera e microfone');
         } else {
-            alert('📱 Problema nas permissões. Recarregue e permita câmera.');
+            console.error('❌ Erro no carregamento:', error);
+            alert('Erro ao inicializar: ' + error.message);
         }
     }
 };
