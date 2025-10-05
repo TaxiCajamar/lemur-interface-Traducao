@@ -4,7 +4,6 @@ import { WebRTCCore } from '../../core/webrtc-core.js';
 let audioContext = null;
 let somDigitacao = null;
 let audioCarregado = false;
-let permissaoConcedida = false;
 
 // 🎵 CARREGAR SOM DE DIGITAÇÃO
 function carregarSomDigitacao() {
@@ -86,34 +85,6 @@ function iniciarAudio() {
     console.log('🎵 Áudio desbloqueado!');
 }
 
-// 🎤 SOLICITAR TODAS AS PERMISSÕES DE UMA VEZ
-async function solicitarTodasPermissoes() {
-    try {
-        console.log('🎯 Solicitando todas as permissões...');
-        
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: true
-        });
-        
-        console.log('✅ Todas as permissões concedidas!');
-        
-        stream.getTracks().forEach(track => track.stop());
-        
-        permissaoConcedida = true;
-        window.permissoesConcedidas = true;
-        window.audioContext = audioContext;
-        
-        return true;
-        
-    } catch (error) {
-        console.error('❌ Erro nas permissões:', error);
-        permissaoConcedida = false;
-        window.permissoesConcedidas = false;
-        throw error;
-    }
-}
-
 // 🎯 FUNÇÃO PARA OBTER IDIOMA COMPLETO
 async function obterIdiomaCompleto(lang) {
   if (!lang) return 'pt-BR';
@@ -189,22 +160,61 @@ async function aplicarBandeiraRemota(langCode) {
     }
 }
 
-// ✅ FUNÇÃO PARA LIBERAR INTERFACE (FALLBACK)
+// ✅ FUNÇÃO PARA LIBERAR INTERFACE (CORRIGIDA - GARANTE QUE PARA O LOADING)
 function liberarInterfaceFallback() {
-    console.log('🔓 Usando fallback para liberar interface...');
+    console.log('🔓 Removendo tela de loading...');
     
-    const loadingScreen = document.getElementById('loadingScreen');
-    if (loadingScreen) {
-        loadingScreen.style.display = 'none';
-        console.log('✅ Tela de loading removida');
+    // ✅ TENTA VÁRIOS ELEMENTOS DE LOADING POSSÍVEIS
+    const loadingSelectors = [
+        '#loadingScreen',
+        '.loading',
+        '.loader',
+        '#loader',
+        '.spinner',
+        '#spinner',
+        '.loading-screen',
+        '#mobileLoading'
+    ];
+    
+    let loadingRemoved = false;
+    
+    loadingSelectors.forEach(selector => {
+        const element = document.querySelector(selector);
+        if (element) {
+            element.style.display = 'none';
+            console.log(`✅ Loading removido: ${selector}`);
+            loadingRemoved = true;
+        }
+    });
+    
+    // ✅ SE NÃO ENCONTROU NENHUM LOADING ESPECÍFICO, TENTA REMOVER POR CLASSE/ID COMUNS
+    if (!loadingRemoved) {
+        const allElements = document.querySelectorAll('*');
+        allElements.forEach(element => {
+            const id = element.id || '';
+            const className = element.className || '';
+            
+            if (id.includes('loading') || id.includes('loader') || 
+                className.includes('loading') || className.includes('loader') ||
+                className.includes('spinner')) {
+                element.style.display = 'none';
+                console.log('✅ Loading genérico removido');
+                loadingRemoved = true;
+            }
+        });
     }
     
+    // ✅ LIBERA ELEMENTOS ESCONDIDOS
     const elementosEscondidos = document.querySelectorAll('.hidden-until-ready');
     elementosEscondidos.forEach(elemento => {
         elemento.style.display = '';
     });
     
     console.log(`✅ ${elementosEscondidos.length} elementos liberados`);
+    
+    if (!loadingRemoved) {
+        console.log('⚠️ Nenhum elemento de loading específico encontrado');
+    }
 }
 
 // 🎤 FUNÇÃO GOOGLE TTS SEPARADA
@@ -264,31 +274,18 @@ async function falarComGoogleTTS(mensagem, elemento) {
         
     } catch (error) {
         console.error('❌ Erro no Google TTS:', error);
-        // Fallback para síntese nativa se necessário
     }
 }
 
-// ✅ FUNÇÃO PARA INICIAR CÂMERA APÓS PERMISSÕES
-async function iniciarCameraAposPermissoes() {
+// ✅✅✅ CONEXÃO WEBRTC ROBUSTA (MÉTODO ANTIGO QUE FUNCIONA 100%)
+async function iniciarConexaoWebRTCAntiga(localStream) {
     try {
-        if (!permissaoConcedida) {
-            throw new Error('Permissões não concedidas');
-        }
-
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: false
-        });
-
-        let localStream = stream;
-
-        const localVideo = document.getElementById('localVideo');
-        if (localVideo) {
-            localVideo.srcObject = localStream;
-        }
-
+        console.log('🌐 INICIANDO CONEXÃO WEBRTC (MÉTODO ROBUSTO)...');
+        
+        // ✅ INICIALIZA WEBRTC
         window.rtcCore = new WebRTCCore();
 
+        // ✅ EXTRAI PARÂMETROS DA URL
         const url = window.location.href;
         const urlParts = url.split('?');
         const queryParams = urlParts[1] ? urlParts[1].split('&') : [];
@@ -305,16 +302,11 @@ async function iniciarCameraAposPermissoes() {
 
         window.targetTranslationLang = lang;
 
-        window.rtcCore.initialize(myId);
-        window.rtcCore.setupSocketHandlers();
-
+        // ✅✅✅ CONFIGURAÇÃO DIRETA DO DATACHANNEL
         window.rtcCore.setDataChannelCallback(async (mensagem) => {
-            iniciarSomDigitacao();
-
             console.log('📩 Mensagem recebida:', mensagem);
 
             const elemento = document.getElementById('texto-recebido');
-            
             if (elemento) {
                 elemento.textContent = "";
                 elemento.style.opacity = '1';
@@ -325,10 +317,11 @@ async function iniciarCameraAposPermissoes() {
                 elemento.style.border = '2px solid #ff0000';
             }
 
-            // 🎤 CHAMADA PARA GOOGLE TTS
+            // 🎤 USA GOOGLE TTS 
             await falarComGoogleTTS(mensagem, elemento);
         });
 
+        // ✅✅✅ CONFIGURAÇÃO DIRETA DO INCOMING CALL
         window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
             if (!localStream) return;
 
@@ -360,6 +353,65 @@ async function iniciarCameraAposPermissoes() {
             });
         };
 
+        // ✅✅✅ INICIALIZAÇÃO DIRETA
+        window.rtcCore.initialize(myId);
+        window.rtcCore.setupSocketHandlers();
+
+        console.log('✅ WebRTC inicializado com ID:', myId);
+
+        // ✅ VERIFICA SE É RECEIVER E INICIA CONEXÃO AUTOMÁTICA
+        const urlParams = new URLSearchParams(window.location.search);
+        const receiverId = urlParams.get('targetId') || '';
+        const receiverToken = urlParams.get('token') || '';
+        const receiverLang = urlParams.get('lang') || 'pt-BR';
+
+        if (receiverId) {
+            console.log('🎯 Modo Receiver - Iniciando conexão com:', receiverId);
+            
+            // ✅ CONEXÃO DIRETA
+            setTimeout(() => {
+                if (window.rtcCore && typeof window.rtcCore.startCall === 'function') {
+                    window.rtcCore.startCall(receiverId, localStream, lang);
+                    console.log('📞 Chamada iniciada para:', receiverId);
+                }
+            }, 1000);
+        }
+
+        console.log('✅✅✅ CONEXÃO WEBRTC ROBUSTA INICIALIZADA COM SUCESSO!');
+
+    } catch (error) {
+        console.error("❌ Erro na conexão WebRTC:", error);
+        throw error;
+    }
+}
+
+// ✅ FUNÇÃO PARA INICIAR CÂMERA COM STREAM EXISTENTE (SEM DUPLICIDADE)
+async function iniciarCameraComStream(stream) {
+    try {
+        console.log('📹 Iniciando câmera com stream existente...');
+
+        // ✅ REUTILIZA o stream já obtido
+        window.localStream = stream;
+
+        const localVideo = document.getElementById('localVideo');
+        if (localVideo) {
+            localVideo.srcObject = stream;
+        }
+
+        // ✅ INICIA CONEXÃO WEBRTC ROBUSTA
+        await iniciarConexaoWebRTCAntiga(stream);
+
+        // ✅ CONFIGURA TRADUÇÕES E INTERFACE
+        const url = window.location.href;
+        const urlParts = url.split('?');
+        const queryParams = urlParts[1] ? urlParts[1].split('&') : [];
+        
+        let lang = 'pt-BR';
+        const langParam = queryParams.find(param => param.startsWith('lang='));
+        if (langParam) {
+            lang = langParam.split('=')[1];
+        }
+
         const frasesParaTraduzir = {
             "translator-label": "Real-time translation."
         };
@@ -376,11 +428,7 @@ async function iniciarCameraAposPermissoes() {
 
         aplicarBandeiraLocal(lang);
 
-        setTimeout(() => {
-            if (typeof initializeTranslator === 'function') {
-                initializeTranslator();
-            }
-        }, 1000);
+        console.log('✅ Câmera e WebRTC iniciados com sucesso!');
 
     } catch (error) {
         console.error("Erro ao iniciar câmera:", error);
@@ -388,99 +436,86 @@ async function iniciarCameraAposPermissoes() {
     }
 }
 
+// 🛡️ TRATAMENTO DE ERRO PARA PERMISSÕES
+function mostrarErroPermissoes() {
+    console.log('❌ Mostrando erro de permissões...');
+    
+    // ✅ GARANTE QUE O LOADING SOME MESMO EM CASO DE ERRO
+    liberarInterfaceFallback();
+    
+    const errorDiv = document.createElement('div');
+    errorDiv.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+        color: white;
+        text-align: center;
+        padding: 20px;
+    `;
+    
+    errorDiv.innerHTML = `
+        <div style="background: #f44336; padding: 30px; border-radius: 15px; max-width: 400px;">
+            <h3 style="margin: 0 0 15px 0;">Permissões Necessárias</h3>
+            <p style="margin: 0 0 20px 0;">Por favor, permita acesso à câmera e microfone para usar o aplicativo.</p>
+            <button onclick="location.reload()" style="
+                background: white;
+                color: #f44336;
+                border: none;
+                padding: 12px 24px;
+                border-radius: 8px;
+                font-weight: bold;
+                cursor: pointer;
+            ">Tentar Novamente</button>
+        </div>
+    `;
+    
+    document.body.appendChild(errorDiv);
+}
+
+// 🚀 INICIALIZAÇÃO AUTOMÁTICA CORRIGIDA (SEM BOTÃO, SEM DUPLICIDADE)
 window.onload = async () => {
     try {
-        // ✅ BOTÃO ÚNICO PARA TODAS AS PERMISSÕES
-        const permissaoButton = document.createElement('button');
-        permissaoButton.innerHTML = `
-            <span style="font-size: 32px;">🎤📹🎧</span><br>
-            <span style="font-size: 14px;">Clique para ativar<br>Microfone, Câmera e Áudio</span>
-        `;
-        permissaoButton.style.position = 'fixed';
-        permissaoButton.style.top = '50%';
-        permissaoButton.style.left = '50%';
-        permissaoButton.style.transform = 'translate(-50%, -50%)';
-        permissaoButton.style.zIndex = '10000';
-        permissaoButton.style.padding = '25px 35px';
-        permissaoButton.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-        permissaoButton.style.color = 'white';
-        permissaoButton.style.border = 'none';
-        permissaoButton.style.borderRadius = '20px';
-        permissaoButton.style.cursor = 'pointer';
-        permissaoButton.style.fontSize = '16px';
-        permissaoButton.style.fontWeight = 'bold';
-        permissaoButton.style.boxShadow = '0 8px 25px rgba(0,0,0,0.3)';
-        permissaoButton.style.textAlign = 'center';
-        permissaoButton.style.lineHeight = '1.4';
-        permissaoButton.style.transition = 'all 0.3s ease';
+        console.log('🚀 Iniciando aplicação automaticamente...');
         
-        permissaoButton.onmouseover = () => {
-            permissaoButton.style.transform = 'translate(-50%, -50%) scale(1.05)';
-            permissaoButton.style.boxShadow = '0 12px 30px rgba(0,0,0,0.4)';
-        };
+        // 1. Pré-carrega recursos (áudio, traduções)
+        await carregarSomDigitacao();
+        iniciarAudio(); // Desbloqueia contexto de áudio
         
-        permissaoButton.onmouseout = () => {
-            permissaoButton.style.transform = 'translate(-50%, -50%)';
-            permissaoButton.style.boxShadow = '0 8px 25px rgba(0,0,0,0.3)';
-        };
+        // 2. ✅ UMA ÚNICA solicitação de permissões
+        console.log('🎯 Solicitando permissões de câmera e microfone...');
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true
+        });
         
-        permissaoButton.onclick = async () => {
-            try {
-                permissaoButton.innerHTML = '<span style="font-size: 24px;">⏳</span><br><span style="font-size: 12px;">Solicitando permissões...</span>';
-                permissaoButton.style.background = '#ff9800';
-                permissaoButton.disabled = true;
-                
-                // 1. Primeiro: Inicia áudio
-                iniciarAudio();
-                
-                // 2. Segundo: Carrega sons
-                await carregarSomDigitacao();
-                
-                // 3. Terceiro: Solicita TODAS as permissões (câmera + microfone)
-                await solicitarTodasPermissoes();
-                
-                // 4. Quarto: Remove botão
-                permissaoButton.remove();
-                
-                // 5. Quinto: Libera interface (com fallback)
-                if (typeof window.liberarInterface === 'function') {
-                    window.liberarInterface();
-                    console.log('✅ Interface liberada via função global');
-                } else {
-                    liberarInterfaceFallback();
-                    console.log('✅ Interface liberada via fallback');
-                }
-                
-                // 6. Sexto: Inicia câmera e WebRTC
-                await iniciarCameraAposPermissoes();
-                
-                console.log('✅ Fluxo completo concluído com sucesso!');
-                
-            } catch (error) {
-                console.error('❌ Erro no fluxo:', error);
-                
-                if (typeof window.mostrarErroCarregamento === 'function') {
-                    window.mostrarErroCarregamento('Erro ao solicitar permissões de câmera e microfone');
-                } else {
-                    console.error('❌ Erro no carregamento:', error);
-                }
-                
-                permissaoButton.innerHTML = `
-                    <span style="font-size: 32px;">❌</span><br>
-                    <span style="font-size: 12px;">Erro nas permissões<br>Clique para tentar novamente</span>
-                `;
-                permissaoButton.style.background = '#f44336';
-                permissaoButton.disabled = false;
-                
-                alert('Por favor, permita o acesso à câmera e microfone para usar o aplicativo.');
-            }
-        };
+        console.log('✅ Permissões concedidas!');
         
-        document.body.appendChild(permissaoButton);
-
+        // 3. ✅ REMOVE LOADING IMEDIATAMENTE APÓS PERMISSÕES
+        liberarInterfaceFallback();
+        
+        // 4. ✅ Inicia câmera COM O MESMO STREAM (sem nova solicitação)
+        await iniciarCameraComStream(stream);
+        
+        console.log('✅ Aplicação iniciada com sucesso!');
+        
     } catch (error) {
-        console.error("Erro ao inicializar:", error);
-        alert("Erro ao inicializar a aplicação.");
-        return;
+        console.error('❌ Erro ao solicitar permissões:', error);
+        
+        // ✅ GARANTE QUE O LOADING SOME MESMO EM CASO DE ERRO
+        liberarInterfaceFallback();
+        
+        // Fallback para caso de rejeição
+        if (typeof window.mostrarErroCarregamento === 'function') {
+            window.mostrarErroCarregamento('Erro ao solicitar permissões de câmera e microfone');
+        } else {
+            mostrarErroPermissoes();
+        }
     }
 };
