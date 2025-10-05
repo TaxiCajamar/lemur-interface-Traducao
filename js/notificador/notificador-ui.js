@@ -160,22 +160,61 @@ async function aplicarBandeiraRemota(langCode) {
     }
 }
 
-// ✅ FUNÇÃO PARA LIBERAR INTERFACE (FALLBACK)
+// ✅ FUNÇÃO PARA LIBERAR INTERFACE (CORRIGIDA - GARANTE QUE PARA O LOADING)
 function liberarInterfaceFallback() {
-    console.log('🔓 Usando fallback para liberar interface...');
+    console.log('🔓 Removendo tela de loading...');
     
-    const loadingScreen = document.getElementById('loadingScreen');
-    if (loadingScreen) {
-        loadingScreen.style.display = 'none';
-        console.log('✅ Tela de loading removida');
+    // ✅ TENTA VÁRIOS ELEMENTOS DE LOADING POSSÍVEIS
+    const loadingSelectors = [
+        '#loadingScreen',
+        '.loading',
+        '.loader',
+        '#loader',
+        '.spinner',
+        '#spinner',
+        '.loading-screen',
+        '#mobileLoading'
+    ];
+    
+    let loadingRemoved = false;
+    
+    loadingSelectors.forEach(selector => {
+        const element = document.querySelector(selector);
+        if (element) {
+            element.style.display = 'none';
+            console.log(`✅ Loading removido: ${selector}`);
+            loadingRemoved = true;
+        }
+    });
+    
+    // ✅ SE NÃO ENCONTROU NENHUM LOADING ESPECÍFICO, TENTA REMOVER POR CLASSE/ID COMUNS
+    if (!loadingRemoved) {
+        const allElements = document.querySelectorAll('*');
+        allElements.forEach(element => {
+            const id = element.id || '';
+            const className = element.className || '';
+            
+            if (id.includes('loading') || id.includes('loader') || 
+                className.includes('loading') || className.includes('loader') ||
+                className.includes('spinner')) {
+                element.style.display = 'none';
+                console.log('✅ Loading genérico removido');
+                loadingRemoved = true;
+            }
+        });
     }
     
+    // ✅ LIBERA ELEMENTOS ESCONDIDOS
     const elementosEscondidos = document.querySelectorAll('.hidden-until-ready');
     elementosEscondidos.forEach(elemento => {
         elemento.style.display = '';
     });
     
     console.log(`✅ ${elementosEscondidos.length} elementos liberados`);
+    
+    if (!loadingRemoved) {
+        console.log('⚠️ Nenhum elemento de loading específico encontrado');
+    }
 }
 
 // 🎤 FUNÇÃO GOOGLE TTS SEPARADA
@@ -401,6 +440,9 @@ async function iniciarCameraComStream(stream) {
 function mostrarErroPermissoes() {
     console.log('❌ Mostrando erro de permissões...');
     
+    // ✅ GARANTE QUE O LOADING SOME MESMO EM CASO DE ERRO
+    liberarInterfaceFallback();
+    
     const errorDiv = document.createElement('div');
     errorDiv.style.cssText = `
         position: fixed;
@@ -455,7 +497,7 @@ window.onload = async () => {
         
         console.log('✅ Permissões concedidas!');
         
-        // 3. ✅ Remove loading
+        // 3. ✅ REMOVE LOADING IMEDIATAMENTE APÓS PERMISSÕES
         liberarInterfaceFallback();
         
         // 4. ✅ Inicia câmera COM O MESMO STREAM (sem nova solicitação)
@@ -465,6 +507,9 @@ window.onload = async () => {
         
     } catch (error) {
         console.error('❌ Erro ao solicitar permissões:', error);
+        
+        // ✅ GARANTE QUE O LOADING SOME MESMO EM CASO DE ERRO
+        liberarInterfaceFallback();
         
         // Fallback para caso de rejeição
         if (typeof window.mostrarErroCarregamento === 'function') {
