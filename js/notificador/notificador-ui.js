@@ -504,6 +504,9 @@ async function iniciarCameraAposPermissoes() {
             throw new Error('Permissões não concedidas');
         }
 
+        // ✅ PEQUENO DELAY para o mobile processar as permissões
+        await new Promise(resolve => setTimeout(resolve, 500));
+
         const stream = await navigator.mediaDevices.getUserMedia({
             video: true,
             audio: false
