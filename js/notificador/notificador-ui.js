@@ -128,34 +128,41 @@ function iniciarAudio() {
     console.log('🎵 Áudio desbloqueado!');
 }
 
-// 🎤 SOLICITAR TODAS AS PERMISSÕES DE UMA VEZ (COM TIMEOUT PARA MOBILE)
+// 🎤 SOLICITAR TODAS AS PERMISSÕES DE UMA VEZ (VERSÃO OTIMIZADA)
 async function solicitarTodasPermissoes() {
     try {
-        console.log('🎯 Solicitando permissões para mobile...');
+        console.log('🎯 Solicitando permissões para notificador...');
         
-        // ✅ TIMEOUT DE 10 SEGUNDOS PARA MOBILE
-        const stream = await Promise.race([
-            navigator.mediaDevices.getUserMedia({
+        // ✅ TENTATIVA PRINCIPAL com fallback
+        let stream;
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({
                 video: true,
                 audio: true
-            }),
-            new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Timeout mobile')), 10000)
-            )
-        ]);
+            });
+        } catch (primaryError) {
+            console.log('🔄 Primeira tentativa falhou, tentando apenas vídeo...');
+            // ✅ FALLBACK: Tenta apenas vídeo se áudio falhar
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: false
+            });
+        }
         
-        console.log('✅ Todas as permissões concedidas!');
+        console.log('✅ Permissões concedidas para notificador!');
         
-        stream.getTracks().forEach(track => track.stop());
+        // ✅ PARA rapidamente para economizar recursos
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
         
         permissaoConcedida = true;
         window.permissoesConcedidas = true;
-        window.audioContext = audioContext;
         
         return true;
         
     } catch (error) {
-        console.error('❌ Erro nas permissões:', error);
+        console.error('❌ Todas as tentativas de permissão falharam:', error);
         permissaoConcedida = false;
         window.permissoesConcedidas = false;
         throw error;
