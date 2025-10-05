@@ -128,15 +128,21 @@ function iniciarAudio() {
     console.log('🎵 Áudio desbloqueado!');
 }
 
-// 🎤 SOLICITAR TODAS AS PERMISSÕES DE UMA VEZ
+// 🎤 SOLICITAR TODAS AS PERMISSÕES DE UMA VEZ (COM TIMEOUT PARA MOBILE)
 async function solicitarTodasPermissoes() {
     try {
-        console.log('🎯 Solicitando todas as permissões...');
+        console.log('🎯 Solicitando permissões para mobile...');
         
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: true
-        });
+        // ✅ TIMEOUT DE 10 SEGUNDOS PARA MOBILE
+        const stream = await Promise.race([
+            navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: true
+            }),
+            new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Timeout mobile')), 10000)
+            )
+        ]);
         
         console.log('✅ Todas as permissões concedidas!');
         
@@ -780,14 +786,14 @@ window.onload = async () => {
         
         console.log('✅ Notificador iniciado com sucesso!');
         
-    } catch (error) {
-        console.error('❌ Erro ao inicializar notificador:', error);
+        } catch (error) {
+        console.error('❌ Erro no notificador:', error);
         
-        if (typeof window.mostrarErroCarregamento === 'function') {
-            window.mostrarErroCarregamento('Erro ao solicitar permissões de câmera e microfone');
+        // ✅ MENSAGEM MAIS SIMPLES PARA MOBILE
+        if (error.message.includes('Timeout')) {
+            alert('📱 Câmera lenta no mobile. Recarregue a página.');
         } else {
-            console.error('❌ Erro no carregamento:', error);
-            alert('Erro ao inicializar: ' + error.message);
+            alert('📱 Problema nas permissões. Recarregue e permita câmera.');
         }
     }
 };
