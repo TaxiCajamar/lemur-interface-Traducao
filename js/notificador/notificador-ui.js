@@ -391,29 +391,29 @@ function liberarInterfaceFallback() {
 
 // 🌐 TRADUÇÃO DAS FRASES FIXAS
 async function traduzirFrasesFixas(lang) {
-  try {
-    const frasesParaTraduzir = {
-      "translator-label": "Real-time translation.",
-      "welcome-text": "Hi, welcome!",
-      "tap-qr": "Tap that QR Code",
-      "quick-scan": "Quick scan",
-      "drop-voice": "Drop your voice",
-      "check-replies": "Check the replies",
-      "flip-cam": "Flip the cam and show the vibes"
-    };
+    try {
+        const frasesParaTraduzir = {
+            "translator-label": "Real-time translation.",
+            "welcome-text": "Hi, welcome!",
+            "tap-qr": "Tap that QR Code",
+            "quick-scan": "Quick scan",
+            "drop-voice": "Drop your voice",
+            "check-replies": "Check the replies",
+            "flip-cam": "Flip the cam and show the vibes"
+        };
 
-    for (const [id, texto] of Object.entries(frasesParaTraduzir)) {
-      const el = document.getElementById(id);
-      if (el) {
-        const traduzido = await translateText(texto, lang);
-        el.textContent = traduzido;
-      }
+        for (const [id, texto] of Object.entries(frasesParaTraduzir)) {
+            const el = document.getElementById(id);
+            if (el) {
+                const traduzido = await translateText(texto, lang);
+                el.textContent = traduzido;
+            }
+        }
+
+        aplicarBandeiraLocal(lang);
+    } catch (error) {
+        console.error("❌ Erro ao traduzir frases fixas:", error);
     }
-
-    aplicarBandeiraLocal(lang);
-  } catch (error) {
-    console.error("❌ Erro ao traduzir frases fixas:", error);
-  }
 }
 
 // 🎥 FUNÇÃO PARA ALTERNAR ENTRE CÂMERAS
@@ -797,7 +797,7 @@ async function iniciarCameraAposPermissoes() {
 }
 
 // 🚀 INICIALIZAÇÃO PRINCIPAL - COMPATÍVEL COM CELULAR
-window.onload = () => {
+window.addEventListener('load', () => {
     document.addEventListener("click", async () => {
         try {
             console.log('🚀 Iniciando aplicação notificador após gesto do usuário...');
@@ -830,4 +830,4 @@ window.onload = () => {
             alert('Erro ao inicializar: ' + error.message);
         }
     }, { once: true });
-};
+});
