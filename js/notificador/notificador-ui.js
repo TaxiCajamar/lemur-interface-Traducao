@@ -1,3 +1,4 @@
+
 import { WebRTCCore } from '../../core/webrtc-core.js';
 
 // 🎵 VARIÁVEIS DE ÁUDIO E GRAVAÇÃO
@@ -391,29 +392,29 @@ function liberarInterfaceFallback() {
 
 // 🌐 TRADUÇÃO DAS FRASES FIXAS
 async function traduzirFrasesFixas(lang) {
-    try {
-        const frasesParaTraduzir = {
-            "translator-label": "Real-time translation.",
-            "welcome-text": "Hi, welcome!",
-            "tap-qr": "Tap that QR Code",
-            "quick-scan": "Quick scan",
-            "drop-voice": "Drop your voice",
-            "check-replies": "Check the replies",
-            "flip-cam": "Flip the cam and show the vibes"
-        };
+  try {
+    const frasesParaTraduzir = {
+      "translator-label": "Real-time translation.",
+      "welcome-text": "Hi, welcome!",
+      "tap-qr": "Tap that QR Code",
+      "quick-scan": "Quick scan",
+      "drop-voice": "Drop your voice",
+      "check-replies": "Check the replies",
+      "flip-cam": "Flip the cam and show the vibes"
+    };
 
-        for (const [id, texto] of Object.entries(frasesParaTraduzir)) {
-            const el = document.getElementById(id);
-            if (el) {
-                const traduzido = await translateText(texto, lang);
-                el.textContent = traduzido;
-            }
-        }
-
-        aplicarBandeiraLocal(lang);
-    } catch (error) {
-        console.error("❌ Erro ao traduzir frases fixas:", error);
+    for (const [id, texto] of Object.entries(frasesParaTraduzir)) {
+      const el = document.getElementById(id);
+      if (el) {
+        const traduzido = await translateText(texto, lang);
+        el.textContent = traduzido;
+      }
     }
+
+    aplicarBandeiraLocal(lang);
+  } catch (error) {
+    console.error("❌ Erro ao traduzir frases fixas:", error);
+  }
 }
 
 // 🎥 FUNÇÃO PARA ALTERNAR ENTRE CÂMERAS
@@ -796,38 +797,46 @@ async function iniciarCameraAposPermissoes() {
     }
 }
 
-// 🚀 INICIALIZAÇÃO PRINCIPAL - COMPATÍVEL COM CELULAR
-window.addEventListener('load', () => {
-    document.addEventListener("click", async () => {
-        try {
-            console.log('🚀 Iniciando aplicação notificador após gesto do usuário...');
+// 🚀 INICIALIZAÇÃO PRINCIPAL - ORDEM CORRIGIDA
+window.onload = async () => {
+    try {
+        console.log('🚀 Iniciando aplicação notificador...');
+        
+        // ✅ FASE 1: CONFIGURAÇÃO BÁSICA DO DOM
+        setupInstructionToggle();
+        
+        // ✅ FASE 2: TRADUÇÕES E IDIOMA
+        const params = new URLSearchParams(window.location.search);
+        const lang = params.get('lang') || navigator.language || 'pt-BR';
+        await traduzirFrasesFixas(lang);
+        
+        // ✅ FASE 3: ÁUDIO (APENAS PREPARAÇÃO)
+        iniciarAudio();
+        await carregarSomDigitacao();
+        
+        // ✅ FASE 4: PERMISSÕES
+        await solicitarTodasPermissoes();
+        
+        // ✅ FASE 5: INTERFACE VISUAL
+        liberarInterfaceFallback();
+        
+        // ✅ FASE 6: CÂMERA E WEBRTC (TUDO JÁ ESTÁ PRONTO)
+        await iniciarCameraAposPermissoes();
+        
+        console.log('✅ Notificador iniciado com sucesso!');
+        
+    } catch (error) {
+        console.error('❌ Erro crítico ao inicializar notificador:', error);
+        
+        // Fallback: pelo menos libera a interface
+        liberarInterfaceFallback();
+        
+        alert('Erro ao inicializar: ' + error.message);
+    }
+};
 
-            // ✅ FASE 1: CONFIGURAÇÃO BÁSICA DO DOM
-            setupInstructionToggle();
-
-            // ✅ FASE 2: TRADUÇÕES E IDIOMA
-            const params = new URLSearchParams(window.location.search);
-            const lang = params.get('lang') || navigator.language || 'pt-BR';
-            await traduzirFrasesFixas(lang);
-
-            // ✅ FASE 3: ÁUDIO (DESBLOQUEADO APÓS TOQUE)
-            iniciarAudio();
-            await carregarSomDigitacao();
-
-            // ✅ FASE 4: PERMISSÕES
-            await solicitarTodasPermissoes();
-
-            // ✅ FASE 5: INTERFACE VISUAL
-            liberarInterfaceFallback();
-
-            // ✅ FASE 6: CÂMERA E WEBRTC
-            await iniciarCameraAposPermissoes();
-
-            console.log('✅ Notificador iniciado com sucesso!');
-        } catch (error) {
-            console.error('❌ Erro crítico ao inicializar notificador:', error);
-            liberarInterfaceFallback();
-            alert('Erro ao inicializar: ' + error.message);
-        }
-    }, { once: true });
+// ✅ GARANTIA EXTRA: Configura toggle quando DOM estiver pronto
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('📄 DOM carregado - configurando elementos...');
+    setupInstructionToggle();
 });
