@@ -1,16 +1,11 @@
 import { WebRTCCore } from '../../core/webrtc-core.js';
+import { QRCodeGenerator } from '../qrcode/qr-code-utils.js';
 
-// 🎵 VARIÁVEIS DE ÁUDIO E GRAVAÇÃO
+// 🎵 VARIÁVEIS DE ÁUDIO
 let audioContext = null;
 let somDigitacao = null;
 let audioCarregado = false;
 let permissaoConcedida = false;
-
-// 🎤 SISTEMA DE GRAVAÇÃO (FALTANTE NO NOTIFICADOR)
-let gravando = false;
-let recognition = null;
-let mediaRecorder = null;
-let audioChunks = [];
 
 // 🎯 CONTROLE DO TOGGLE DAS INSTRUÇÕES
 function setupInstructionToggle() {
@@ -130,7 +125,7 @@ async function solicitarTodasPermissoes() {
         
         const stream = await navigator.mediaDevices.getUserMedia({
             video: true,
-            audio: true  // ✅ AGORA solicita áudio também para gravação
+            audio: true
         });
         
         console.log('✅ Permissões concedidas para notificador!');
@@ -148,151 +143,6 @@ async function solicitarTodasPermissoes() {
         window.permissoesConcedidas = false;
         throw error;
     }
-}
-
-// 🎤 🆕 SISTEMA DE GRAVAÇÃO DE VOZ (FALTANTE)
-function inicializarReconhecimentoVoz() {
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-        console.log('❌ Reconhecimento de voz não suportado');
-        return null;
-    }
-
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    recognition = new SpeechRecognition();
-    
-    recognition.continuous = false;
-    recognition.interimResults = true;
-    recognition.lang = window.targetTranslationLang || 'pt-BR';
-
-    recognition.onstart = function() {
-        console.log('🎤 Reconhecimento de voz iniciado');
-        gravando = true;
-        atualizarUIgravacao(true);
-    };
-
-    recognition.onresult = function(event) {
-        let textoInterim = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-            if (event.results[i].isFinal) {
-                const textoFinal = event.results[i][0].transcript;
-                console.log('📝 Texto reconhecido:', textoFinal);
-                enviarMensagemTexto(textoFinal);
-            } else {
-                textoInterim += event.results[i][0].transcript;
-            }
-        }
-        
-        // Atualiza UI com texto interim
-        if (textoInterim) {
-            const elementoTexto = document.getElementById('texto-recebido');
-            if (elementoTexto) {
-                elementoTexto.textContent = textoInterim;
-                elementoTexto.style.color = '#ffff00';
-            }
-        }
-    };
-
-    recognition.onerror = function(event) {
-        console.log('❌ Erro no reconhecimento:', event.error);
-        gravando = false;
-        atualizarUIgravacao(false);
-    };
-
-    recognition.onend = function() {
-        console.log('🔴 Reconhecimento de voz finalizado');
-        gravando = false;
-        atualizarUIgravacao(false);
-    };
-
-    return recognition;
-}
-
-// 🆕 FUNÇÃO PARA ENVIAR MENSAGEM DE TEXTO
-function enviarMensagemTexto(texto) {
-    if (!texto || !texto.trim()) return;
-    
-    console.log('📤 Enviando mensagem:', texto);
-    
-    if (window.rtcCore && window.rtcCore.dataChannel && window.rtcCore.dataChannel.readyState === 'open') {
-        window.rtcCore.dataChannel.send(texto);
-        
-        // Feedback visual
-        const elementoTexto = document.getElementById('texto-recebido');
-        if (elementoTexto) {
-            elementoTexto.textContent = "✓ Mensagem enviada: " + texto;
-            elementoTexto.style.color = '#00ff00';
-            setTimeout(() => {
-                elementoTexto.textContent = '';
-            }, 3000);
-        }
-    } else {
-        console.log('❌ Canal de dados não disponível');
-        alert('Conexão não estabelecida. Aguarde...');
-    }
-}
-
-// 🆕 ATUALIZAR UI DA GRAVAÇÃO
-function atualizarUIgravacao(gravando) {
-    const botaoMicrofone = document.querySelector('.voice-button'); // ou o seletor correto
-    const elementoTexto = document.getElementById('texto-recebido');
-    
-    if (gravando) {
-        if (botaoMicrofone) botaoMicrofone.style.backgroundColor = '#ff4444';
-        if (elementoTexto) {
-            elementoTexto.textContent = "🎤 Gravando... Fale agora!";
-            elementoTexto.style.color = '#ffff00';
-        }
-    } else {
-        if (botaoMicrofone) botaoMicrofone.style.backgroundColor = '';
-        if (elementoTexto) {
-            elementoTexto.textContent = "";
-        }
-    }
-}
-
-// 🆕 CONFIGURAR BOTÃO DE MICROFONE (CRÍTICO!)
-function setupBotaoMicrofone() {
-    const botaoMicrofone = document.getElementById('voiceButton'); // Ajuste o seletor conforme seu HTML
-    
-    if (!botaoMicrofone) {
-        console.log('❌ Botão de microfone não encontrado');
-        return;
-    }
-
-    console.log('🎤 Configurando botão de microfone...');
-
-    botaoMicrofone.addEventListener('click', function() {
-        if (gravando) {
-            // Parar gravação
-            if (recognition) {
-                recognition.stop();
-            }
-            console.log('⏹️ Parando gravação...');
-        } else {
-            // Iniciar gravação
-            if (!recognition) {
-                recognition = inicializarReconhecimentoVoz();
-            }
-            
-            if (recognition) {
-                try {
-                    recognition.start();
-                    console.log('🎤 Iniciando gravação...');
-                } catch (error) {
-                    console.log('❌ Erro ao iniciar gravação:', error);
-                    // Tenta reinicializar
-                    recognition = inicializarReconhecimentoVoz();
-                    if (recognition) {
-                        recognition.start();
-                    }
-                }
-            } else {
-                alert('Reconhecimento de voz não suportado neste navegador.');
-            }
-        }
-    });
-
-    console.log('✅ Botão de microfone configurado com sucesso');
 }
 
 // 🎯 FUNÇÃO PARA OBTER IDIOMA COMPLETO
@@ -473,7 +323,7 @@ function setupCameraToggle() {
     console.log('✅ Botão de alternar câmera configurado');
 }
 
-// ✅ CONFIGURAÇÃO SEGURA DO CLIQUE NO LOGO
+// ✅ CONFIGURAÇÃO DO CLIQUE NO LOGO (IGUAL AO RECEIVER)
 function setupLogoTradutor() {
     const logoTradutor = document.getElementById('logo-traduz');
     if (!logoTradutor) {
@@ -482,20 +332,38 @@ function setupLogoTradutor() {
     }
 
     logoTradutor.addEventListener('click', function() {
-        console.log('🎯 Logo clicado - Sessão ativa');
+        const overlay = document.querySelector('.info-overlay');
+        const qrcodeContainer = document.getElementById('qrcode');
+        
+        if (overlay && !overlay.classList.contains('hidden')) {
+            overlay.classList.add('hidden');
+            console.log('📱 QR Code fechado pelo usuário');
+            return;
+        }
         
         const remoteVideo = document.getElementById('remoteVideo');
         const isConnected = remoteVideo && remoteVideo.srcObject;
         
         if (isConnected) {
-            alert('✅ Chamada ativa!\nVocê já está conectado com outra pessoa.');
+            console.log('❌ WebRTC já conectado - QR Code não pode ser reaberto');
             return;
         }
         
-        const myId = window.currentSessionId || 'Não disponível';
-        const lang = window.targetTranslationLang || 'pt-BR';
+        console.log('🗝️ Gerando QR Code...');
         
-        alert(`Sessão Ativa!\nID: ${myId}\nIdioma: ${lang}\n\nOutra pessoa pode se conectar com você usando este ID.`);
+        if (qrcodeContainer) {
+            qrcodeContainer.innerHTML = '';
+        }
+        
+        const callerUrl = `${window.location.origin}/caller.html?targetId=${window.qrCodeData.myId}&token=${encodeURIComponent(window.qrCodeData.token)}&lang=${encodeURIComponent(window.qrCodeData.lang)}`;
+        
+        QRCodeGenerator.generate("qrcode", callerUrl);
+        
+        if (overlay) {
+            overlay.classList.remove('hidden');
+        }
+        
+        console.log('✅ QR Code gerado!');
     });
 
     console.log('✅ Clique no logo configurado com sucesso');
@@ -527,15 +395,11 @@ function esconderClickQuandoConectar() {
     });
 }
 
-// 🎤 ✅✅✅ SISTEMA HÍBRIDO TTS CORRIGIDO (COM FALLBACK)
+// 🎤 SISTEMA TTS CORRIGIDO
 async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente) {
-    // ✅ PRIMEIRO: Tenta Google TTS (RÁPIDO)
     try {
-        console.log('🎤 Tentando Google TTS...');
+        console.log('🎤 Iniciando Google TTS para:', mensagem.substring(0, 50) + '...');
         
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // Timeout de 5 segundos
-
         const resposta = await fetch('https://chat-tradutor.onrender.com/speak', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -543,11 +407,8 @@ async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente) {
                 text: mensagem,
                 languageCode: window.targetTranslationLang || 'pt-BR',
                 gender: 'FEMALE'
-            }),
-            signal: controller.signal
+            })
         });
-
-        clearTimeout(timeoutId);
 
         if (!resposta.ok) {
             throw new Error('Erro na API de voz');
@@ -559,6 +420,7 @@ async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente) {
         
         audio.onplay = () => {
             pararSomDigitacao();
+            
             if (elemento) {
                 elemento.style.animation = 'none';
                 elemento.style.backgroundColor = '';
@@ -568,7 +430,8 @@ async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente) {
             if (imagemImpaciente) {
                 imagemImpaciente.style.display = 'none';
             }
-            console.log('🔊 Áudio Google TTS iniciado (RÁPIDO)');
+            
+            console.log('🔊 Áudio Google TTS iniciado');
         };
         
         audio.onended = () => {
@@ -579,68 +442,22 @@ async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente) {
         };
         
         audio.onerror = () => {
-            throw new Error('Erro no áudio Google TTS');
+            pararSomDigitacao();
+            console.log('❌ Erro no áudio Google TTS');
+            if (elemento) {
+                elemento.style.animation = 'none';
+                elemento.style.backgroundColor = '';
+                elemento.style.border = '';
+            }
+            if (imagemImpaciente) {
+                imagemImpaciente.style.display = 'none';
+            }
         };
 
         await audio.play();
-        return; // ✅ SUCESSO - para aqui
         
     } catch (error) {
-        console.log('🔄 Google TTS falhou, usando fallback nativo:', error);
-        
-        // ✅ FALLBACK: Síntese de voz do navegador
-        try {
-            if ('speechSynthesis' in window) {
-                pararSomDigitacao();
-                
-                if (elemento) {
-                    elemento.style.animation = 'none';
-                    elemento.style.backgroundColor = '';
-                    elemento.style.border = '';
-                    elemento.textContent = mensagem;
-                }
-                if (imagemImpaciente) {
-                    imagemImpaciente.style.display = 'none';
-                }
-                
-                const utterance = new SpeechSynthesisUtterance(mensagem);
-                utterance.lang = window.targetTranslationLang || 'pt-BR';
-                utterance.rate = 0.9;
-                utterance.pitch = 1;
-                
-                // Carrega as vozes disponíveis
-                await new Promise((resolve) => {
-                    const vozes = speechSynthesis.getVoices();
-                    if (vozes.length > 0) {
-                        resolve();
-                    } else {
-                        speechSynthesis.addEventListener('voiceschanged', resolve);
-                    }
-                });
-                
-                const vozes = speechSynthesis.getVoices();
-                const vozPreferida = vozes.find(voz => 
-                    voz.lang.startsWith((window.targetTranslationLang || 'pt').split('-')[0])
-                );
-                
-                if (vozPreferida) {
-                    utterance.voice = vozPreferida;
-                }
-                
-                utterance.onend = () => {
-                    console.log('🔚 Áudio nativo terminado');
-                };
-                
-                speechSynthesis.speak(utterance);
-                console.log('🔊 Áudio nativo iniciado (fallback)');
-            }
-        } catch (fallbackError) {
-            console.error('❌ Fallback nativo também falhou:', fallbackError);
-            // Pelo menos mostra o texto
-            if (elemento) {
-                elemento.textContent = mensagem;
-            }
-        }
+        console.error('❌ Erro no Google TTS:', error);
     }
 }
 
@@ -653,7 +470,6 @@ async function iniciarCameraAposPermissoes() {
 
         console.log('📹 Iniciando câmera para notificador...');
         
-        // 1. Inicia a câmera
         const stream = await navigator.mediaDevices.getUserMedia({
             video: true,
             audio: false
@@ -661,18 +477,15 @@ async function iniciarCameraAposPermissoes() {
 
         window.localStream = stream;
 
-        // 2. Configura o vídeo local
         const localVideo = document.getElementById('localVideo');
         if (localVideo) {
             localVideo.srcObject = stream;
             
-            // Remove loading
             const mobileLoading = document.getElementById('mobileLoading');
             if (mobileLoading) {
                 mobileLoading.style.display = 'none';
             }
 
-            // Mostra botão click após delay
             setTimeout(() => {
                 const elementoClick = document.getElementById('click');
                 if (elementoClick) {
@@ -682,45 +495,55 @@ async function iniciarCameraAposPermissoes() {
             }, 500);
         }
 
-        // 3. Configura toggle da câmera
         setupCameraToggle();
 
-        // 4. 🆕 CONFIGURA BOTÃO DE MICROFONE
-        setupBotaoMicrofone();
-
-        // 5. Configura WebRTC
         console.log('🌐 Inicializando WebRTC...');
         window.rtcCore = new WebRTCCore();
 
-        // Obtém ID da sessão
         const url = window.location.href;
-        const urlParts = url.split('?');
-        const queryParams = urlParts[1] ? urlParts[1].split('&') : [];
+        const fixedId = url.split('?')[1] || crypto.randomUUID().substr(0, 8);
 
-        const myId = queryParams[0] && !queryParams[0].includes('=') 
-            ? queryParams[0] 
-            : crypto.randomUUID().substr(0, 8);
+        function fakeRandomUUID(fixedValue) {
+            return {
+                substr: function(start, length) {
+                    return fixedValue.substr(start, length);
+                }
+            };
+        }
+
+        const myId = fakeRandomUUID(fixedId).substr(0, 8);
 
         const params = new URLSearchParams(window.location.search);
+        const token = params.get('token') || '';
         const lang = params.get('lang') || navigator.language || 'pt-BR';
 
-        // Armazena informações globalmente
-        window.currentSessionId = myId;
         window.targetTranslationLang = lang;
 
-        console.log('🚀 Sessão Notificador Iniciada:', { id: myId, lang: lang });
+        window.qrCodeData = {
+            myId: myId,
+            token: token,
+            lang: lang
+        };
 
-        // 6. Configura o clique no logo APÓS TUDO ESTAR PRONTO
         setupLogoTradutor();
 
-        // 7. Inicializa WebRTC
+        const overlay = document.querySelector('.info-overlay');
+        if (overlay) {
+            overlay.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.add('hidden');
+                    console.log('📱 QR Code fechado (clique fora)');
+                }
+            });
+        }
+
         window.rtcCore.initialize(myId);
         window.rtcCore.setupSocketHandlers();
 
-        // 8. Configura callbacks do WebRTC
         window.rtcCore.setDataChannelCallback(async (mensagem) => {
-            console.log('📩 Mensagem recebida via WebRTC:', mensagem);
             iniciarSomDigitacao();
+
+            console.log('📩 Mensagem recebida:', mensagem);
 
             const elemento = document.getElementById('texto-recebido');
             const imagemImpaciente = document.getElementById('lemurFixed');
@@ -728,6 +551,8 @@ async function iniciarCameraAposPermissoes() {
             if (elemento) {
                 elemento.textContent = "";
                 elemento.style.opacity = '1';
+                elemento.style.transition = 'opacity 0.5s ease';
+                
                 elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
                 elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
                 elemento.style.border = '2px solid #ff0000';
@@ -743,50 +568,57 @@ async function iniciarCameraAposPermissoes() {
         window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
             if (!window.localStream) return;
 
-            console.log('📞 Chamada recebida de:', idiomaDoCaller);
+            console.log('🎯 Caller fala:', idiomaDoCaller);
+            console.log('🎯 Eu (notificador) entendo:', lang);
 
             window.sourceTranslationLang = idiomaDoCaller;
             window.targetTranslationLang = lang;
 
+            console.log('🎯 Vou traduzir:', idiomaDoCaller, '→', lang);
+
             window.rtcCore.handleIncomingCall(offer, window.localStream, (remoteStream) => {
-                // Desabilita áudio remoto
                 remoteStream.getAudioTracks().forEach(track => track.enabled = false);
 
-                // Remove overlay se existir
                 const overlay = document.querySelector('.info-overlay');
                 if (overlay) overlay.classList.add('hidden');
 
-                // Configura vídeo remoto
                 const remoteVideo = document.getElementById('remoteVideo');
                 if (remoteVideo) {
                     remoteVideo.srcObject = remoteStream;
                     
-                    // Esconde botão click
                     const elementoClick = document.getElementById('click');
                     if (elementoClick) {
                         elementoClick.style.display = 'none';
                         elementoClick.classList.remove('piscar-suave');
+                        console.log('🔗 WebRTC conectado - botão Click removido permanentemente');
                     }
                 }
 
                 window.targetTranslationLang = idiomaDoCaller || lang;
+                console.log('🎯 Idioma definido para tradução:', window.targetTranslationLang);
 
-                // Atualiza bandeira remota
                 if (idiomaDoCaller) {
                     aplicarBandeiraRemota(idiomaDoCaller);
+                } else {
+                    const remoteLangElement = document.querySelector('.remoter-Lang');
+                    if (remoteLangElement) remoteLangElement.textContent = '🔴';
                 }
             });
         };
 
-        // 9. Configura observador para esconder click quando conectar
+        aplicarBandeiraLocal(lang);
+
+        setTimeout(() => {
+            if (typeof initializeTranslator === 'function') {
+                initializeTranslator();
+            }
+        }, 1000);
+
         esconderClickQuandoConectar();
 
-        console.log('✅ Notificador completamente inicializado');
-
     } catch (error) {
-        console.error("❌ Erro ao iniciar câmera no notificador:", error);
+        console.error("Erro ao iniciar câmera:", error);
         
-        // Remove loading mesmo em caso de erro
         const mobileLoading = document.getElementById('mobileLoading');
         if (mobileLoading) {
             mobileLoading.style.display = 'none';
@@ -796,46 +628,47 @@ async function iniciarCameraAposPermissoes() {
     }
 }
 
-// 🚀 INICIALIZAÇÃO PRINCIPAL - ORDEM CORRIGIDA
+// 🚀 INICIALIZAÇÃO PRINCIPAL
 window.onload = async () => {
     try {
-        console.log('🚀 Iniciando aplicação notificador...');
+        console.log('🚀 Iniciando aplicação notificador automaticamente...');
         
-        // ✅ FASE 1: CONFIGURAÇÃO BÁSICA DO DOM
-        setupInstructionToggle();
-        
-        // ✅ FASE 2: TRADUÇÕES E IDIOMA
         const params = new URLSearchParams(window.location.search);
         const lang = params.get('lang') || navigator.language || 'pt-BR';
+        
         await traduzirFrasesFixas(lang);
         
-        // ✅ FASE 3: ÁUDIO (APENAS PREPARAÇÃO)
         iniciarAudio();
+        
         await carregarSomDigitacao();
         
-        // ✅ FASE 4: PERMISSÕES
         await solicitarTodasPermissoes();
         
-        // ✅ FASE 5: INTERFACE VISUAL
-        liberarInterfaceFallback();
+        if (typeof window.liberarInterface === 'function') {
+            window.liberarInterface();
+            console.log('✅ Interface liberada via função global');
+        } else {
+            liberarInterfaceFallback();
+            console.log('✅ Interface liberada via fallback');
+        }
         
-        // ✅ FASE 6: CÂMERA E WEBRTC (TUDO JÁ ESTÁ PRONTO)
         await iniciarCameraAposPermissoes();
         
         console.log('✅ Notificador iniciado com sucesso!');
         
     } catch (error) {
-        console.error('❌ Erro crítico ao inicializar notificador:', error);
+        console.error('❌ Erro ao inicializar notificador:', error);
         
-        // Fallback: pelo menos libera a interface
-        liberarInterfaceFallback();
-        
-        alert('Erro ao inicializar: ' + error.message);
+        if (typeof window.mostrarErroCarregamento === 'function') {
+            window.mostrarErroCarregamento('Erro ao solicitar permissões de câmera e microfone');
+        } else {
+            console.error('❌ Erro no carregamento:', error);
+            alert('Erro ao inicializar: ' + error.message);
+        }
     }
 };
 
-// ✅ GARANTIA EXTRA: Configura toggle quando DOM estiver pronto
+// ✅ CONFIGURAÇÃO DO DOM
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('📄 DOM carregado - configurando elementos...');
     setupInstructionToggle();
 });
