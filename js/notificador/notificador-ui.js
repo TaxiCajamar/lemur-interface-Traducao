@@ -586,6 +586,14 @@ async function iniciarCameraAposPermissoes() {
                 if (remoteVideo) {
                     remoteVideo.srcObject = remoteStream;
                     
+                    // ✅ FECHA UNBOXING QUANDO WEBRTC CONECTAR
+                    const instructionBox = document.getElementById('instructionBox');
+                    if (instructionBox) {
+                        instructionBox.classList.remove('expandido');
+                        instructionBox.classList.add('recolhido');
+                        console.log('📦 Unboxing fechado automaticamente - WebRTC conectado');
+                    }
+                    
                     const elementoClick = document.getElementById('click');
                     if (elementoClick) {
                         elementoClick.style.display = 'none';
