@@ -23,7 +23,7 @@
     <img src="assets/images/lemurp2p.png" alt="Lemur Logo" class="logo" />
             
      <!-- 🌉 Imagem ponte -->
-    <img src="assets/images/Bridg.png" alt="ponte" class="ponte" /
+    <img src="assets/images/Bridg.png" alt="ponte" class="ponte" />
 
        <!-- ⏳ Loader de carregamento (IGUAL AO RECEIVER) -->
     <div id="mobileLoading" class="mobile-loader">
@@ -61,8 +61,19 @@
         <!-- 🏳️ Bandeira do idioma local -->
         <div class="language-flag" id="currentLanguageFlag">🇧🇷</div>
        
-        <!-- 🎤 Microfone -->
-        <button class="record-btn" id="recordButton" disabled>🎤</button>
+        <!-- 🎤 Microfone (MESMO ID DO RECEIVER) -->
+<button class="record-btn" id="recordButton" disabled>🎤</button>
+
+<!-- 🔊 Botão de áudio (ADICIONAR ESTE) -->
+<button class="speaker-btn" id="speakerButton" disabled>🔊</button>
+
+<!-- 🗝️ Botão Key (ADICIONAR ESTE - igual ao receiver) -->
+<button id="logo-traduz" class="botao-key">
+    <img src="assets/images/key.png" alt="Key" />
+</button>
+
+<!-- 👆 Botão Click (ADICIONAR ESTE - igual ao receiver) -->
+<img id="click" src="assets/images/click.png" alt="Click" style="display: none;" />
                      
     </div>
 
