@@ -796,42 +796,40 @@ async function iniciarCameraAposPermissoes() {
     }
 }
 
-// 🚀 INICIALIZAÇÃO PRINCIPAL - ORDEM CORRIGIDA
-window.onload = async () => {
-    try {
-        console.log('🚀 Iniciando aplicação notificador...');
-        
-        // ✅ FASE 1: CONFIGURAÇÃO BÁSICA DO DOM
-        setupInstructionToggle();
-        
-        // ✅ FASE 2: TRADUÇÕES E IDIOMA
-        const params = new URLSearchParams(window.location.search);
-        const lang = params.get('lang') || navigator.language || 'pt-BR';
-        await traduzirFrasesFixas(lang);
-        
-        // ✅ FASE 3: ÁUDIO (APENAS PREPARAÇÃO)
-        iniciarAudio();
-        await carregarSomDigitacao();
-        
-        // ✅ FASE 4: PERMISSÕES
-        await solicitarTodasPermissoes();
-        
-        // ✅ FASE 5: INTERFACE VISUAL
-        liberarInterfaceFallback();
-        
-        // ✅ FASE 6: CÂMERA E WEBRTC (TUDO JÁ ESTÁ PRONTO)
-        await iniciarCameraAposPermissoes();
-        
-        console.log('✅ Notificador iniciado com sucesso!');
-        
-    } catch (error) {
-        console.error('❌ Erro crítico ao inicializar notificador:', error);
-        
-        // Fallback: pelo menos libera a interface
-        liberarInterfaceFallback();
-        
-        alert('Erro ao inicializar: ' + error.message);
-    }
+// 🚀 INICIALIZAÇÃO PRINCIPAL - COMPATÍVEL COM CELULAR
+window.onload = () => {
+    document.addEventListener("click", async () => {
+        try {
+            console.log('🚀 Iniciando aplicação notificador após gesto do usuário...');
+
+            // ✅ FASE 1: CONFIGURAÇÃO BÁSICA DO DOM
+            setupInstructionToggle();
+
+            // ✅ FASE 2: TRADUÇÕES E IDIOMA
+            const params = new URLSearchParams(window.location.search);
+            const lang = params.get('lang') || navigator.language || 'pt-BR';
+            await traduzirFrasesFixas(lang);
+
+            // ✅ FASE 3: ÁUDIO (DESBLOQUEADO APÓS TOQUE)
+            iniciarAudio();
+            await carregarSomDigitacao();
+
+            // ✅ FASE 4: PERMISSÕES
+            await solicitarTodasPermissoes();
+
+            // ✅ FASE 5: INTERFACE VISUAL
+            liberarInterfaceFallback();
+
+            // ✅ FASE 6: CÂMERA E WEBRTC
+            await iniciarCameraAposPermissoes();
+
+            console.log('✅ Notificador iniciado com sucesso!');
+        } catch (error) {
+            console.error('❌ Erro crítico ao inicializar notificador:', error);
+            liberarInterfaceFallback();
+            alert('Erro ao inicializar: ' + error.message);
+        }
+    }, { once: true });
 };
 
 // ✅ GARANTIA EXTRA: Configura toggle quando DOM estiver pronto
