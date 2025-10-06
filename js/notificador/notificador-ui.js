@@ -831,9 +831,3 @@ window.onload = () => {
         }
     }, { once: true });
 };
-
-// ✅ GARANTIA EXTRA: Configura toggle quando DOM estiver pronto
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('📄 DOM carregado - configurando elementos...');
-    setupInstructionToggle();
-});
