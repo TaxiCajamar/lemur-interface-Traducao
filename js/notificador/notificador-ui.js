@@ -1,5 +1,4 @@
 import { WebRTCCore } from '../../core/webrtc-core.js';
-import { QRCodeGenerator } from '../qrcode/qr-code-utils.js';
 
 // 🎵 VARIÁVEIS DE ÁUDIO
 let audioContext = null;
@@ -145,44 +144,6 @@ async function solicitarTodasPermissoes() {
     }
 }
 
-// 🎯 FUNÇÃO PARA OBTER IDIOMA COMPLETO
-async function obterIdiomaCompleto(lang) {
-    if (!lang) return 'pt-BR';
-    if (lang.includes('-')) return lang;
-
-    try {
-        const response = await fetch('assets/bandeiras/language-flags.json');
-        const flags = await response.json();
-        const codigoCompleto = Object.keys(flags).find(key => key.startsWith(lang + '-'));
-        return codigoCompleto || `${lang}-${lang.toUpperCase()}`;
-    } catch (error) {
-        console.error('Erro ao carregar JSON de bandeiras:', error);
-        const fallback = {
-            'pt': 'pt-BR', 'es': 'es-ES', 'en': 'en-US',
-            'fr': 'fr-FR', 'de': 'de-DE', 'it': 'it-IT',
-            'ja': 'ja-JP', 'zh': 'zh-CN', 'ru': 'ru-RU'
-        };
-        return fallback[lang] || 'en-US';
-    }
-}
-
-// 🌐 Tradução apenas para texto
-async function translateText(text, targetLang) {
-    try {
-        const response = await fetch('https://chat-tradutor-bvvx.onrender.com/translate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text, targetLang })
-        });
-
-        const result = await response.json();
-        return result.translatedText || text;
-    } catch (error) {
-        console.error('Erro na tradução:', error);
-        return text;
-    }
-}
-
 // 🏳️ Aplica bandeira do idioma local
 async function aplicarBandeiraLocal(langCode) {
     try {
@@ -222,23 +183,6 @@ async function aplicarBandeiraRemota(langCode) {
     }
 }
 
-// ✅ FUNÇÃO PARA LIBERAR INTERFACE
-function liberarInterfaceFallback() {
-    console.log('🔓 Liberando interface...');
-    
-    const loadingScreen = document.getElementById('loadingScreen');
-    if (loadingScreen) {
-        loadingScreen.style.display = 'none';
-    }
-    
-    const elementosEscondidos = document.querySelectorAll('.hidden-until-ready');
-    elementosEscondidos.forEach(elemento => {
-        elemento.style.display = '';
-    });
-    
-    console.log('✅ Interface liberada');
-}
-
 // 🌐 TRADUÇÃO DAS FRASES FIXAS
 async function traduzirFrasesFixas(lang) {
   try {
@@ -264,6 +208,23 @@ async function traduzirFrasesFixas(lang) {
   } catch (error) {
     console.error("❌ Erro ao traduzir frases fixas:", error);
   }
+}
+
+// 🌐 Tradução apenas para texto
+async function translateText(text, targetLang) {
+    try {
+        const response = await fetch('https://chat-tradutor-bvvx.onrender.com/translate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text, targetLang })
+        });
+
+        const result = await response.json();
+        return result.translatedText || text;
+    } catch (error) {
+        console.error('Erro na tradução:', error);
+        return text;
+    }
 }
 
 // 🎥 FUNÇÃO PARA ALTERNAR ENTRE CÂMERAS
@@ -323,80 +284,8 @@ function setupCameraToggle() {
     console.log('✅ Botão de alternar câmera configurado');
 }
 
-// ✅ CONFIGURAÇÃO DO CLIQUE NO LOGO (IGUAL AO RECEIVER)
-function setupLogoTradutor() {
-    const logoTradutor = document.getElementById('logo-traduz');
-    if (!logoTradutor) {
-        console.log('❌ Elemento logo-traduz não encontrado');
-        return;
-    }
-
-    logoTradutor.addEventListener('click', function() {
-        const overlay = document.querySelector('.info-overlay');
-        const qrcodeContainer = document.getElementById('qrcode');
-        
-        if (overlay && !overlay.classList.contains('hidden')) {
-            overlay.classList.add('hidden');
-            console.log('📱 QR Code fechado pelo usuário');
-            return;
-        }
-        
-        const remoteVideo = document.getElementById('remoteVideo');
-        const isConnected = remoteVideo && remoteVideo.srcObject;
-        
-        if (isConnected) {
-            console.log('❌ WebRTC já conectado - QR Code não pode ser reaberto');
-            return;
-        }
-        
-        console.log('🗝️ Gerando QR Code...');
-        
-        if (qrcodeContainer) {
-            qrcodeContainer.innerHTML = '';
-        }
-        
-        const callerUrl = `${window.location.origin}/caller.html?targetId=${window.qrCodeData.myId}&token=${encodeURIComponent(window.qrCodeData.token)}&lang=${encodeURIComponent(window.qrCodeData.lang)}`;
-        
-        QRCodeGenerator.generate("qrcode", callerUrl);
-        
-        if (overlay) {
-            overlay.classList.remove('hidden');
-        }
-        
-        console.log('✅ QR Code gerado!');
-    });
-
-    console.log('✅ Clique no logo configurado com sucesso');
-}
-
-// ✅ FUNÇÃO PARA ESCONDER O BOTÃO CLICK QUANDO WEBRTC CONECTAR
-function esconderClickQuandoConectar() {
-    const elementoClick = document.getElementById('click');
-    const remoteVideo = document.getElementById('remoteVideo');
-    
-    if (!elementoClick || !remoteVideo) return;
-    
-    const observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-            if (mutation.type === 'attributes' && mutation.attributeName === 'srcObject') {
-                if (remoteVideo.srcObject) {
-                    elementoClick.style.display = 'none';
-                    elementoClick.classList.remove('piscar-suave');
-                    console.log('🔗 WebRTC conectado - botão Click removido');
-                    observer.disconnect();
-                }
-            }
-        });
-    });
-    
-    observer.observe(remoteVideo, {
-        attributes: true,
-        attributeFilter: ['srcObject']
-    });
-}
-
 // 🎤 SISTEMA TTS CORRIGIDO
-async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente) {
+async function falarComGoogleTTS(mensagem, elemento) {
     try {
         console.log('🎤 Iniciando Google TTS para:', mensagem.substring(0, 50) + '...');
         
@@ -427,18 +316,12 @@ async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente) {
                 elemento.style.border = '';
                 elemento.textContent = mensagem;
             }
-            if (imagemImpaciente) {
-                imagemImpaciente.style.display = 'none';
-            }
             
             console.log('🔊 Áudio Google TTS iniciado');
         };
         
         audio.onended = () => {
             console.log('🔚 Áudio Google TTS terminado');
-            if (imagemImpaciente) {
-                imagemImpaciente.style.display = 'none';
-            }
         };
         
         audio.onerror = () => {
@@ -448,9 +331,6 @@ async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente) {
                 elemento.style.animation = 'none';
                 elemento.style.backgroundColor = '';
                 elemento.style.border = '';
-            }
-            if (imagemImpaciente) {
-                imagemImpaciente.style.display = 'none';
             }
         };
 
@@ -485,14 +365,6 @@ async function iniciarCameraAposPermissoes() {
             if (mobileLoading) {
                 mobileLoading.style.display = 'none';
             }
-
-            setTimeout(() => {
-                const elementoClick = document.getElementById('click');
-                if (elementoClick) {
-                    elementoClick.style.display = 'block';
-                    elementoClick.classList.add('piscar-suave');
-                }
-            }, 500);
         }
 
         setupCameraToggle();
@@ -500,42 +372,14 @@ async function iniciarCameraAposPermissoes() {
         console.log('🌐 Inicializando WebRTC...');
         window.rtcCore = new WebRTCCore();
 
-        const url = window.location.href;
-        const fixedId = url.split('?')[1] || crypto.randomUUID().substr(0, 8);
-
-        function fakeRandomUUID(fixedValue) {
-            return {
-                substr: function(start, length) {
-                    return fixedValue.substr(start, length);
-                }
-            };
-        }
-
-        const myId = fakeRandomUUID(fixedId).substr(0, 8);
-
+        // ✅ SIMPLIFICADO: Apenas o essencial do Notificador
         const params = new URLSearchParams(window.location.search);
-        const token = params.get('token') || '';
-        const lang = params.get('lang') || navigator.language || 'pt-BR';
+        const myId = window.location.href.split('?')[1]?.split('&')[0] || '';
+        const lang = params.get('lang') || 'pt-BR';
 
         window.targetTranslationLang = lang;
 
-        window.qrCodeData = {
-            myId: myId,
-            token: token,
-            lang: lang
-        };
-
-        setupLogoTradutor();
-
-        const overlay = document.querySelector('.info-overlay');
-        if (overlay) {
-            overlay.addEventListener('click', function(e) {
-                if (e.target === this) {
-                    this.classList.add('hidden');
-                    console.log('📱 QR Code fechado (clique fora)');
-                }
-            });
-        }
+        console.log('🎯 Notificador pronto:', { myId, lang });
 
         window.rtcCore.initialize(myId);
         window.rtcCore.setupSocketHandlers();
@@ -546,7 +390,6 @@ async function iniciarCameraAposPermissoes() {
             console.log('📩 Mensagem recebida:', mensagem);
 
             const elemento = document.getElementById('texto-recebido');
-            const imagemImpaciente = document.getElementById('lemurFixed');
             
             if (elemento) {
                 elemento.textContent = "";
@@ -558,11 +401,7 @@ async function iniciarCameraAposPermissoes() {
                 elemento.style.border = '2px solid #ff0000';
             }
 
-            if (imagemImpaciente) {
-                imagemImpaciente.style.display = 'block';
-            }
-
-            await falarComGoogleTTS(mensagem, elemento, imagemImpaciente);
+            await falarComGoogleTTS(mensagem, elemento);
         });
 
         window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
@@ -579,9 +418,6 @@ async function iniciarCameraAposPermissoes() {
             window.rtcCore.handleIncomingCall(offer, window.localStream, (remoteStream) => {
                 remoteStream.getAudioTracks().forEach(track => track.enabled = false);
 
-                const overlay = document.querySelector('.info-overlay');
-                if (overlay) overlay.classList.add('hidden');
-
                 const remoteVideo = document.getElementById('remoteVideo');
                 if (remoteVideo) {
                     remoteVideo.srcObject = remoteStream;
@@ -592,13 +428,6 @@ async function iniciarCameraAposPermissoes() {
                         instructionBox.classList.remove('expandido');
                         instructionBox.classList.add('recolhido');
                         console.log('📦 Unboxing fechado automaticamente - WebRTC conectado');
-                    }
-                    
-                    const elementoClick = document.getElementById('click');
-                    if (elementoClick) {
-                        elementoClick.style.display = 'none';
-                        elementoClick.classList.remove('piscar-suave');
-                        console.log('🔗 WebRTC conectado - botão Click removido permanentemente');
                     }
                 }
 
@@ -621,8 +450,6 @@ async function iniciarCameraAposPermissoes() {
                 initializeTranslator();
             }
         }, 1000);
-
-        esconderClickQuandoConectar();
 
     } catch (error) {
         console.error("Erro ao iniciar câmera:", error);
@@ -655,9 +482,6 @@ window.onload = async () => {
         if (typeof window.liberarInterface === 'function') {
             window.liberarInterface();
             console.log('✅ Interface liberada via função global');
-        } else {
-            liberarInterfaceFallback();
-            console.log('✅ Interface liberada via fallback');
         }
         
         await iniciarCameraAposPermissoes();
