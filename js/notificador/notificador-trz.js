@@ -1,4 +1,4 @@
-// ===== TRADUTOR OTIMIZADO - VISUAL COMPLETO + NÚCLEO SIMPLES =====
+// ===== TRADUTOR OTIMIZADO - VISUAL COMPLETO + NÚCLEO CONECTADO =====
 function initializeTranslator() {
     console.log('🎯 Iniciando tradutor notificador...');
 
@@ -99,7 +99,7 @@ function initializeTranslator() {
         console.log('⏹️ Parando gravação');
     }
 
-    // 🎯 NÚCLEO SIMPLIFICADO DE TRADUÇÃO
+    // 🎯 NÚCLEO SIMPLIFICADO DE TRADUÇÃO + ENVIO CORRETO
     async function traduzirEFalar(texto) {
         if (isTranslating) return;
         
@@ -107,7 +107,7 @@ function initializeTranslator() {
         console.log('🔄 Traduzindo texto:', texto.substring(0, 50));
 
         try {
-            // 1. TRADUZ TEXTO (SIMPLIFICADO)
+            // 1. TRADUZ TEXTO
             const response = await fetch('https://chat-tradutor-bvvx.onrender.com/translate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -121,16 +121,16 @@ function initializeTranslator() {
             const result = await response.json();
             const textoTraduzido = result.translatedText || texto;
 
-            // 2. ENVIA PARA OUTRO USUÁRIO (SIMPLIFICADO)
-            if (window.rtcDataChannel && window.rtcDataChannel.readyState === 'open') {
-                window.rtcDataChannel.send(textoTraduzido);
-                console.log('✅ Texto traduzido e enviado:', textoTraduzido);
+            console.log('✅ Texto traduzido:', textoTraduzido);
+
+            // 2. ENVIA PARA OUTRO USUÁRIO VIA FUNÇÃO GLOBAL
+            if (window.enviarMensagemTraduzida) {
+                window.enviarMensagemTraduzida(textoTraduzido);
             } else {
-                console.log('⏳ Canal não disponível, tentando novamente...');
-                // Tenta enviar novamente em 1 segundo
+                console.log('❌ Função de envio não disponível, tentando novamente...');
                 setTimeout(() => {
-                    if (window.rtcDataChannel && window.rtcDataChannel.readyState === 'open') {
-                        window.rtcDataChannel.send(textoTraduzido);
+                    if (window.enviarMensagemTraduzida) {
+                        window.enviarMensagemTraduzida(textoTraduzido);
                     }
                 }, 1000);
             }
@@ -264,7 +264,7 @@ function initializeTranslator() {
 
     // ✅ MICROFONE JÁ AUTORIZADO (pelas permissões principais)
     recordButton.disabled = false;
-    console.log('✅ Tradutor notificador pronto!');
+    console.log('✅ Tradutor notificador pronto e conectado!');
 }
 
 // ===== INICIALIZAÇÃO =====
