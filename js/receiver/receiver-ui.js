@@ -1,3 +1,25 @@
+// ✅ FUNÇÃO GLOBAL DE ENVIO
+window.enviarMensagemTraduzida = function(mensagemTraduzida) {
+    if (window.rtcDataChannel && window.rtcDataChannel.isOpen()) {
+        window.rtcDataChannel.send(mensagemTraduzida);
+        console.log('✅ Texto enviado:', mensagemTraduzida);
+        return true;
+    } else {
+        console.log('⏳ Canal não disponível ainda. Tentando novamente...');
+        setTimeout(() => window.enviarMensagemTraduzida(mensagemTraduzida), 1000);
+        return false;
+    }
+};
+
+import { WebRTCCore } from '../../core/webrtc-core.js';
+import { QRCodeGenerator } from '../qrcode/qr-code-utils.js';
+
+// 🎵 VARIÁVEIS DE ÁUDIO
+let audioContext = null;
+let somDigitacao = null;
+let audioCarregado = false;
+let permissaoConcedida = false;
+
 // 🎯 CONTROLE DO TOGGLE DAS INSTRUÇÕES
 function setupInstructionToggle() {
     const instructionBox = document.getElementById('instructionBox');
@@ -39,15 +61,6 @@ function setupInstructionToggle() {
 document.addEventListener('DOMContentLoaded', function() {
     setupInstructionToggle();
 });
-
-import { WebRTCCore } from '../../core/webrtc-core.js';
-import { QRCodeGenerator } from '../qrcode/qr-code-utils.js';
-
-// 🎵 VARIÁVEIS DE ÁUDIO
-let audioContext = null;
-let somDigitacao = null;
-let audioCarregado = false;
-let permissaoConcedida = false;
 
 // 🎵 CARREGAR SOM DE DIGITAÇÃO
 function carregarSomDigitacao() {
@@ -178,22 +191,8 @@ async function obterIdiomaCompleto(lang) {
     }
 }
 
-// 🌐 Tradução apenas para texto
-async function translateText(text, targetLang) {
-    try {
-        const response = await fetch('https://chat-tradutor-bvvx.onrender.com/translate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text, targetLang })
-        });
-
-        const result = await response.json();
-        return result.translatedText || text;
-    } catch (error) {
-        console.error('Erro na tradução:', error);
-        return text;
-    }
-}
+// 🌐 Tradução apenas para texto (REMOVIDA - AGORA USA A DO TRADUTOR UNIVERSAL)
+// ❌ REMOVIDA: async function translateText(text, targetLang) { ... }
 
 // 🏳️ Aplica bandeira do idioma local
 async function aplicarBandeiraLocal(langCode) {
@@ -273,7 +272,7 @@ async function traduzirFrasesFixas(lang) {
     for (const [id, texto] of Object.entries(frasesParaTraduzir)) {
       const el = document.getElementById(id);
       if (el) {
-        const traduzido = await translateText(texto, lang);
+        const traduzido = await window.translateText(texto, lang);
         el.textContent = traduzido;
         console.log(`✅ Traduzido: ${texto} → ${traduzido}`);
       }
@@ -606,100 +605,18 @@ document.getElementById('logo-traduz').addEventListener('click', function() {
         window.rtcCore.initialize(myId);
         window.rtcCore.setupSocketHandlers();
 
-        // 🎤 FUNÇÃO GOOGLE TTS SEPARADA
-        async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente) {
-            try {
-                console.log('🎤 Iniciando Google TTS para:', mensagem.substring(0, 50) + '...');
-                
-                const resposta = await fetch('https://chat-tradutor.onrender.com/speak', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        text: mensagem,
-                        languageCode: window.targetTranslationLang || 'pt-BR',
-                        gender: 'FEMALE'
-                    })
-                });
-
-                if (!resposta.ok) {
-                    throw new Error('Erro na API de voz');
-                }
-
-                const blob = await resposta.blob();
-                const url = URL.createObjectURL(blob);
-                const audio = new Audio(url);
-                
-                // EVENTO: ÁUDIO COMEÇOU
-                audio.onplay = () => {
-                    pararSomDigitacao();
-                    
-                    if (elemento) {
-                        elemento.style.animation = 'none';
-                        elemento.style.backgroundColor = '';
-                        elemento.style.border = '';
-                        elemento.textContent = mensagem;
-                    }
-                    if (imagemImpaciente) {
-                        imagemImpaciente.style.display = 'none';
-                    }
-                    
-                    console.log('🔊 Áudio Google TTS iniciado');
-                };
-                
-                // EVENTO: ÁUDIO TERMINOU
-                audio.onended = () => {
-                    console.log('🔚 Áudio Google TTS terminado');
-                    if (imagemImpaciente) {
-                        imagemImpaciente.style.display = 'none';
-                    }
-                };
-                
-                // EVENTO: ERRO NO ÁUDIO
-                audio.onerror = () => {
-                    pararSomDigitacao();
-                    console.log('❌ Erro no áudio Google TTS');
-                    if (elemento) {
-                        elemento.style.animation = 'none';
-                        elemento.style.backgroundColor = '';
-                        elemento.style.border = '';
-                    }
-                    if (imagemImpaciente) {
-                        imagemImpaciente.style.display = 'none';
-                    }
-                };
-
-                await audio.play();
-                
-            } catch (error) {
-                console.error('❌ Erro no Google TTS:', error);
-                // Fallback para síntese nativa se necessário
-            }
-        }
-
+        // ✅ CALLBACK SIMPLIFICADO
         window.rtcCore.setDataChannelCallback(async (mensagem) => {
             iniciarSomDigitacao();
-
             console.log('📩 Mensagem recebida:', mensagem);
 
             const elemento = document.getElementById('texto-recebido');
-            const imagemImpaciente = document.getElementById('lemurFixed');
             
             if (elemento) {
-                elemento.textContent = "";
+                elemento.textContent = mensagem;
                 elemento.style.opacity = '1';
                 elemento.style.transition = 'opacity 0.5s ease';
-                
-                elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
-                elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
-                elemento.style.border = '2px solid #ff0000';
             }
-
-            if (imagemImpaciente) {
-                imagemImpaciente.style.display = 'block';
-            }
-
-            // 🎤 CHAMADA PARA GOOGLE TTS
-            await falarComGoogleTTS(mensagem, elemento, imagemImpaciente);
         });
 
         window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
@@ -754,19 +671,13 @@ document.getElementById('logo-traduz').addEventListener('click', function() {
             for (const [id, texto] of Object.entries(frasesParaTraduzir)) {
                 const el = document.getElementById(id);
                 if (el) {
-                    const traduzido = await translateText(texto, lang);
+                    const traduzido = await window.translateText(texto, lang);
                     el.textContent = traduzido;
                 }
             }
         })();
 
         aplicarBandeiraLocal(lang);
-
-        setTimeout(() => {
-            if (typeof initializeTranslator === 'function') {
-                initializeTranslator();
-            }
-        }, 1000);
 
         // ✅ INICIA O OBSERVADOR PARA ESCONDER O CLICK QUANDO CONECTAR
         esconderClickQuandoConectar();
@@ -818,6 +729,16 @@ window.onload = async () => {
         await iniciarCameraAposPermissoes();
         
         console.log('✅ Receiver iniciado com sucesso!');
+
+        // ✅ INICIALIZA TRADUTOR UNIVERSAL
+        setTimeout(() => {
+            if (typeof window.initializeUniversalTranslator === 'function') {
+                window.initializeUniversalTranslator();
+                console.log('🎯 Tradutor universal inicializado no receiver!');
+            } else {
+                console.error('❌ Tradutor universal não encontrado!');
+            }
+        }, 2000);
         
     } catch (error) {
         console.error('❌ Erro ao inicializar receiver:', error);
