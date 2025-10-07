@@ -1,19 +1,17 @@
-// ===== TRADUTOR CORRIGIDO - TRADUÇÃO FUNCIONANDO =====
+// ===== TRADUTOR NOTIFICADOR - BASEADO NO RECEIVER FUNCIONAL =====
 function initializeTranslator() {
     console.log('🎯 Iniciando tradutor notificador...');
 
-    // 🎯 IDIOMAS JÁ DEFINIDOS (das bandeiras)
+    // 🎯 IDIOMAS JÁ DEFINIDOS (das bandeiras) - MESMA LÓGICA DO RECEIVER
     const IDIOMA_ORIGEM = window.sourceTranslationLang || navigator.language || 'pt-BR';
     const IDIOMA_DESTINO = window.targetTranslationLang || 'en';
     
     console.log('🔤 Idiomas configurados:', { 
         origem: IDIOMA_ORIGEM, 
-        destino: IDIOMA_DESTINO,
-        bandeira_local: document.querySelector('.local-Lang')?.textContent,
-        bandeira_remota: document.querySelector('.remoter-Lang')?.textContent
+        destino: IDIOMA_DESTINO
     });
 
-    // 🎤 ELEMENTOS VISUAIS (MANTIDOS)
+    // 🎤 ELEMENTOS PRINCIPAIS
     const recordButton = document.getElementById('recordButton');
     const recordingModal = document.getElementById('recordingModal');
     const recordingTimer = document.getElementById('recordingTimer');
@@ -45,7 +43,7 @@ function initializeTranslator() {
     recognition.continuous = false;
     recognition.interimResults = true;
 
-    // ⏱️ SISTEMA DE TIMER (MANTIDO)
+    // ⏱️ SISTEMA DE TIMER
     let recordingStartTime = 0;
     let timerInterval = null;
     
@@ -62,7 +60,7 @@ function initializeTranslator() {
         }
     }
 
-    // 🎙️ CONTROLES DE GRAVAÇÃO (MANTIDOS)
+    // 🎙️ CONTROLES DE GRAVAÇÃO
     let isRecording = false;
     let isTranslating = false;
     let pressTimer;
@@ -104,7 +102,7 @@ function initializeTranslator() {
         console.log('⏹️ Parando gravação');
     }
 
-    // 🎯 NÚCLEO CORRIGIDO DE TRADUÇÃO
+    // 🎯 NÚCLEO DE TRADUÇÃO - MESMA LÓGICA DO RECEIVER
     async function traduzirEFalar(texto) {
         if (isTranslating) return;
         
@@ -112,14 +110,14 @@ function initializeTranslator() {
         console.log('🔄 Traduzindo texto:', texto.substring(0, 50));
 
         try {
-            // 1. TRADUZ TEXTO - CORREÇÃO APLICADA
+            // ✅ MESMA LÓGICA DO RECEIVER QUE FUNCIONA
             const response = await fetch('https://chat-tradutor-bvvx.onrender.com/translate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     text: texto,
-                    sourceLang: 'auto', // ✅ DETECÇÃO AUTOMÁTICA DO IDIOMA
-                    targetLang: IDIOMA_DESTINO // ✅ SEMPRE TRADUZ PARA O IDIOMA DO OUTRO
+                    sourceLang: IDIOMA_ORIGEM,  // ✅ USA O IDIOMA ORIGEM CORRETO
+                    targetLang: IDIOMA_DESTINO  // ✅ USA O IDIOMA DESTINO CORRETO
                 })
             });
 
@@ -127,13 +125,13 @@ function initializeTranslator() {
             const textoTraduzido = result.translatedText || texto;
 
             console.log('✅ Texto traduzido:', { 
-                original: texto.substring(0, 30) + '...', 
-                traduzido: textoTraduzido.substring(0, 30) + '...',
-                de: 'auto', 
+                original: texto, 
+                traduzido: textoTraduzido,
+                de: IDIOMA_ORIGEM, 
                 para: IDIOMA_DESTINO 
             });
 
-            // 2. ENVIA PARA OUTRO USUÁRIO VIA FUNÇÃO GLOBAL
+            // ✅ ENVIA VIA FUNÇÃO GLOBAL (igual ao receiver)
             if (window.enviarMensagemTraduzida) {
                 window.enviarMensagemTraduzida(textoTraduzido);
                 console.log('📤 Mensagem traduzida enviada para o outro celular');
@@ -153,7 +151,7 @@ function initializeTranslator() {
         }
     }
 
-    // 🔊 SISTEMA DE Voz (MANTIDO)
+    // 🔊 SISTEMA DE VOZ
     let isSpeechPlaying = false;
 
     function speakText(text) {
@@ -200,7 +198,7 @@ function initializeTranslator() {
         }
     }
 
-    // 🎙️ EVENTOS DE RECONHECIMENTO (MANTIDOS)
+    // 🎙️ EVENTOS DE RECONHECIMENTO
     recognition.onresult = function(event) {
         let finalTranscript = '';
         
@@ -227,7 +225,7 @@ function initializeTranslator() {
         }
     };
 
-    // 🎮 EVENTOS DE BOTÃO (MANTIDOS - VISUAL COMPLETO)
+    // 🎮 EVENTOS DE BOTÃO
     if (recordButton) {
         recordButton.addEventListener('touchstart', function(e) {
             e.preventDefault();
@@ -273,9 +271,9 @@ function initializeTranslator() {
         speakerButton.addEventListener('click', toggleSpeech);
     }
 
-    // ✅ MICROFONE JÁ AUTORIZADO (pelas permissões principais)
+    // ✅ MICROFONE JÁ AUTORIZADO
     recordButton.disabled = false;
-    console.log('✅ Tradutor notificador PRONTO e CORRIGIDO!');
+    console.log('✅ Tradutor notificador PRONTO!');
 }
 
 // ===== INICIALIZAÇÃO =====
