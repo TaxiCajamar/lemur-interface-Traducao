@@ -341,6 +341,21 @@ async function falarComGoogleTTS(mensagem, elemento) {
     }
 }
 
+// ✅ FUNÇÃO GLOBAL PARA ENVIAR MENSAGENS TRADUZIDAS
+window.enviarMensagemTraduzida = function(mensagemTraduzida) {
+    if (window.rtcCore && window.rtcCore.dataChannel && window.rtcCore.dataChannel.readyState === 'open') {
+        window.rtcCore.dataChannel.send(mensagemTraduzida);
+        console.log('✅ Mensagem traduzida enviada para outro celular:', mensagemTraduzida);
+        return true;
+    } else {
+        console.log('⏳ Canal WebRTC não está pronto, tentando novamente em 1 segundo...');
+        setTimeout(() => {
+            window.enviarMensagemTraduzida(mensagemTraduzida);
+        }, 1000);
+        return false;
+    }
+};
+
 // ✅ FUNÇÃO PRINCIPAL PARA INICIAR CÂMERA E WEBRTC
 async function iniciarCameraAposPermissoes() {
     try {
@@ -387,7 +402,7 @@ async function iniciarCameraAposPermissoes() {
         window.rtcCore.setDataChannelCallback(async (mensagem) => {
             iniciarSomDigitacao();
 
-            console.log('📩 Mensagem recebida:', mensagem);
+            console.log('📩 Mensagem recebida do caller:', mensagem);
 
             const elemento = document.getElementById('texto-recebido');
             
