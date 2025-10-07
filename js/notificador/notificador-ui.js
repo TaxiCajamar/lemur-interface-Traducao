@@ -1,5 +1,20 @@
 import { WebRTCCore } from '../../core/webrtc-core.js';
 
+// ✅ FUNÇÃO GLOBAL DE ENVIO
+window.enviarMensagemTraduzida = function(mensagemTraduzida) {
+    if (window.rtcCore && window.rtcCore.dataChannel && window.rtcCore.dataChannel.readyState === 'open') {
+        window.rtcCore.dataChannel.send(mensagemTraduzida);
+        console.log('✅ Mensagem traduzida enviada para outro celular:', mensagemTraduzida);
+        return true;
+    } else {
+        console.log('⏳ Canal WebRTC não está pronto, tentando novamente em 1 segundo...');
+        setTimeout(() => {
+            window.enviarMensagemTraduzida(mensagemTraduzida);
+        }, 1000);
+        return false;
+    }
+};
+
 // 🎵 VARIÁVEIS DE ÁUDIO
 let audioContext = null;
 let somDigitacao = null;
@@ -199,7 +214,7 @@ async function traduzirFrasesFixas(lang) {
     for (const [id, texto] of Object.entries(frasesParaTraduzir)) {
       const el = document.getElementById(id);
       if (el) {
-        const traduzido = await translateText(texto, lang);
+        const traduzido = await window.translateText(texto, lang);
         el.textContent = traduzido;
       }
     }
@@ -208,23 +223,6 @@ async function traduzirFrasesFixas(lang) {
   } catch (error) {
     console.error("❌ Erro ao traduzir frases fixas:", error);
   }
-}
-
-// 🌐 Tradução apenas para texto
-async function translateText(text, targetLang) {
-    try {
-        const response = await fetch('https://chat-tradutor-bvvx.onrender.com/translate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text, targetLang })
-        });
-
-        const result = await response.json();
-        return result.translatedText || text;
-    } catch (error) {
-        console.error('Erro na tradução:', error);
-        return text;
-    }
 }
 
 // 🎥 FUNÇÃO PARA ALTERNAR ENTRE CÂMERAS
@@ -284,78 +282,6 @@ function setupCameraToggle() {
     console.log('✅ Botão de alternar câmera configurado');
 }
 
-// 🎤 SISTEMA TTS CORRIGIDO
-async function falarComGoogleTTS(mensagem, elemento) {
-    try {
-        console.log('🎤 Iniciando Google TTS para:', mensagem.substring(0, 50) + '...');
-        
-        const resposta = await fetch('https://chat-tradutor.onrender.com/speak', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                text: mensagem,
-                languageCode: window.targetTranslationLang || 'pt-BR',
-                gender: 'FEMALE'
-            })
-        });
-
-        if (!resposta.ok) {
-            throw new Error('Erro na API de voz');
-        }
-
-        const blob = await resposta.blob();
-        const url = URL.createObjectURL(blob);
-        const audio = new Audio(url);
-        
-        audio.onplay = () => {
-            pararSomDigitacao();
-            
-            if (elemento) {
-                elemento.style.animation = 'none';
-                elemento.style.backgroundColor = '';
-                elemento.style.border = '';
-                elemento.textContent = mensagem;
-            }
-            
-            console.log('🔊 Áudio Google TTS iniciado');
-        };
-        
-        audio.onended = () => {
-            console.log('🔚 Áudio Google TTS terminado');
-        };
-        
-        audio.onerror = () => {
-            pararSomDigitacao();
-            console.log('❌ Erro no áudio Google TTS');
-            if (elemento) {
-                elemento.style.animation = 'none';
-                elemento.style.backgroundColor = '';
-                elemento.style.border = '';
-            }
-        };
-
-        await audio.play();
-        
-    } catch (error) {
-        console.error('❌ Erro no Google TTS:', error);
-    }
-}
-
-// ✅ FUNÇÃO GLOBAL PARA ENVIAR MENSAGENS TRADUZIDAS
-window.enviarMensagemTraduzida = function(mensagemTraduzida) {
-    if (window.rtcCore && window.rtcCore.dataChannel && window.rtcCore.dataChannel.readyState === 'open') {
-        window.rtcCore.dataChannel.send(mensagemTraduzida);
-        console.log('✅ Mensagem traduzida enviada para outro celular:', mensagemTraduzida);
-        return true;
-    } else {
-        console.log('⏳ Canal WebRTC não está pronto, tentando novamente em 1 segundo...');
-        setTimeout(() => {
-            window.enviarMensagemTraduzida(mensagemTraduzida);
-        }, 1000);
-        return false;
-    }
-};
-
 // ✅ FUNÇÃO PRINCIPAL PARA INICIAR CÂMERA E WEBRTC
 async function iniciarCameraAposPermissoes() {
     try {
@@ -387,7 +313,6 @@ async function iniciarCameraAposPermissoes() {
         console.log('🌐 Inicializando WebRTC...');
         window.rtcCore = new WebRTCCore();
 
-        // ✅ SIMPLIFICADO: Apenas o essencial do Notificador
         const params = new URLSearchParams(window.location.search);
         const myId = window.location.href.split('?')[1]?.split('&')[0] || '';
         const lang = params.get('lang') || 'pt-BR';
@@ -399,24 +324,18 @@ async function iniciarCameraAposPermissoes() {
         window.rtcCore.initialize(myId);
         window.rtcCore.setupSocketHandlers();
 
+        // ✅ CALLBACK SIMPLIFICADO
         window.rtcCore.setDataChannelCallback(async (mensagem) => {
             iniciarSomDigitacao();
-
             console.log('📩 Mensagem recebida do caller:', mensagem);
 
             const elemento = document.getElementById('texto-recebido');
             
             if (elemento) {
-                elemento.textContent = "";
+                elemento.textContent = mensagem;
                 elemento.style.opacity = '1';
                 elemento.style.transition = 'opacity 0.5s ease';
-                
-                elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
-                elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
-                elemento.style.border = '2px solid #ff0000';
             }
-
-            await falarComGoogleTTS(mensagem, elemento);
         });
 
         window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
@@ -437,7 +356,6 @@ async function iniciarCameraAposPermissoes() {
                 if (remoteVideo) {
                     remoteVideo.srcObject = remoteStream;
                     
-                    // ✅ FECHA UNBOXING QUANDO WEBRTC CONECTAR
                     const instructionBox = document.getElementById('instructionBox');
                     if (instructionBox) {
                         instructionBox.classList.remove('expandido');
@@ -459,16 +377,6 @@ async function iniciarCameraAposPermissoes() {
         };
 
         aplicarBandeiraLocal(lang);
-
-        // ✅ CORREÇÃO: Chama o tradutor CORRETAMENTE
-        setTimeout(() => {
-            if (typeof initializeTranslator === 'function') {
-                initializeTranslator();
-            } else {
-                console.log('⚠️ initializeTranslator não encontrado, carregando notificador-trz.js...');
-                // O tradutor será carregado via script tag no HTML
-            }
-        }, 1000);
 
     } catch (error) {
         console.error("Erro ao iniciar câmera:", error);
@@ -506,6 +414,16 @@ window.onload = async () => {
         await iniciarCameraAposPermissoes();
         
         console.log('✅ Notificador iniciado com sucesso!');
+
+        // ✅ INICIALIZA TRADUTOR UNIVERSAL
+        setTimeout(() => {
+            if (typeof window.initializeUniversalTranslator === 'function') {
+                window.initializeUniversalTranslator();
+                console.log('🎯 Tradutor universal inicializado no notificador!');
+            } else {
+                console.error('❌ Tradutor universal não encontrado!');
+            }
+        }, 2000);
         
     } catch (error) {
         console.error('❌ Erro ao inicializar notificador:', error);
@@ -519,7 +437,6 @@ window.onload = async () => {
     }
 };
 
-// ✅ CONFIGURAÇÃO DO DOM
 document.addEventListener('DOMContentLoaded', function() {
     setupInstructionToggle();
 });
