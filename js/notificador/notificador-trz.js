@@ -2,9 +2,11 @@
 function initializeTranslator() {
     console.log('🎯 Iniciando tradutor notificador...');
 
-    // 🎯 IDIOMAS JÁ DEFINIDOS (das bandeiras)
-    const IDIOMA_ORIGEM = window.sourceTranslationLang || navigator.language || 'pt-BR';
-    const IDIOMA_DESTINO = window.targetTranslationLang || 'en';
+    // 🎯 IDIOMAS DINÂMICOS (IGUAL AO CALLER/RECEIVER)
+    const urlParams = new URLSearchParams(window.location.search);
+    const IDIOMA_ORIGEM = navigator.language || 'pt-BR';
+    const IDIOMA_DESTINO = urlParams.get('lang') || 'en';
+    const IDIOMA_FALA = urlParams.get('lang') || 'en-US';
     
     console.log('🔤 Idiomas configurados:', { origem: IDIOMA_ORIGEM, destino: IDIOMA_DESTINO });
 
@@ -107,13 +109,12 @@ function initializeTranslator() {
         console.log('🔄 Traduzindo texto:', texto.substring(0, 50));
 
         try {
-            // 1. TRADUZ TEXTO
+            // 1. TRADUZ TEXTO (IGUAL AO CALLER/RECEIVER)
             const response = await fetch('https://chat-tradutor-bvvx.onrender.com/translate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     text: texto,
-                    sourceLang: IDIOMA_ORIGEM,
                     targetLang: IDIOMA_DESTINO
                 })
             });
@@ -150,7 +151,7 @@ function initializeTranslator() {
         
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = IDIOMA_DESTINO;
+        utterance.lang = IDIOMA_FALA;
         utterance.rate = 0.9;
         utterance.volume = 0.8;
         
