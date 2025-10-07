@@ -1,35 +1,122 @@
-// ===== TRADUTOR UNIVERSAL - USADO POR CALLER, RECEIVER E NOTIFICADOR =====
+// ===== TRADUTOR UNIVERSAL - USANDO BANDEIRAS COMO REFERÊNCIA =====
 
-// 🌐 FUNÇÃO DE TRADUÇÃO CENTRALIZADA
-window.translateText = async function(text) {
+// 🌐 FUNÇÃO PARA CONVERTER BANDEIRA EMOJI EM CÓDIGO DE IDIOMA
+async function bandeiraParaCodigoIdioma(bandeiraEmoji) {
     try {
+        const response = await fetch('assets/bandeiras/language-flags.json');
+        const flags = await response.json();
+        
+        // Encontra o código do idioma pela bandeira (emoji)
+        for (const [codigo, emoji] of Object.entries(flags)) {
+            if (emoji === bandeiraEmoji) {
+                console.log(`✅ Bandeira ${bandeiraEmoji} → Código: ${codigo}`);
+                return codigo; // Ex: 'pt-BR', 'en-US', 'es-ES'
+            }
+        }
+        
+        console.log(`❌ Bandeira não encontrada: ${bandeiraEmoji}, usando fallback`);
+        return 'en-US'; // Fallback seguro
+        
+    } catch (error) {
+        console.error('❌ Erro ao carregar JSON de bandeiras:', error);
+        return 'en-US';
+    }
+}
+
+// 🌐 FUNÇÃO PARA DETECTAR IDIOMAS DAS BANDEIRAS VISUAIS
+async function detectarIdiomasDasBandeiras() {
+    try {
+        const elementoLocal = document.querySelector('.local-Lang');
+        const elementoRemoto = document.querySelector('.remoter-Lang');
+        
+        if (!elementoLocal || !elementoRemoto) {
+            console.log('❌ Elementos de bandeira não encontrados');
+            return {
+                idiomaLocal: 'pt-BR',
+                idiomaRemoto: 'en-US'
+            };
+        }
+
+        const bandeiraLocal = elementoLocal.textContent.trim();
+        const bandeiraRemota = elementoRemoto.textContent.trim();
+
+        console.log('🎯 Bandeiras detectadas:', {
+            local: bandeiraLocal,
+            remota: bandeiraRemota
+        });
+
+        const [idiomaLocal, idiomaRemoto] = await Promise.all([
+            bandeiraParaCodigoIdioma(bandeiraLocal),
+            bandeiraParaCodigoIdioma(bandeiraRemota)
+        ]);
+
+        console.log('🎯 Idiomas configurados:', {
+            de: idiomaLocal,
+            para: idiomaRemoto
+        });
+
+        return {
+            idiomaLocal,
+            idiomaRemoto
+        };
+
+    } catch (error) {
+        console.error('❌ Erro ao detectar idiomas:', error);
+        return {
+            idiomaLocal: 'pt-BR',
+            idiomaRemoto: 'en-US'
+        };
+    }
+}
+
+// 🌐 FUNÇÃO DE TRADUÇÃO CENTRALIZADA (USANDO BANDEIRAS)
+window.translateText = async function(texto) {
+    try {
+        // ✅ USA AS BANDEIRAS VISUAIS COMO REFERÊNCIA
+        const { idiomaLocal, idiomaRemoto } = await detectarIdiomasDasBandeiras();
+
+        console.log('🔄 Traduzindo texto:', {
+            de: idiomaLocal,
+            para: idiomaRemoto,
+            texto: texto.substring(0, 50) + '...'
+        });
+
         const response = await fetch('https://chat-tradutor-bvvx.onrender.com/translate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                text: text,
-                sourceLang: window.sourceTranslationLang || 'auto',
-                targetLang: window.targetTranslationLang || 'en'
+                text: texto,
+                sourceLang: idiomaLocal,    // ← DA BANDEIRA .local-Lang
+                targetLang: idiomaRemoto    // ← DA BANDEIRA .remoter-Lang
             })
         });
 
+        if (!response.ok) {
+            throw new Error(`Erro HTTP: ${response.status}`);
+        }
+
         const result = await response.json();
-        return result.translatedText || text;
+        const textoTraduzido = result.translatedText || texto;
+
+        console.log('✅ Tradução concluída:', {
+            original: texto.substring(0, 30),
+            traduzido: textoTraduzido.substring(0, 30)
+        });
+
+        return textoTraduzido;
         
     } catch (error) {
         console.error('❌ Erro na tradução:', error);
-        return text;
+        return texto; // Fallback: retorna texto original
     }
 };
 
 // 🎙️ INICIALIZADOR DO TRADUTOR UNIVERSAL
 window.initializeUniversalTranslator = function(customConfig = {}) {
-    console.log('🎯 Iniciando tradutor universal...');
+    console.log('🎯 Iniciando tradutor universal com detecção por bandeiras...');
 
     // 🎯 CONFIGURAÇÃO PADRÃO
     const config = {
-        IDIOMA_ORIGEM: navigator.language || 'pt-BR',
-        IDIOMA_FALA: window.targetTranslationLang || 'en-US',
         recordButtonId: 'recordButton',
         recordingModalId: 'recordingModal', 
         recordingTimerId: 'recordingTimer',
@@ -69,7 +156,6 @@ window.initializeUniversalTranslator = function(customConfig = {}) {
     }
     
     const recognition = new SpeechRecognition();
-    recognition.lang = config.IDIOMA_ORIGEM;
     recognition.continuous = false;
     recognition.interimResults = true;
 
@@ -110,21 +196,40 @@ window.initializeUniversalTranslator = function(customConfig = {}) {
         clearInterval(timerInterval);
     }
 
+    // ✅ ATUALIZA IDIOMA DO RECOGNITION BASEADO NA BANDEIRA DO MICROFONE
+    async function atualizarIdiomaReconhecimento() {
+        try {
+            const elementoBandeiraMicrofone = document.querySelector('.language-flag');
+            if (elementoBandeiraMicrofone) {
+                const bandeiraMicrofone = elementoBandeiraMicrofone.textContent.trim();
+                const codigoIdioma = await bandeiraParaCodigoIdioma(bandeiraMicrofone);
+                recognition.lang = codigoIdioma;
+                console.log(`🎤 Idioma do reconhecimento configurado: ${codigoIdioma}`);
+            }
+        } catch (error) {
+            console.error('❌ Erro ao atualizar idioma do reconhecimento:', error);
+            recognition.lang = navigator.language || 'pt-BR';
+        }
+    }
+
     function startRecording() {
         if (isRecording || isTranslating) return;
         
         try {
-            recognition.start();
-            isRecording = true;
-            
-            recordButton.classList.add('recording');
-            showRecordingModal();
-            
-            if (speakerButton) {
-                speakerButton.disabled = true;
-            }
-            
-            console.log('🎙️ Iniciando gravação...');
+            // ✅ ATUALIZA IDIOMA ANTES DE INICIAR
+            atualizarIdiomaReconhecimento().then(() => {
+                recognition.start();
+                isRecording = true;
+                
+                recordButton.classList.add('recording');
+                showRecordingModal();
+                
+                if (speakerButton) {
+                    speakerButton.disabled = true;
+                }
+                
+                console.log('🎙️ Iniciando gravação...');
+            });
         } catch (error) {
             console.error('❌ Erro ao iniciar gravação:', error);
             stopRecording();
@@ -147,32 +252,40 @@ window.initializeUniversalTranslator = function(customConfig = {}) {
         console.log('⏹️ Parando gravação');
     }
 
-    // 🔊 SISTEMA DE VOZ
-    function speakText(text) {
+    // 🔊 SISTEMA DE VOZ (USA BANDEIRA REMOTA PARA TTS)
+    async function speakText(text) {
         if (!SpeechSynthesis || !text) return;
         
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = config.IDIOMA_FALA;
-        utterance.rate = 0.9;
-        utterance.volume = 0.8;
-        
-        utterance.onstart = function() {
-            isSpeechPlaying = true;
-            if (speakerButton) speakerButton.textContent = '⏹';
-        };
-        
-        utterance.onend = function() {
-            isSpeechPlaying = false;
-            if (speakerButton) speakerButton.textContent = '🔊';
-        };
-        
-        utterance.onerror = function() {
-            isSpeechPlaying = false;
-            if (speakerButton) speakerButton.textContent = '🔊';
-        };
-        
-        window.speechSynthesis.speak(utterance);
+        try {
+            const { idiomaRemoto } = await detectarIdiomasDasBandeiras();
+            
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = idiomaRemoto; // ← USA IDIOMA DA BANDEIRA REMOTA
+            utterance.rate = 0.9;
+            utterance.volume = 0.8;
+            
+            utterance.onstart = function() {
+                isSpeechPlaying = true;
+                if (speakerButton) speakerButton.textContent = '⏹';
+            };
+            
+            utterance.onend = function() {
+                isSpeechPlaying = false;
+                if (speakerButton) speakerButton.textContent = '🔊';
+            };
+            
+            utterance.onerror = function() {
+                isSpeechPlaying = false;
+                if (speakerButton) speakerButton.textContent = '🔊';
+            };
+            
+            window.speechSynthesis.speak(utterance);
+            console.log(`🔊 TTS em ${idiomaRemoto}: ${text.substring(0, 30)}...`);
+            
+        } catch (error) {
+            console.error('❌ Erro no TTS:', error);
+        }
     }
 
     function toggleSpeech() {
@@ -211,6 +324,9 @@ window.initializeUniversalTranslator = function(customConfig = {}) {
                 lastTranslationTime = now;
                 isTranslating = true;
                 
+                console.log('📝 Texto reconhecido para tradução:', finalTranscript);
+                
+                // ✅ USA A FUNÇÃO translateText QUE USA AS BANDEIRAS!
                 window.translateText(finalTranscript).then(translation => {
                     if (window.enviarMensagemTraduzida) {
                         window.enviarMensagemTraduzida(translation);
@@ -289,9 +405,9 @@ window.initializeUniversalTranslator = function(customConfig = {}) {
     }
 
     recordButton.disabled = false;
-    console.log('✅ Tradutor universal inicializado!');
+    console.log('✅ Tradutor universal inicializado com detecção por bandeiras!');
 };
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Tradutor universal carregado');
+    console.log('🚀 Tradutor universal carregado - Sistema de bandeiras ativo');
 });
