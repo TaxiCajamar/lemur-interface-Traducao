@@ -1,16 +1,27 @@
+<!-- ============================================= -->
+<!-- CONFIGURAÇÃO INICIAL DO DOCUMENTO HTML -->
+<!-- ============================================= -->
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <!-- ===== METADADOS E CONFIGURAÇÕES BÁSICAS ===== -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lemur EchoMe P2P Receiver</title>
 
+  <!-- ===== IMPORTAÇÃO DE ESTILOS ===== -->
+  
   <!-- 🎨 Estilos principais -->
   <link rel="stylesheet" href="mobile-style.css" />
 
+  <!-- ===== IMPORTAÇÃO DE BIBLIOTECAS EXTERNAS ===== -->
+  
   <!-- 📦 Biblioteca para QR Code -->
   <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
 
+  <!-- ===== ESTILOS INLINE ADICIONAIS ===== -->
+  
   <!-- 🔒 Estilo para overlay oculto -->
   <style>
     .info-overlay.hidden {
@@ -19,10 +30,19 @@
     }
   </style>
 </head>
+
 <body>
+
+  <!-- ============================================= -->
+  <!-- CONTAINER PRINCIPAL DA APLICAÇÃO -->
+  <!-- ============================================= -->
 
   <!-- 🧩 Container principal -->
   <div class="box-principal">
+
+    <!-- ============================================= -->
+    <!-- ELEMENTOS DE MARCA E IDENTIDADE VISUAL -->
+    <!-- ============================================= -->
 
     <!-- 🐵 Logo Lemur -->
     <img src="assets/images/lemurBlu.png" alt="Lemur Logo" class="logo" />
@@ -33,41 +53,54 @@
     <!-- 👆 Imagem de clique -->
     <img id="click" src="assets/images/click.png" alt="Click" />
     
+    <!-- ============================================= -->
+    <!-- SISTEMA DE LOADING E INDICADORES -->
+    <!-- ============================================= -->
+
     <!-- ⏳ Loader de carregamento -->
     <div id="mobileLoading" class="mobile-loader">
       <div class="loader-circle"></div>
     </div>
 
-   <!-- 📋 Bloco de instruções compacto no rodapé - COM TOGGLE -->
-<div class="instruction-box expandido" id="instructionBox">
-  <button class="instruction-toggle" id="instructionToggle"></button>
-  <div class="instruction-content">
-    <div class="instruction-item">
-      <img src="assets/images/hello.png" alt="Hello icon" />
-      <span id="welcome-text">Welcome! Let's begin.</span>
+    <!-- ============================================= -->
+    <!-- COMPONENTE DE INSTRUÇÕES INTERATIVAS -->
+    <!-- ============================================= -->
+
+    <!-- 📋 Bloco de instruções compacto no rodapé - COM TOGGLE -->
+    <div class="instruction-box expandido" id="instructionBox">
+      <button class="instruction-toggle" id="instructionToggle"></button>
+      <div class="instruction-content">
+        <div class="instruction-item">
+          <img src="assets/images/hello.png" alt="Hello icon" />
+          <span id="welcome-text">Welcome! Let's begin.</span>
+        </div>
+        <div class="instruction-item">
+          <img src="assets/images/QRcode.png" alt="QR icon" />
+          <span id="tap-qr">Tap that QR Code</span>
+        </div>
+        <div class="instruction-item">
+          <img src="assets/images/mobil.png" alt="Mobile icon" />
+          <span id="quick-scan">Quick scan</span>
+        </div>
+        <div class="instruction-item">
+          <img src="assets/images/mic.png" alt="Mic icon" />
+          <span id="drop-voice">Drop your voice</span>
+        </div>
+        <div class="instruction-item">
+          <img src="assets/images/trduz.png" alt="Translate icon" />
+          <span id="check-replies">Check the replies</span>
+        </div>
+        <div class="instruction-item">
+          <img src="assets/images/cam.png" alt="Camera icon" />
+          <span id="flip-cam">Flip the cam and show the vibes</span>
+        </div>
+      </div>
     </div>
-    <div class="instruction-item">
-      <img src="assets/images/QRcode.png" alt="QR icon" />
-      <span id="tap-qr">Tap that QR Code</span>
-    </div>
-    <div class="instruction-item">
-      <img src="assets/images/mobil.png" alt="Mobile icon" />
-      <span id="quick-scan">Quick scan</span>
-    </div>
-    <div class="instruction-item">
-      <img src="assets/images/mic.png" alt="Mic icon" />
-      <span id="drop-voice">Drop your voice</span>
-    </div>
-    <div class="instruction-item">
-      <img src="assets/images/trduz.png" alt="Translate icon" />
-      <span id="check-replies">Check the replies</span>
-    </div>
-    <div class="instruction-item">
-      <img src="assets/images/cam.png" alt="Camera icon" />
-      <span id="flip-cam">Flip the cam and show the vibes</span>
-    </div>
-  </div>
-</div>
+
+    <!-- ============================================= -->
+    <!-- BOTÕES DE CONTROLE PRINCIPAIS -->
+    <!-- ============================================= -->
+
     <!-- 🔑 Botão para gerar QR Code -->
     <button id="logo-traduz" class="botao-key">
       <img src="assets/images/key.png" alt="Gerar QR Code" />
@@ -78,27 +111,44 @@
       <img src="assets/images/girar-camera.png" alt="Alternar Câmera" />
     </button>
 
+    <!-- ============================================= -->
+    <!-- ELEMENTOS DE TEXTO E LABELS -->
+    <!-- ============================================= -->
+
     <!-- 🏷️ Subtítulo de tradução -->
     <div class="translator-label" id="translator-label">
       Real-time translation.
     </div>
+
+    <!-- ============================================= -->
+    <!-- INDICADORES DE IDIOMA E BANDEIRAS -->
+    <!-- ============================================= -->
 
     <!-- 🏳️ Idiomas -->
     <div class="remoter-Lang">🏳️</div>
     <div class="local-Lang">🏳️</div>
     <div class="local-mic-Lang">🏳️</div>
 
-    <!-- 🎥 Vídeo remoto -->
+    <!-- ============================================= -->
+    <!-- SISTEMA DE VÍDEO E STREAMING -->
+    <!-- ============================================= -->
+
+    <!-- 🎥 Container de vídeo remoto -->
     <div class="video-wrapper">
+      <!-- Vídeo do usuário remoto -->
       <video id="remoteVideo" autoplay playsinline></video>
 
-      <!-- 📺 Vídeo local em PiP -->
+      <!-- 📺 Vídeo local em Picture-in-Picture -->
       <div class="pip-local-wrapper">
         <video id="localVideo" autoplay muted playsinline></video>
       </div>
     </div>
 
-    <!-- 🧾 Overlay com QR Code (inicialmente oculto) -->
+    <!-- ============================================= -->
+    <!-- OVERLAY DE QR CODE (INICIALMENTE OCULTO) -->
+    <!-- ============================================= -->
+
+    <!-- 🧾 Overlay com QR Code -->
     <div class="info-overlay hidden">
       <h2 id="qr-modal-title">This is your online key</h2>
       <div id="qrcode" class="qrcode-container"></div>
@@ -107,19 +157,35 @@
       </p>
     </div>
 
+    <!-- ============================================= -->
+    <!-- ÁREA DE EXIBIÇÃO DE TEXTO TRADUZIDO -->
+    <!-- ============================================= -->
+
     <!-- 🎙️ Texto traduzido por voz -->
     <div id="texto-recebido"></div>
+
+    <!-- ============================================= -->
+    <!-- INDICADORES DE IDIOMA ATUAL -->
+    <!-- ============================================= -->
 
     <!-- 🏳️ Bandeira do idioma atual -->
     <div class="language-flag" id="currentLanguageFlag">🇧🇷</div>
 
+    <!-- ============================================= -->
+    <!-- BOTÕES DE CONTROLE DE ÁUDIO -->
+    <!-- ============================================= -->
+
     <!-- 🎤 Botão de gravação -->
     <button class="record-btn" id="recordButton" disabled>🎤</button>
 
-  </div>
+  </div> <!-- Fim do .box-principal -->
+
+  <!-- ============================================= -->
+  <!-- MODAL DE GRAVAÇÃO (FORA DO CONTAINER PRINCIPAL) -->
+  <!-- ============================================= -->
 
   <!-- 🎛️ Modal de gravação -->
-  <div class="recording-modal" id="recordingModal">
+ <div class="recording-modal hidden-until-ready" id="recordingModal">
     <div class="recording-indicator">
       <div class="recording-dot"></div>
       <div class="recording-text">●</div>
@@ -128,10 +194,20 @@
     <button class="send-button" id="sendButton">📤</button>
   </div>
 
-  <!-- 🔌 Scripts principais -->
+  <!-- ============================================= -->
+  <!-- IMPORTAÇÃO DE BIBLIOTECAS EXTERNAS -->
+  <!-- ============================================= -->
+
+  <!-- 🔌 Socket.IO para comunicação em tempo real -->
   <script src="https://lemur-signal-ings.onrender.com/socket.io/socket.io.js"></script>
 
+  <!-- ============================================= -->
+  <!-- SCRIPTS DE INICIALIZAÇÃO E CONFIGURAÇÃO -->
+  <!-- ============================================= -->
+
   <script>
+    // ===== FUNÇÕES GLOBAIS DE CONTROLE DE INTERFACE =====
+    
     // ✅ Libera interface após carregamento
     window.liberarInterface = function () {
       console.log('✅ Interface já está visível');
@@ -149,8 +225,15 @@
         overlay.classList.add('hidden');
       }
     });
- </script>
-<script src="../../core/translator-core.js"></script>
-<script type="module" src="./js/receiver/receiver-ui.js"></script>
+  </script>
+
+  <!-- ============================================= -->
+  <!-- IMPORTAÇÃO DOS SCRIPTS DA APLICAÇÃO -->
+  <!-- ============================================= -->
+
+  <!-- 📦 Scripts do receptor -->
+  <script type="module" src="./js/receiver/receiver-ui.js"></script>
+  <script src="./js/receiver/receiver-trz.js"></script>
+
 </body>
 </html>
