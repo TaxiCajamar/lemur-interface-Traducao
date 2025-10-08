@@ -770,6 +770,9 @@ async function iniciarCameraAposPermissoes() {
             if (overlay && !overlay.classList.contains('hidden')) {
                 overlay.classList.add('hidden');
                 console.log('📱 QR Code fechado pelo usuário');
+                
+                // 🔄 PARA o timer de espera se existir
+                pararTimerEspera();
                 return;
             }
             
@@ -800,13 +803,92 @@ async function iniciarCameraAposPermissoes() {
             }
             
             console.log('✅ QR Code gerado/reativado!');
+            
+            // 🕒 INICIA O SISTEMA DE ESPERA DE 7 SEGUNDOS
+            iniciarSistemaEspera();
         });
 
-        // ✅ FECHA QR CODE AO CLICAR FORA (opcional)
+        // 🕒 SISTEMA DE ESPERA DO LÊMURE ANCIOSO
+        let timerEspera = null;
+        const lemurAncioso = document.getElementById('lemurAnciosoWaiting');
+
+        function iniciarSistemaEspera() {
+            // 🔄 RESETA tudo primeiro
+            pararTimerEspera();
+            esconderLemurAncioso();
+            
+            // 🕒 INICIA NOVO TIMER de 7 segundos
+            timerEspera = setTimeout(() => {
+                mostrarLemurAncioso();
+            }, 7000); // 7 segundos
+            
+            console.log('⏰ Timer de espera iniciado: 7 segundos');
+        }
+
+        function pararTimerEspera() {
+            if (timerEspera) {
+                clearTimeout(timerEspera);
+                timerEspera = null;
+                console.log('⏹️ Timer de espera parado');
+            }
+        }
+
+        function mostrarLemurAncioso() {
+            if (lemurAncioso) {
+                lemurAncioso.classList.remove('hidden');
+                // Pequeno delay para a transição CSS funcionar
+                setTimeout(() => {
+                    lemurAncioso.classList.add('visible');
+                }, 10);
+                console.log('🦊 Lêmure ancioso apareceu (após 7 segundos)');
+            }
+        }
+
+        function esconderLemurAncioso() {
+            if (lemurAncioso) {
+                lemurAncioso.classList.remove('visible');
+                // Espera a transição terminar antes de esconder completamente
+                setTimeout(() => {
+                    lemurAncioso.classList.add('hidden');
+                }, 500);
+                console.log('🦊 Lêmure ancioso escondido');
+            }
+        }
+
+        // 🖱️ CONFIGURA O CLIQUE NO LÊMURE ANCIOSO
+        if (lemurAncioso) {
+            lemurAncioso.addEventListener('click', function() {
+                console.log('🖱️ Lêmure ancioso clicado - escondendo e reativando QR Code');
+                
+                // 1. Esconde o lêmure
+                esconderLemurAncioso();
+                
+                // 2. Para qualquer timer ativo
+                pararTimerEspera();
+                
+                // 3. O QR Code já está visível, então apenas garante o foco
+                const overlay = document.querySelector('.info-overlay');
+                if (overlay) {
+                    // Dá um destaque visual momentâneo no QR Code
+                    overlay.style.transform = 'scale(1.02)';
+                    setTimeout(() => {
+                        overlay.style.transform = 'scale(1)';
+                    }, 300);
+                }
+                
+                console.log('✅ QR Code reativado para escaneamento');
+            });
+        }
+
+        // 🔄 TAMBÉM esconde o lêmure quando o QR Code for fechado de outras formas
         document.querySelector('.info-overlay').addEventListener('click', function(e) {
             if (e.target === this) {
                 this.classList.add('hidden');
                 console.log('📱 QR Code fechado (clique fora)');
+                
+                // 🔄 PARA o timer e esconde o lêmure
+                pararTimerEspera();
+                esconderLemurAncioso();
             }
         });
 
@@ -849,6 +931,11 @@ window.rtcCore.setDataChannelCallback(async (mensagem) => {
             if (!localStream) return;
 
             console.log('🎯 Caller fala:', idiomaDoCaller);
+            
+            // 🔄 SE CONECTOU, PARA O SISTEMA DE ESPERA
+            pararTimerEspera();
+            esconderLemurAncioso();
+
             console.log('🎯 Eu (receiver) entendo:', lang);
 
             window.sourceTranslationLang = idiomaDoCaller;
