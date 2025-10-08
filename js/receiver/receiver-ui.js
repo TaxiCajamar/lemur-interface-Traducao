@@ -814,7 +814,7 @@ async function iniciarCameraAposPermissoes() {
         window.rtcCore.setupSocketHandlers();
 
         // 🎤 SISTEMA HÍBRIDO TTS - CALLBACK ATUALIZADO
-       window.rtcCore.setDataChannelCallback(async (mensagem) => {
+window.rtcCore.setDataChannelCallback(async (mensagem) => {
     iniciarSomDigitacao();
 
     console.log('📩 Mensagem recebida:', mensagem);
@@ -836,14 +836,13 @@ async function iniciarCameraAposPermissoes() {
         imagemImpaciente.style.display = 'block';
     }
 
-    // ✅✅✅ CORREÇÃO CRÍTICA: Usar SEMPRE o idioma LOCAL do receiver
-    const params = new URLSearchParams(window.location.search);
-    const meuIdiomaLocal = params.get('lang') || navigator.language || 'pt-BR';
+    // ✅✅✅ SOLUÇÃO DEFINITIVA: Usar o idioma GUARDADO
+    const idiomaExato = window.meuIdiomaLocal || 'pt-BR';
     
-    console.log(`🎯 TTS: Falando em ${meuIdiomaLocal} (meu idioma)`);
+    console.log(`🎯 TTS Receiver: Idioma guardado = ${idiomaExato}`);
     
-    // 🎤 CHAMADA CORRIGIDA: Usa o idioma do RECEIVER, não do caller
-    await falarTextoSistemaHibrido(mensagem, elemento, imagemImpaciente, meuIdiomaLocal);
+    // 🎤 CHAMADA CORRETA: Usa o idioma que JÁ FOI GUARDADO
+    await falarTextoSistemaHibrido(mensagem, elemento, imagemImpaciente, idiomaExato);
 });
 
         window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
