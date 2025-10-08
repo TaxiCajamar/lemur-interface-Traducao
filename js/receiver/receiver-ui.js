@@ -54,6 +54,54 @@ let primeiraFraseTTS = true;
 let navegadorTTSPreparado = false;
 let ultimoIdiomaTTS = 'pt-BR';
 
+// 🕒 SISTEMA DE ESPERA DO LÊMURE ANCIOSO
+let timerEspera = null;
+
+function iniciarSistemaEspera() {
+    // 🔄 RESETA tudo primeiro
+    pararTimerEspera();
+    esconderLemurAncioso();
+    
+    // 🕒 INICIA NOVO TIMER de 7 segundos
+    timerEspera = setTimeout(() => {
+        mostrarLemurAncioso();
+    }, 7000); // 7 segundos
+    
+    console.log('⏰ Timer de espera iniciado: 7 segundos');
+}
+
+function pararTimerEspera() {
+    if (timerEspera) {
+        clearTimeout(timerEspera);
+        timerEspera = null;
+        console.log('⏹️ Timer de espera parado');
+    }
+}
+
+function mostrarLemurAncioso() {
+    const lemurAncioso = document.getElementById('lemurAnciosoWaiting');
+    if (lemurAncioso) {
+        lemurAncioso.classList.remove('hidden');
+        // Pequeno delay para a transição CSS funcionar
+        setTimeout(() => {
+            lemurAncioso.classList.add('visible');
+        }, 10);
+        console.log('🦊 Lêmure ancioso apareceu (após 7 segundos)');
+    }
+}
+
+function esconderLemurAncioso() {
+    const lemurAncioso = document.getElementById('lemurAnciosoWaiting');
+    if (lemurAncioso) {
+        lemurAncioso.classList.remove('visible');
+        // Espera a transição terminar antes de esconder completamente
+        setTimeout(() => {
+            lemurAncioso.classList.add('hidden');
+        }, 500);
+        console.log('🦊 Lêmure ancioso escondido');
+    }
+}
+
 // 🎵 CARREGAR SOM DE DIGITAÇÃO
 function carregarSomDigitacao() {
     return new Promise((resolve) => {
@@ -808,55 +856,9 @@ async function iniciarCameraAposPermissoes() {
             iniciarSistemaEspera();
         });
 
-        // 🕒 SISTEMA DE ESPERA DO LÊMURE ANCIOSO
-        let timerEspera = null;
+        // 🖱️ CONFIGURA O CLIQUE NO LÊMURE ANCIOSO (APENAS UMA VEZ)
         const lemurAncioso = document.getElementById('lemurAnciosoWaiting');
-
-        function iniciarSistemaEspera() {
-            // 🔄 RESETA tudo primeiro
-            pararTimerEspera();
-            esconderLemurAncioso();
-            
-            // 🕒 INICIA NOVO TIMER de 7 segundos
-            timerEspera = setTimeout(() => {
-                mostrarLemurAncioso();
-            }, 7000); // 7 segundos
-            
-            console.log('⏰ Timer de espera iniciado: 7 segundos');
-        }
-
-        function pararTimerEspera() {
-            if (timerEspera) {
-                clearTimeout(timerEspera);
-                timerEspera = null;
-                console.log('⏹️ Timer de espera parado');
-            }
-        }
-
-        function mostrarLemurAncioso() {
-            if (lemurAncioso) {
-                lemurAncioso.classList.remove('hidden');
-                // Pequeno delay para a transição CSS funcionar
-                setTimeout(() => {
-                    lemurAncioso.classList.add('visible');
-                }, 10);
-                console.log('🦊 Lêmure ancioso apareceu (após 7 segundos)');
-            }
-        }
-
-        function esconderLemurAncioso() {
-            if (lemurAncioso) {
-                lemurAncioso.classList.remove('visible');
-                // Espera a transição terminar antes de esconder completamente
-                setTimeout(() => {
-                    lemurAncioso.classList.add('hidden');
-                }, 500);
-                console.log('🦊 Lêmure ancioso escondido');
-            }
-        }
-
-        // 🖱️ CONFIGURA O CLIQUE NO LÊMURE ANCIOSO
-        if (lemurAncioso) {
+        if (lemurAncioso && !lemurAncioso.hasEventListener) {
             lemurAncioso.addEventListener('click', function() {
                 console.log('🖱️ Lêmure ancioso clicado - escondendo e reativando QR Code');
                 
@@ -866,18 +868,9 @@ async function iniciarCameraAposPermissoes() {
                 // 2. Para qualquer timer ativo
                 pararTimerEspera();
                 
-                // 3. O QR Code já está visível, então apenas garante o foco
-                const overlay = document.querySelector('.info-overlay');
-                if (overlay) {
-                    // Dá um destaque visual momentâneo no QR Code
-                    overlay.style.transform = 'scale(1.02)';
-                    setTimeout(() => {
-                        overlay.style.transform = 'scale(1)';
-                    }, 300);
-                }
-                
                 console.log('✅ QR Code reativado para escaneamento');
             });
+            lemurAncioso.hasEventListener = true; // Marca para não adicionar novamente
         }
 
         // 🔄 TAMBÉM esconde o lêmure quando o QR Code for fechado de outras formas
@@ -896,36 +889,36 @@ async function iniciarCameraAposPermissoes() {
         window.rtcCore.setupSocketHandlers();
 
         // 🎤 SISTEMA HÍBRIDO TTS - CALLBACK ATUALIZADO
-window.rtcCore.setDataChannelCallback(async (mensagem) => {
-    iniciarSomDigitacao();
+        window.rtcCore.setDataChannelCallback(async (mensagem) => {
+            iniciarSomDigitacao();
 
-    console.log('📩 Mensagem recebida:', mensagem);
+            console.log('📩 Mensagem recebida:', mensagem);
 
-    const elemento = document.getElementById('texto-recebido');
-    const imagemImpaciente = document.getElementById('lemurFixed');
-    
-    if (elemento) {
-        elemento.textContent = "";
-        elemento.style.opacity = '1';
-        elemento.style.transition = 'opacity 0.5s ease';
-        
-        elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
-        elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
-        elemento.style.border = '2px solid #ff0000';
-    }
+            const elemento = document.getElementById('texto-recebido');
+            const imagemImpaciente = document.getElementById('lemurFixed');
+            
+            if (elemento) {
+                elemento.textContent = "";
+                elemento.style.opacity = '1';
+                elemento.style.transition = 'opacity 0.5s ease';
+                
+                elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
+                elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
+                elemento.style.border = '2px solid #ff0000';
+            }
 
-    if (imagemImpaciente) {
-        imagemImpaciente.style.display = 'block';
-    }
+            if (imagemImpaciente) {
+                imagemImpaciente.style.display = 'block';
+            }
 
-    // ✅✅✅ SOLUÇÃO DEFINITIVA: Usar o idioma GUARDADO
-    const idiomaExato = window.meuIdiomaLocal || 'pt-BR';
-    
-    console.log(`🎯 TTS Receiver: Idioma guardado = ${idiomaExato}`);
-    
-    // 🎤 CHAMADA CORRETA: Usa o idioma que JÁ FOI GUARDADO
-    await falarTextoSistemaHibrido(mensagem, elemento, imagemImpaciente, idiomaExato);
-});
+            // ✅✅✅ SOLUÇÃO DEFINITIVA: Usar o idioma GUARDADO
+            const idiomaExato = window.meuIdiomaLocal || 'pt-BR';
+            
+            console.log(`🎯 TTS Receiver: Idioma guardado = ${idiomaExato}`);
+            
+            // 🎤 CHAMADA CORRETA: Usa o idioma que JÁ FOI GUARDADO
+            await falarTextoSistemaHibrido(mensagem, elemento, imagemImpaciente, idiomaExato);
+        });
 
         window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
             if (!localStream) return;
