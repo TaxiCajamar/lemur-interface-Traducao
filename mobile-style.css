@@ -1,3 +1,7 @@
+/* =============================================
+   CONFIGURAÇÕES GERAIS E LAYOUT PRINCIPAL
+   ============================================= */
+
 /* ===== ESTILOS GERAIS ===== */
 html {
   height: 100%;
@@ -26,6 +30,10 @@ body {
   overflow-y: auto;
 }
 
+/* =============================================
+   ANIMAÇÕES E EFEITOS VISUAIS
+   ============================================= */
+
 /* ===== IMAGEM DE AGUARDANDO CONEXÃO ===== */
 #lemurWaiting {
     position: fixed;
@@ -46,6 +54,21 @@ body {
     50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.05); }
     100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
 }
+
+/* ===== EFEITO DE PISCAR ===== */
+@keyframes piscar {
+    0% { opacity: 1; }
+    50% { opacity: 0.3; }
+    100% { opacity: 1; }
+}
+
+.piscar-suave {
+    animation: piscar 2s infinite;
+}
+
+/* =============================================
+   COMPONENTES DE INTERFACE - INSTRUÇÕES
+   ============================================= */
 
 /* ===== INSTRUÇÕES COMPACTAS NO RODAPÉ - RESPONSIVO ===== */
 .instruction-box {
@@ -154,26 +177,10 @@ body {
   border-color: #45a049;
 }
 
-/* Media queries para ajustes em telas específicas */
-@media (max-width: 480px) {
-  .instruction-box {
-    width: 90%;
-    font-size: 0.8em;
-    bottom: 0.5%;
-  }
-  
-  .instruction-item img {
-    width: 20px;
-    height: 20px;
-  }
-}
+/* =============================================
+   COMPONENTES DE INTERFACE - BOTÕES E CONTROLES
+   ============================================= */
 
-@media (min-width: 768px) {
-  .instruction-box {
-    width: 70%;
-    font-size: 1em;
-  }
-}
 /* ===== BOTÃO ALTERNAR CÂMERA ===== */
 .camera-toggle-btn {
     position: absolute;
@@ -209,31 +216,8 @@ body {
     object-fit: contain;
     filter: brightness(0.8);
 }
-/* efeito carrega pagina */
 
-.mobile-loader {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-    background: rgba(0,0,0,0.8); display: flex; justify-content: center; 
-    align-items: center; z-index: 9999;
-}
-.loader-circle {
-    width: 50px; height: 50px; border: 5px solid #fff; 
-    border-top: 5px solid #2196F3; border-radius: 50%; 
-    animation: spin 1s linear infinite;
-}
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-@keyframes piscar {
-    0% { opacity: 1; }
-    50% { opacity: 0.3; }
-    100% { opacity: 1; }
-}
-
-/* 🗝️ Botão Key - Substitua o estilo #logo-traduz existente */
-
+/* ===== BOTÃO KEY (GERAR QR CODE) ===== */
 #logo-traduz.botao-key {
      position: absolute;
     top: 45.5%;
@@ -263,18 +247,116 @@ body {
     height: auto;
     display: block;
 }
-/* ✅ Overlay do QR Code começa OCULTO */
-.info-overlay.hidden {
-    opacity: 0 !important;
-    pointer-events: none !important;
-    display: block !important; /* Mantém no layout mas invisível */
+
+/* ===== BOTÃO DE GRAVAÇÃO ===== */
+.record-btn {
+    position: absolute;
+    top: 46%;
+    left: 78%;
+    width: 65px;
+    height: 65px;
+    border-radius: 50%;
+    background: #ff4757;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    cursor: pointer;
+    border: none;
+    color: white;
+    transition: transform 0.2s, background-color 0.3s;
+    z-index: 30;
 }
 
-/* ✅ Overlay VISÍVEL quando não tem classe hidden */
-.info-overlay:not(.hidden) {
-    opacity: 1;
-    pointer-events: auto;
+/* Botão GRAVANDO - Verde vibrante */
+.record-btn.recording {
+    background: #2ed573;
+    animation: pulse 1.5s infinite;
 }
+
+.record-btn:active {
+  transform: scale(0.95);
+}
+
+/* ===== BOTÃO DE ÁUDIO ===== */
+.speaker-btn {
+  position: absolute;
+  top: 60%;
+  left: 78%;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: #2196F3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  cursor: pointer;
+  border: none;
+  color: white;
+  transition: transform 0.2s, background-color 0.3s;
+  z-index: 30;
+}
+
+.speaker-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.speaker-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+/* =============================================
+   COMPONENTES DE INTERFACE - VÍDEO E MÍDIA
+   ============================================= */
+
+/* ===== VÍDEO REMOTO ===== */
+.video-wrapper {
+  position: absolute;
+  bottom: 45%;
+  right: 50%;
+  width: 35%;
+  height: 30%;
+  transform: translateX(-17%);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  border: 0.3vw solid #4CAF50;
+  z-index: 5;
+  /* NOVA LINHA - imagem de placeholder */
+  background: url('assets/images/telalemur.png') center/cover no-repeat;
+}
+
+.video-wrapper video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ===== PiP LOCAL ===== */
+.pip-local-wrapper {
+  position: absolute;
+  bottom: 5%;
+  right: 5%;
+  width: 30%;
+  height: 30%;
+  border: 0.3vw solid #2196F3;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+  z-index: 10;
+}
+
+.pip-local-wrapper video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* =============================================
+   COMPONENTES DE INTERFACE - TEXTOS E LABELS
+   ============================================= */
 
 #texto-recebido {
   position: absolute;
@@ -321,97 +403,9 @@ body {
   height: auto;
   z-index: 50;
 }
+
 /* efeito clik */
 #click { display: none; } /* Começa escondido */
-
-.piscar-suave {
-    animation: piscar 2s infinite;
-}
-
-@keyframes piscar {
-    0% { opacity: 1; }
-    50% { opacity: 0.3; }
-    100% { opacity: 1; }
-}
-
-/* 🏳️ Bandeira do idioma local */
-.language-flag {
-  position: absolute;
-  top: 53%;
-  left: 83.6%;
-  font-size: 2rem;
-  z-index: 40;
-}
-
-/* ESTILO ORIGINAL DO BOTÃO (quando inativo) */
-.record-btn {
-    position: absolute;
-    top: 46%;
-    left: 78%;
-    width: 65px;
-    height: 65px;
-    border-radius: 50%;
-    background: #ff4757;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2rem;
-    cursor: pointer;
-    border: none;
-    color: white;
-    transition: transform 0.2s, background-color 0.3s;
-    z-index: 30;
-}
-
-/* Botão GRAVANDO - Verde vibrante */
-.record-btn.recording {
-    background: #2ed573;
-    animation: pulse 1.5s infinite;
-}
-
-.record-btn:active {
-  transform: scale(0.95);
-}
-
-/* Botão de áudio */
-.speaker-btn {
-  position: absolute;
-  top: 60%;
-  left: 78%;
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  background: #2196F3;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  cursor: pointer;
-  border: none;
-  color: white;
-  transition: transform 0.2s, background-color 0.3s;
-  z-index: 30;
-}
-
-.speaker-btn:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-}
-
-.speaker-btn:active:not(:disabled) {
-  transform: scale(0.95);
-}
-
-/* Para diferenciar caller vs receiver */
-caller.html #texto-recebido {
-  border-color: #2196F3;
-  background-color: #e3f2fd;
-}
-
-receiver.html #texto-recebido {
-  border-color: #4CAF50;
-  background-color: #f1f8e9;
-}
 
 .logo {
   position: absolute;
@@ -450,46 +444,17 @@ receiver.html #texto-recebido {
   margin: 0;
 }
 
-/* ===== VÍDEO REMOTO ===== */
-.video-wrapper {
-  position: absolute;
-  bottom: 45%;
-  right: 50%;
-  width: 35%;
-  height: 30%;
-  transform: translateX(-17%);
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-  border: 0.3vw solid #4CAF50;
-  z-index: 5;
-  /* NOVA LINHA - imagem de placeholder */
-  background: url('assets/images/telalemur.png') center/cover no-repeat;
-}
+/* =============================================
+   COMPONENTES DE INTERFACE - BANDEIRAS DE IDIOMA
+   ============================================= */
 
-.video-wrapper video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-/* ===== PiP LOCAL ===== */
-.pip-local-wrapper {
+/* 🏳️ Bandeira do idioma local */
+.language-flag {
   position: absolute;
-  bottom: 5%;
-  right: 5%;
-  width: 30%;
-  height: 30%;
-  border: 0.3vw solid #2196F3;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
-  z-index: 10;
-}
-
-.pip-local-wrapper video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  top: 53%;
+  left: 83.6%;
+  font-size: 2rem;
+  z-index: 40;
 }
 
 /* ===== CIRCULO DA BANDEIRA ===== */
@@ -511,25 +476,11 @@ receiver.html #texto-recebido {
   z-index: 10;
 }
 
-/* ===== CONTROLES ===== */
-.callActionBtn {
-  position: absolute;
-  top: 70%;
-  left: 50%;
-  width: 60%;
-  height: 6%;
-  border-radius: 50px;
-  border: none;
-  font-size: 1em;
-  font-weight: bold;
-  color: white;
-  cursor: pointer;
-  backdrop-filter: blur(6px);
-  background: #4CAF50;
-  z-index: 1000
-}
+/* =============================================
+   COMPONENTES DE INTERFACE - OVERLAYS E MODAIS
+   ============================================= */
 
-/* ===== OVERLAY DE QR CODE ===== */
+/* ===== OVERLAY DO QR CODE ===== */
 .info-overlay {
   position: absolute;
   top: 23%;
@@ -542,6 +493,24 @@ receiver.html #texto-recebido {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   z-index: 100;
   text-align: center;
+}
+
+/* ✅ Overlay do QR Code começa OCULTO */
+.info-overlay.hidden {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    display: block !important; /* Mantém no layout mas invisível */
+}
+
+/* ✅ Overlay VISÍVEL quando não tem classe hidden */
+.info-overlay:not(.hidden) {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.info-overlay {
+  transition: opacity 0.5s ease;
+  opacity: 1;
 }
 
 .qrcode-container {
@@ -574,17 +543,7 @@ receiver.html #texto-recebido {
   width: 100%;
 }
 
-.info-overlay {
-  transition: opacity 0.5s ease;
-  opacity: 1;
-}
-
-.info-overlay.hidden {
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* Modal de gravação */
+/* ===== MODAL DE GRAVAÇÃO ===== */
 .recording-modal {
   position: fixed;
   bottom: -100%;
@@ -657,7 +616,31 @@ receiver.html #texto-recebido {
   background: #126782;
 }
 
-/* Animações */
+/* =============================================
+   LOADERS E ANIMAÇÕES
+   ============================================= */
+
+/* efeito carrega pagina */
+.mobile-loader {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+    background: rgba(0,0,0,0.8); display: flex; justify-content: center; 
+    align-items: center; z-index: 9999;
+}
+.loader-circle {
+    width: 50px; height: 50px; border: 5px solid #fff; 
+    border-top: 5px solid #2196F3; border-radius: 50%; 
+    animation: spin 1s linear infinite;
+}
+
+/* =============================================
+   ANIMAÇÕES PRINCIPAIS
+   ============================================= */
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
 @keyframes pulse {
   0% { transform: scale(1); }
   50% { transform: scale(1.05); }
@@ -688,5 +671,67 @@ receiver.html #texto-recebido {
   100% { 
     box-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
     opacity: 0.9;
+  }
+}
+
+/* =============================================
+   CONTROLES E BOTÕES DE AÇÃO
+   ============================================= */
+
+/* ===== CONTROLES ===== */
+.callActionBtn {
+  position: absolute;
+  top: 70%;
+  left: 50%;
+  width: 60%;
+  height: 6%;
+  border-radius: 50px;
+  border: none;
+  font-size: 1em;
+  font-weight: bold;
+  color: white;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  background: #4CAF50;
+  z-index: 1000
+}
+
+/* =============================================
+   ESTILOS ESPECÍFICOS POR PÁGINA
+   ============================================= */
+
+/* Para diferenciar caller vs receiver */
+caller.html #texto-recebido {
+  border-color: #2196F3;
+  background-color: #e3f2fd;
+}
+
+receiver.html #texto-recebido {
+  border-color: #4CAF50;
+  background-color: #f1f8e9;
+}
+
+/* =============================================
+   MEDIA QUERIES - RESPONSIVIDADE
+   ============================================= */
+
+/* Media queries para ajustes em telas específicas */
+@media (max-width: 480px) {
+  .instruction-box {
+    width: 90%;
+    font-size: 0.8em;
+    bottom: 0.5%;
+  }
+  
+  .instruction-item img {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+@media (min-width: 768px) {
+  .instruction-box {
+    width: 70%;
+    font-size: 1em;
   }
 }
