@@ -34,6 +34,11 @@ body {
    ANIMAÇÕES E EFEITOS VISUAIS
    ============================================= */
 
+/* ===== CLASSE HIDDEN ===== */
+.hidden {
+    display: none !important;
+}
+
 /* ===== IMAGEM DE LÊMURE ANCIOSO (ESPERA) ===== */
 #lemurAnciosoWaiting {
     position: fixed;
@@ -42,15 +47,15 @@ body {
     transform: translate(-50%, -50%);
     width: 180px;
     height: auto;
-    opacity: 0;
-    z-index: 9999; /* Acima do QR Code */
-    pointer-events: none; /* Inicialmente não clicável */
+    opacity: 0; /* ⬅️ MANTÉM isso - começa invisível */
+    z-index: 9999;
+    pointer-events: none; /* ⬅️ MANTÉM isso - não clicável inicialmente */
     cursor: pointer;
-    transition: opacity 0.5s ease-in-out;
+    transition: opacity 0.5s ease-in-out; /* ⬅️ MANTÉM isso */
     animation: pulsar-suave-ancioso 2.5s infinite ease-in-out;
 }
 
-/* Quando visível, torna-se clicável */
+/* ⬅️ MANTÉM ESTA CLASSE - controla quando aparece */
 #lemurAnciosoWaiting.visible {
     opacity: 0.8;
     pointer-events: auto;
