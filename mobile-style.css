@@ -34,6 +34,35 @@ body {
    ANIMAÇÕES E EFEITOS VISUAIS
    ============================================= */
 
+/* ===== IMAGEM DE LÊMURE ANCIOSO (ESPERA) ===== */
+#lemurAnciosoWaiting {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 180px;
+    height: auto;
+    opacity: 0;
+    z-index: 9999; /* Acima do QR Code */
+    pointer-events: none; /* Inicialmente não clicável */
+    cursor: pointer;
+    transition: opacity 0.5s ease-in-out;
+    animation: pulsar-suave-ancioso 2.5s infinite ease-in-out;
+}
+
+/* Quando visível, torna-se clicável */
+#lemurAnciosoWaiting.visible {
+    opacity: 0.8;
+    pointer-events: auto;
+}
+
+/* Animação específica para o lêmure ancioso */
+@keyframes pulsar-suave-ancioso {
+    0% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 0.9; transform: translate(-50%, -50%) scale(1.08); }
+    100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
+}
+
 /* ===== IMAGEM DE AGUARDANDO CONEXÃO ===== */
 #lemurWaiting {
     position: fixed;
