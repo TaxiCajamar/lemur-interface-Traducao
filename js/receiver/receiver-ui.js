@@ -810,32 +810,37 @@ async function iniciarCameraAposPermissoes() {
         window.rtcCore.setupSocketHandlers();
 
         // 🎤 SISTEMA HÍBRIDO TTS - CALLBACK ATUALIZADO
-        window.rtcCore.setDataChannelCallback(async (mensagem) => {
-            iniciarSomDigitacao();
+       window.rtcCore.setDataChannelCallback(async (mensagem) => {
+    iniciarSomDigitacao();
 
-            console.log('📩 Mensagem recebida:', mensagem);
+    console.log('📩 Mensagem recebida:', mensagem);
 
-            const elemento = document.getElementById('texto-recebido');
-            const imagemImpaciente = document.getElementById('lemurFixed');
-            
-            if (elemento) {
-                elemento.textContent = "";
-                elemento.style.opacity = '1';
-                elemento.style.transition = 'opacity 0.5s ease';
-                
-                elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
-                elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
-                elemento.style.border = '2px solid #ff0000';
-            }
+    const elemento = document.getElementById('texto-recebido');
+    const imagemImpaciente = document.getElementById('lemurFixed');
+    
+    if (elemento) {
+        elemento.textContent = "";
+        elemento.style.opacity = '1';
+        elemento.style.transition = 'opacity 0.5s ease';
+        
+        elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
+        elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
+        elemento.style.border = '2px solid #ff0000';
+    }
 
-            if (imagemImpaciente) {
-                imagemImpaciente.style.display = 'block';
-            }
+    if (imagemImpaciente) {
+        imagemImpaciente.style.display = 'block';
+    }
 
-            // 🎤 CHAMADA PARA SISTEMA HÍBRIDO TTS AVANÇADO
-            const idioma = window.targetTranslationLang || 'pt-BR';
-            await falarTextoSistemaHibrido(mensagem, elemento, imagemImpaciente, idioma);
-        });
+    // ✅✅✅ CORREÇÃO CRÍTICA: Usar SEMPRE o idioma LOCAL do receiver
+    const params = new URLSearchParams(window.location.search);
+    const meuIdiomaLocal = params.get('lang') || navigator.language || 'pt-BR';
+    
+    console.log(`🎯 TTS: Falando em ${meuIdiomaLocal} (meu idioma)`);
+    
+    // 🎤 CHAMADA CORRIGIDA: Usa o idioma do RECEIVER, não do caller
+    await falarTextoSistemaHibrido(mensagem, elemento, imagemImpaciente, meuIdiomaLocal);
+});
 
         window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
             if (!localStream) return;
