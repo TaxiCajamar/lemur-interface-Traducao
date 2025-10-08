@@ -628,6 +628,10 @@ async function aplicarBandeiraLocal(langCode) {
 
         const bandeira = flags[langCode] || flags[langCode.split('-')[0]] || '🔴';
 
+        // ✅✅✅ SOLUÇÃO INTELIGENTE: Guardar o idioma original
+        window.meuIdiomaLocal = langCode;
+        console.log('💾 Idioma local guardado:', window.meuIdiomaLocal);
+
         // ✅ MESMA BANDEIRA NAS DUAS POSIÇÕES (usando elementos que EXISTEM)
         const languageFlagElement = document.querySelector('.language-flag');
         if (languageFlagElement) languageFlagElement.textContent = bandeira;
@@ -892,38 +896,37 @@ async function iniciarCameraAposPermissoes() {
         console.log('🌐 Inicializando WebRTC...');
         window.rtcCore = new WebRTCCore();
 
-        // Configura callbacks ANTES de inicializar
-        window.rtcCore.setDataChannelCallback(async (mensagem) => {
-            iniciarSomDigitacao();
+      // Configura callbacks ANTES de inicializar
+window.rtcCore.setDataChannelCallback(async (mensagem) => {
+    iniciarSomDigitacao();
 
-            console.log('📩 Mensagem recebida:', mensagem);
+    console.log('📩 Mensagem recebida:', mensagem);
 
-            const elemento = document.getElementById('texto-recebido');
-            const imagemImpaciente = document.getElementById('lemurFixed');
-            
-            if (elemento) {
-                elemento.textContent = "";
-                elemento.style.opacity = '1';
-                elemento.style.transition = 'opacity 0.5s ease';
-                
-                elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
-                elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
-                elemento.style.border = '2px solid #ff0000';
-            }
+    const elemento = document.getElementById('texto-recebido');
+    const imagemImpaciente = document.getElementById('lemurFixed');
+    
+    if (elemento) {
+        elemento.textContent = "";
+        elemento.style.opacity = '1';
+        elemento.style.transition = 'opacity 0.5s ease';
+        
+        elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
+        elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
+        elemento.style.border = '2px solid #ff0000';
+    }
 
-            if (imagemImpaciente) {
-                imagemImpaciente.style.display = 'block';
-            }
+    if (imagemImpaciente) {
+        imagemImpaciente.style.display = 'block';
+    }
 
-            // ✅✅✅ CORREÇÃO CRÍTICA: Usar SEMPRE o idioma LOCAL do caller
-            const params = new URLSearchParams(window.location.search);
-            const meuIdiomaLocal = params.get('lang') || navigator.language || 'pt-BR';
-            
-            console.log(`🎯 TTS Caller: Falando em ${meuIdiomaLocal} (meu idioma)`);
-            
-            // 🎤 CHAMADA PARA SISTEMA HÍBRIDO TTS AVANÇADO
-            await falarTextoSistemaHibrido(mensagem, elemento, imagemImpaciente, meuIdiomaLocal);
-        });
+    // ✅✅✅ SOLUÇÃO DEFINITIVA: Usar o idioma GUARDADO
+    const idiomaExato = window.meuIdiomaLocal || 'pt-BR';
+    
+    console.log(`🎯 TTS Caller: Idioma guardado = ${idiomaExato}`);
+    
+    // 🎤 CHAMADA PARA SISTEMA HÍBRIDO TTS AVANÇADO
+    await falarTextoSistemaHibrido(mensagem, elemento, imagemImpaciente, idiomaExato);
+});
 
         const myId = crypto.randomUUID().substr(0, 8);
         document.getElementById('myId').textContent = myId;
