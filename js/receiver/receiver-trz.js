@@ -1,8 +1,4 @@
-// =============================================
-// SISTEMA DE VERIFICAÇÃO DE PERMISSÕES
-// =============================================
-
-// ===== VERIFICAÇÃO DE PERMISSÕES MICROFONE =====
+// ===== VERIFICAÇÃO DE PERMISSÕES =====
 function verificarPermissoesMicrofone() {
     if (window.permissoesConcedidas) {
         console.log('✅ Microfone já autorizado anteriormente');
@@ -12,10 +8,6 @@ function verificarPermissoesMicrofone() {
         return Promise.reject(new Error('Aguardando permissões do botão principal'));
     }
 }
-
-// =============================================
-// SISTEMA DE COMUNICAÇÃO WEBRTC
-// =============================================
 
 // ===== FUNÇÃO SIMPLES PARA ENVIAR TEXTO =====
 function enviarParaOutroCelular(texto) {
@@ -28,11 +20,6 @@ function enviarParaOutroCelular(texto) {
     }
 }
 
-// =============================================
-// SISTEMA DE TRADUÇÃO DE TEXTO
-// =============================================
-
-// ===== TRADUÇÃO DE TEXTO VIA API =====
 async function translateText(text) {
     try {
         const response = await fetch('https://chat-tradutor-bvvx.onrender.com/translate', {
@@ -54,16 +41,8 @@ async function translateText(text) {
     }
 }
 
-// =============================================
-// CONFIGURAÇÃO PRINCIPAL DO TRADUTOR
-// =============================================
-
 // ===== INICIALIZAÇÃO DO TRADUTOR =====
 function initializeTranslator() {
-    
-    // =============================================
-    // CONFIGURAÇÃO DE IDIOMAS
-    // =============================================
     
     let IDIOMA_ORIGEM = window.currentSourceLang || window.callerLang || navigator.language || 'pt-BR';
     
@@ -94,10 +73,6 @@ function initializeTranslator() {
         fala: IDIOMA_FALA
     });
 
-    // =============================================
-    // ELEMENTOS DA INTERFACE
-    // =============================================
-
     const recordButton = document.getElementById('recordButton');
     const recordingModal = document.getElementById('recordingModal');
     const recordingTimer = document.getElementById('recordingTimer');
@@ -111,10 +86,6 @@ function initializeTranslator() {
         return;
     }
     
-    // =============================================
-    // VERIFICAÇÃO DE SUPORTE DO NAVEGADOR
-    // =============================================
-    
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const SpeechSynthesis = window.speechSynthesis;
     
@@ -127,18 +98,10 @@ function initializeTranslator() {
         speakerButton.style.display = 'none';
     }
     
-    // =============================================
-    // CONFIGURAÇÃO DO RECONHECIMENTO DE VOZ
-    // =============================================
-    
     let recognition = new SpeechRecognition();
     recognition.lang = IDIOMA_ORIGEM;
     recognition.continuous = false;
     recognition.interimResults = true;
-    
-    // =============================================
-    // VARIÁVEIS DE ESTADO DO TRADUTOR
-    // =============================================
     
     let isRecording = false;
     let isTranslating = false;
@@ -151,10 +114,6 @@ function initializeTranslator() {
     let lastTranslationTime = 0;
     let permissionCheckAttempts = 0;
     const MAX_PERMISSION_CHECKS = 10;
-    
-    // =============================================
-    // EVENTOS DO RECONHECIMENTO DE VOZ
-    // =============================================
     
     function setupRecognitionEvents() {
         recognition.onresult = function(event) {
@@ -199,10 +158,6 @@ function initializeTranslator() {
             }
         };
     }
-    
-    // =============================================
-    // SISTEMA DE PERMISSÕES DO MICROFONE
-    // =============================================
     
     async function requestMicrophonePermission() {
         try {
@@ -250,148 +205,128 @@ function initializeTranslator() {
         }
     }
     
-    // =============================================
-    // SISTEMA DE TEXTO PARA FALA (TTS)
-    // =============================================
-    
     function speakText(text) {
-        if (!SpeechSynthesis || !text) return;
-        
+    if (!SpeechSynthesis || !text) return;
+    
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = IDIOMA_FALA;
+    utterance.rate = 0.9;
+    utterance.volume = 0.8;
+    
+    utterance.onstart = function() {
+        isSpeechPlaying = true;
+        if (speakerButton) speakerButton.textContent = '⏹';
+    };
+    
+    utterance.onend = function() {
+        isSpeechPlaying = false;
+        if (speakerButton) speakerButton.textContent = '🔊';
+    };
+    
+    utterance.onerror = function() {
+        isSpeechPlaying = false;
+        if (speakerButton) speakerButton.textContent = '🔊';
+    };
+    
+    window.speechSynthesis.speak(utterance);
+}
+
+function toggleSpeech() {
+    if (!SpeechSynthesis) return;
+    
+    if (isSpeechPlaying) {
         window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = IDIOMA_FALA;
-        utterance.rate = 0.9;
-        utterance.volume = 0.8;
-        
-        utterance.onstart = function() {
-            isSpeechPlaying = true;
-            if (speakerButton) speakerButton.textContent = '⏹';
-        };
-        
-        utterance.onend = function() {
-            isSpeechPlaying = false;
-            if (speakerButton) speakerButton.textContent = '🔊';
-        };
-        
-        utterance.onerror = function() {
-            isSpeechPlaying = false;
-            if (speakerButton) speakerButton.textContent = '🔊';
-        };
-        
-        window.speechSynthesis.speak(utterance);
-    }
-
-    // =============================================
-    // CONTROLES DE ÁUDIO - SPEAKER
-    // =============================================
-    
-    function toggleSpeech() {
-        if (!SpeechSynthesis) return;
-        
-        if (isSpeechPlaying) {
-            window.speechSynthesis.cancel();
-            isSpeechPlaying = false;
-            if (speakerButton) speakerButton.textContent = '🔊';
-        } else {
-            // ✅ Lê apenas o texto recebido
-            if (textoRecebido && textoRecebido.textContent) {
-                const textToSpeak = textoRecebido.textContent;
-                if (textToSpeak && textToSpeak.trim() !== "") {
-                    speakText(textToSpeak);
-                }
+        isSpeechPlaying = false;
+        if (speakerButton) speakerButton.textContent = '🔊';
+    } else {
+        // ✅ Lê apenas o texto recebido
+        if (textoRecebido && textoRecebido.textContent) {
+            const textToSpeak = textoRecebido.textContent;
+            if (textToSpeak && textToSpeak.trim() !== "") {
+                speakText(textToSpeak);
             }
         }
     }
+}
 
-    // =============================================
-    // CONTROLES DE GRAVAÇÃO DE ÁUDIO
-    // =============================================
+function startRecording() {
+    if (isRecording || isTranslating) return;
     
-    function startRecording() {
-        if (isRecording || isTranslating) return;
+    try {
+        // Atualizar idioma dinamicamente
+        const currentLang = window.currentSourceLang || IDIOMA_ORIGEM;
+        recognition.lang = currentLang;
         
-        try {
-            // Atualizar idioma dinamicamente
-            const currentLang = window.currentSourceLang || IDIOMA_ORIGEM;
-            recognition.lang = currentLang;
-            
-            recognition.start();
-            isRecording = true;
-            
-            if (recordButton) recordButton.classList.add('recording');
-            recordingStartTime = Date.now();
-            updateTimer();
-            timerInterval = setInterval(updateTimer, 1000);
-            
-            // ✅ CORREÇÃO: NÃO muda o texto do botão - evita emoji na caixa de texto
-            if (speakerButton) {
-                speakerButton.disabled = true;
-                // ❌ REMOVIDO: speakerButton.textContent = '🔇';
-            }
-            
-        } catch (error) {
-            console.error('Erro ao iniciar gravação:', error);
-            stopRecording();
-        }
-    }
-
-    function stopRecording() {
-        if (!isRecording) return;
+        recognition.start();
+        isRecording = true;
         
-        isRecording = false;
-        if (recordButton) recordButton.classList.remove('recording');
-        clearInterval(timerInterval);
-        hideRecordingModal();
+        if (recordButton) recordButton.classList.add('recording');
+        recordingStartTime = Date.now();
+        updateTimer();
+        timerInterval = setInterval(updateTimer, 1000);
         
-        // ✅ Reativa o botão de speaker após gravação
+        // ✅ CORREÇÃO: NÃO muda o texto do botão - evita emoji na caixa de texto
         if (speakerButton) {
-            speakerButton.disabled = false;
-        }
-    }
-
-    // =============================================
-    // CONTROLES DA MODAL DE GRAVAÇÃO
-    // =============================================
-    
-    function showRecordingModal() {
-        if (recordingModal) recordingModal.classList.add('visible');
-    }
-
-    function hideRecordingModal() {
-        if (recordingModal) recordingModal.classList.remove('visible');
-    }
-
-    function updateTimer() {
-        const elapsedSeconds = Math.floor((Date.now() - recordingStartTime) / 1000);
-        const minutes = Math.floor(elapsedSeconds / 60);
-        const seconds = elapsedSeconds % 60;
-        if (recordingTimer) {
-            recordingTimer.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            speakerButton.disabled = true;
+            // ❌ REMOVIDO: speakerButton.textContent = '🔇';
         }
         
-        if (elapsedSeconds >= 30) {
-            stopRecording();
-        }
+    } catch (error) {
+        console.error('Erro ao iniciar gravação:', error);
+        stopRecording();
     }
+}
 
-    // =============================================
-    // EVENT LISTENERS - BOTÃO DE GRAVAÇÃO
-    // =============================================
+function stopRecording() {
+    if (!isRecording) return;
     
-    if (recordButton) {
-        recordButton.addEventListener('touchstart', function(e) {
-            e.preventDefault();
-            if (recordButton.disabled || !microphonePermissionGranted || isTranslating) return;
-            
-            if (!isRecording) {
-                pressTimer = setTimeout(() => {
-                    tapMode = false;
-                    startRecording();
-                    showRecordingModal();
-                }, 300);
-            }
-        });
-            
+    isRecording = false;
+    if (recordButton) recordButton.classList.remove('recording');
+    clearInterval(timerInterval);
+    hideRecordingModal();
+    
+    // ✅ Reativa o botão de speaker após gravação
+    if (speakerButton) {
+        speakerButton.disabled = false;
+    }
+}
+
+function showRecordingModal() {
+    if (recordingModal) recordingModal.classList.add('visible');
+}
+
+function hideRecordingModal() {
+    if (recordingModal) recordingModal.classList.remove('visible');
+}
+
+function updateTimer() {
+    const elapsedSeconds = Math.floor((Date.now() - recordingStartTime) / 1000);
+    const minutes = Math.floor(elapsedSeconds / 60);
+    const seconds = elapsedSeconds % 60;
+    if (recordingTimer) {
+        recordingTimer.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+    
+    if (elapsedSeconds >= 30) {
+        stopRecording();
+    }
+}
+
+if (recordButton) {
+    recordButton.addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        if (recordButton.disabled || !microphonePermissionGranted || isTranslating) return;
+        
+        if (!isRecording) {
+            pressTimer = setTimeout(() => {
+                tapMode = false;
+                startRecording();
+                showRecordingModal();
+            }, 300);
+        }
+    });
+        
         recordButton.addEventListener('touchend', function(e) {
             e.preventDefault();
             clearTimeout(pressTimer);
@@ -420,10 +355,6 @@ function initializeTranslator() {
         });
     }
     
-    // =============================================
-    // EVENT LISTENERS - BOTÕES ADICIONAIS
-    // =============================================
-    
     if (sendButton) {
         sendButton.addEventListener('click', stopRecording);
     }
@@ -432,19 +363,11 @@ function initializeTranslator() {
         speakerButton.addEventListener('click', toggleSpeech);
     }
     
-    // =============================================
-    // INICIALIZAÇÃO DO SISTEMA
-    // =============================================
-    
     // Inicia a verificação de permissões
     requestMicrophonePermission();
     
     console.log('✅ Tradutor inicializado com sucesso!');
 }
-
-// =============================================
-// INICIALIZAÇÃO GERAL DA APLICAÇÃO
-// =============================================
 
 // ===== INICIALIZAÇÃO GERAL =====
 document.addEventListener('DOMContentLoaded', function() {
