@@ -161,8 +161,8 @@ body {
 }
 
 .instruction-item img {
-   width: 50px !important;
-  height: 50px !important;
+   width: 35px !important;
+  height: 35px !important;
   object-fit: contain;
   flex-shrink: 0;
 }
