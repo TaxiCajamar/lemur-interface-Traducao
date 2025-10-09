@@ -60,8 +60,7 @@ async function traduzirFrasesFixas() {
     const frasesParaTraduzir = {
       "translator-label": "Real-time translation.",      
  "welcome-text": "Welcome! Let's begin.",
-  "translator-label": "Real-time translation.",
-  "wait-connection": "Waiting for connection.",
+   "wait-connection": "Waiting for connection.",
   "both-connected": "Both online.",
   "drop-voice": "Speak clearly.",
   "check-replies": "Read the message.",
