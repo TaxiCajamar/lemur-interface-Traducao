@@ -50,8 +50,13 @@ function setupInstructionToggle() {
 }
 
 // 🌐 TRADUÇÃO DAS FRASES FIXAS (IGUAL AO RECEIVER)
-async function traduzirFrasesFixas(lang) {
+async function traduzirFrasesFixas() {
   try {
+    // ✅✅✅ AGORA USA O IDIOMA GUARDADO!
+    const idiomaExato = window.meuIdiomaLocal || 'pt-BR';
+    
+    console.log(`🌐 Traduzindo frases fixas para: ${idiomaExato}`);
+
     const frasesParaTraduzir = {
       "translator-label": "Real-time translation.",
       "welcome-text": "Hi, welcome!",
@@ -65,13 +70,14 @@ async function traduzirFrasesFixas(lang) {
     for (const [id, texto] of Object.entries(frasesParaTraduzir)) {
       const el = document.getElementById(id);
       if (el) {
-        const traduzido = await translateText(texto, lang);
+        const traduzido = await translateText(texto, idiomaExato);
         el.textContent = traduzido;
         console.log(`✅ Traduzido: ${texto} → ${traduzido}`);
       }
     }
 
-    aplicarBandeiraLocal(lang);
+    console.log('✅ Frases fixas traduzidas com sucesso');
+
   } catch (error) {
     console.error("❌ Erro ao traduzir frases fixas:", error);
   }
@@ -646,13 +652,17 @@ async function aplicarBandeiraLocal(langCode) {
     }
 }
 
-// 🏳️ Aplica bandeira do idioma remoto
+// 🏳️ Aplica bandeira do idioma remota
 async function aplicarBandeiraRemota(langCode) {
     try {
         const response = await fetch('assets/bandeiras/language-flags.json');
         const flags = await response.json();
 
         const bandeira = flags[langCode] || flags[langCode.split('-')[0]] || '🔴';
+
+        // ✅✅✅ SOLUÇÃO INTELIGENTE: Guardar o idioma REMOTO também!
+        window.meuIdiomaRemoto = langCode;
+        console.log('💾 Idioma REMOTO guardado:', window.meuIdiomaRemoto);
 
         const remoteLangElement = document.querySelector('.remoter-Lang');
         if (remoteLangElement) remoteLangElement.textContent = bandeira;
@@ -782,8 +792,8 @@ async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente, idioma) {
                 elemento.textContent = mensagem;
             }
             if (imagemImpaciente) {
-                imagemImpaciente.style.display = 'none';
-            }
+                    imagemImpaciente.style.display = 'none';
+                }
             
             console.log(`🔊 Áudio Google TTS iniciado em ${idioma}`);
         };
@@ -998,8 +1008,11 @@ window.onload = async () => {
         const params = new URLSearchParams(window.location.search);
         const lang = params.get('lang') || navigator.language || 'pt-BR';
         
-        // 2. Traduz as frases fixas PRIMEIRO (NOVO)
-        await traduzirFrasesFixas(lang);
+        // ✅✅✅ PRIMEIRO: Aplica bandeira e GUARDA o idioma
+        await aplicarBandeiraLocal(lang);
+
+        // ✅✅✅ DEPOIS: Traduz frases com o idioma JÁ GUARDADO  
+        await traduzirFrasesFixas();
         
         // 3. Inicia áudio
         iniciarAudio();
