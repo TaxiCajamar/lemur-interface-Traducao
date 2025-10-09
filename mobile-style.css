@@ -118,7 +118,7 @@ body {
   border: 2px solid #4CAF50;
   border-radius: 12px;
   box-shadow: inset 0 0 10px rgba(0, 128, 0, 0.2);
-  font-size: 1.2em; /* tamanho base relativo */
+  font-size: 2em; /* tamanho base relativo */
   z-index: 100;
   text-align: left;
   transition: all 0.3s ease; /* transição suave */
@@ -134,7 +134,7 @@ body {
 
 /* Estado expandido */
 .instruction-box.expandido {
-  height: 300px; /* MUDEI de 'auto' para 400px - VOCÊ CONTROLA O TAMANHO */
+  height: 250px; /* MUDEI de 'auto' para 400px - VOCÊ CONTROLA O TAMANHO */
   max-height: none; /* REMOVI o limite máximo */
 }
 
