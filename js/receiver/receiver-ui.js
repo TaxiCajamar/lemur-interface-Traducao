@@ -1,72 +1,3 @@
-```javascript
-// 🎯 SISTEMA DE CARREGAMENTO PERSONALIZADO - VERSÃO SIMPLIFICADA
-function initCustomLoading() {
-    const loadingElement = document.getElementById('custom-loading-screen');
-    if (!loadingElement) return;
-    
-    console.log('🎯 Iniciando tela de carregamento personalizada...');
-    
-    // Tradutor automático das frases do loading
-    translateLoadingPhrases();
-    
-    // Esconde o loading quando tudo estiver pronto
-    setTimeout(() => {
-        if (loadingElement) {
-            loadingElement.classList.add('custom-loading-hidden');
-            setTimeout(() => {
-                loadingElement.style.display = 'none';
-                console.log('✅ Tela de carregamento personalizada removida');
-            }, 500);
-        }
-    }, 3000); // Mostra por pelo menos 3 segundos
-}
-
-// 🌐 Traduz as frases do loading screen
-async function translateLoadingPhrases() {
-    try {
-        const idiomaExato = window.meuIdiomaLocal || 'pt-BR';
-        
-        if (idiomaExato.startsWith('en')) {
-            console.log('🌐 Loading screen: Inglês detectado, mantendo frases originais');
-            return;
-        }
-        
-        console.log(`🌐 Traduzindo loading screen para: ${idiomaExato}`);
-        
-        const loadingPhrases = {
-            "loading-welcome-text": "Welcome to Real-Time Translator",
-            "loading-welcome-message": "Hi, welcome! Get ready to connect.",
-            "loading-tap-qr": "Tap that QR Code to start the conversation",
-            "loading-quick-scan": "Quick scan and instant translation",
-            "loading-drop-voice": "Drop your voice and see the magic",
-            "loading-check-replies": "Check the replies in real-time",
-            "loading-flip-cam": "Flip the cam and show the vibes",
-            "loading-ready-text": "Getting everything ready for you...",
-            "loading-preparing": "Preparing your translator"
-        };
-        
-        for (const [id, texto] of Object.entries(loadingPhrases)) {
-            const element = document.getElementById(id);
-            if (element) {
-                try {
-                    const traduzido = await translateText(texto, idiomaExato);
-                    element.textContent = traduzido;
-                } catch (error) {
-                    console.log(`⚠️ Não foi possível traduzir: ${texto}`);
-                }
-            }
-        }
-        
-    } catch (error) {
-        console.error('❌ Erro ao traduzir loading screen:', error);
-    }
-}
-
-// Inicia o loading personalizado quando o DOM carregar
-document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(initCustomLoading, 100);
-});
-
 // 🎯 CONTROLE DO TOGGLE DAS INSTRUÇÕES
 function setupInstructionToggle() {
     const instructionBox = document.getElementById('instructionBox');
@@ -363,6 +294,26 @@ async function aplicarBandeiraRemota(langCode) {
         const remoteLangElement = document.querySelector('.remoter-Lang');
         if (remoteLangElement) remoteLangElement.textContent = '🔴';
     }
+}
+
+// ✅ FUNÇÃO PARA LIBERAR INTERFACE (FALLBACK)
+function liberarInterfaceFallback() {
+    console.log('🔓 Usando fallback para liberar interface...');
+    
+    // Remove tela de loading
+    const loadingScreen = document.getElementById('loadingScreen');
+    if (loadingScreen) {
+        loadingScreen.style.display = 'none';
+        console.log('✅ Tela de loading removida');
+    }
+    
+    // Mostra conteúdo principal
+    const elementosEscondidos = document.querySelectorAll('.hidden-until-ready');
+    elementosEscondidos.forEach(elemento => {
+        elemento.style.display = '';
+    });
+    
+    console.log(`✅ ${elementosEscondidos.length} elementos liberados`);
 }
 
 // 🌐 TRADUÇÃO DAS FRASES FIXAS (AGORA SEPARADA)
@@ -1115,4 +1066,3 @@ window.onload = async () => {
         }
     }
 };
-```
