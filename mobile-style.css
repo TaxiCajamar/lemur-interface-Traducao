@@ -105,44 +105,43 @@ body {
    ============================================= */
 
 /* ===== INSTRUÇÕES COMPACTAS NO RODAPÉ - RESPONSIVO ===== */
-/* ===== INSTRUÇÕES COMPACTAS NO RODAPÉ - RESPONSIVO ===== */
 .instruction-box {
   position: absolute;
-  bottom: 1%;
+  bottom: 1%; /* porcentagem em relação à altura da tela */
   left: 50%;
   transform: translateX(-50%);
-  width: 85%;
-  max-width: 300px;
-  min-width: 200px;
-  padding: 1% 2%;
+  width: 85%; /* largura responsiva */
+  max-width: 300px; /* largura máxima para telas grandes */
+  min-width: 200px; /* largura mínima */
+  padding: 1% 2%; /* padding em porcentagem */
   background: #ffffff;
   border: 2px solid #4CAF50;
   border-radius: 12px;
   box-shadow: inset 0 0 10px rgba(0, 128, 0, 0.2);
-  font-size: 0.9em;
+  font-size: 0.9em; /* tamanho base relativo */
   z-index: 100;
   text-align: left;
-  transition: all 0.3s ease;
-  overflow: hidden; /* IMPORTANTE: mantém o conteúdo cortado */
+  transition: all 0.3s ease; /* transição suave */
+  overflow: hidden; /* esconde conteúdo quando recolhido */
 }
 
 /* Estado recolhido */
 .instruction-box.recolhido {
-  height: 40px; /* altura fixa quando recolhido */
-  width: 50px;
+  height: 40px; /* altura do botão quando recolhido */
+  width: 50px; /* largura menor quando recolhido */
   cursor: pointer;
 }
 
 /* Estado expandido */
 .instruction-box.expandido {
-  height: auto; /* altura automática quando expandido */
-  max-height: 500px; /* altura máxima aumentada */
+  height: 400px; /* MUDEI de 'auto' para 400px - VOCÊ CONTROLA O TAMANHO */
+  max-height: none; /* REMOVI o limite máximo */
 }
 
 .instruction-item {
   display: flex;
   align-items: center;
-  gap: 3%;
+  gap: 3%; /* gap em porcentagem */
   margin-bottom: 1%;
   line-height: 1.2;
   font-family: 'Segoe UI', sans-serif;
@@ -150,21 +149,68 @@ body {
   transition: opacity 0.3s ease;
 }
 
-/* MODIFIQUEI AQUI: Remove display: none */
+/* Esconde os itens quando recolhido */
 .instruction-box.recolhido .instruction-item {
   opacity: 0;
-  /* display: none; ← REMOVA ESTA LINHA */
-  pointer-events: none; /* impede interação quando invisível */
+  display: none;
 }
 
-/* MODIFIQUEI AQUI: Remove display: flex */
+/* Mostra os itens quando expandido */
 .instruction-box.expandido .instruction-item {
   opacity: 1;
-  /* display: flex; ← REMOVA ESTA LINHA */
-  pointer-events: auto;
+  display: flex;
 }
 
-/* ... o resto do CSS permanece igual ... */
+.instruction-item img {
+  width: 24px; /* tamanho fixo mínimo */
+  height: 24px;
+  object-fit: contain;
+  flex-shrink: 0; /* não deixa encolher */
+}
+
+/* Botão de fechar/expandir */
+.instruction-toggle {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: #4CAF50;
+  font-weight: bold;
+  z-index: 101;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+}
+
+.instruction-toggle:hover {
+  background-color: rgba(76, 175, 80, 0.1);
+}
+
+/* Ícone do botão quando recolhido */
+.instruction-box.recolhido .instruction-toggle::after {
+  content: "?";
+  font-size: 14px;
+}
+
+/* Ícone do botão quando expandido */
+.instruction-box.expandido .instruction-toggle::after {
+  content: "×";
+  font-size: 18px;
+}
+
+/* Efeito de hover para indicar que é clicável */
+.instruction-box.recolhido:hover {
+  background: #f8fff8;
+  border-color: #45a049;
+}
+
 /* =============================================
    COMPONENTES DE INTERFACE - BOTÕES E CONTROLES
    ============================================= */
