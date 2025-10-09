@@ -135,7 +135,7 @@ body {
 /* Estado expandido */
 .instruction-box.expandido {
   height: auto; /* altura automática quando expandido */
-  max-height: 400px; /* altura máxima */
+  max-height: 1000px; /* altura máxima */
 }
 
 .instruction-item {
