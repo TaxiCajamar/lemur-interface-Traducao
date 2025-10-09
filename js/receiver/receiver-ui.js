@@ -328,7 +328,7 @@ async function traduzirFrasesFixas() {
       "translator-label": "Real-time translation.",
       "qr-modal-title": "This is your online key",
       "qr-modal-description": "You can ask to scan, share or print on your business card.",
-       "welcome-text": "Welcome! Let's begin.",
+      "welcome-text": "Welcome! Let's begin.",
   "translator-label": "Real-time translation.",
   "tap-qr": "Tap the QR code to start.",
   "quick-scan": "Ask to scan the QR.",
@@ -337,7 +337,8 @@ async function traduzirFrasesFixas() {
   "drop-voice": "Speak clearly.",
   "check-replies": "Read the message.",
   "flip-cam": "Flip the camera. Share!"
-};
+    };
+
     for (const [id, texto] of Object.entries(frasesParaTraduzir)) {
       const el = document.getElementById(id);
       if (el) {
