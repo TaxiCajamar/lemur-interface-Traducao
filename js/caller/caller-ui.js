@@ -59,12 +59,12 @@ async function traduzirFrasesFixas() {
 
     const frasesParaTraduzir = {
       "translator-label": "Real-time translation.",      
- "welcome-text": "Welcome! Let's begin.",
-   "wait-connection": "Waiting for connection.",
-  "both-connected": "Both online.",
-  "drop-voice": "Speak clearly.",
-  "check-replies": "Read the message.",
-  "flip-cam": "Flip the camera. Share!"
+       "welcome-text": "Welcome! Let's begin.",
+       "wait-connection": "Waiting for connection.",
+       "both-connected": "Both online.",
+       "drop-voice": "Speak clearly.",
+       "check-replies": "Read the message.",
+       "flip-cam": "Flip the camera. Share!"
     };
 
     for (const [id, texto] of Object.entries(frasesParaTraduzir)) {
