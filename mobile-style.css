@@ -118,7 +118,7 @@ body {
   border: 2px solid #4CAF50;
   border-radius: 12px;
   box-shadow: inset 0 0 10px rgba(0, 128, 0, 0.2);
-  font-size: 2em; /* tamanho base relativo */
+  font-size: 1.2em; /* ← MUDE AQUI - 1.2em, 1.5em, 2em, etc */
   z-index: 100;
   text-align: left;
   transition: all 0.3s ease; /* transição suave */
@@ -147,6 +147,7 @@ body {
   font-family: 'Segoe UI', sans-serif;
   color: #333;
   transition: opacity 0.3s ease;
+  font-size: inherit; /* ← ADICIONE ESTA LINHA - HERDA DO PAI */
 }
 
 /* Esconde os itens quando recolhido */
