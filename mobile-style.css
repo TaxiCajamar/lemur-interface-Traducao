@@ -107,66 +107,64 @@ body {
 /* ===== INSTRUÇÕES COMPACTAS NO RODAPÉ - RESPONSIVO ===== */
 .instruction-box {
   position: absolute;
-  bottom: 1%; /* porcentagem em relação à altura da tela */
+  bottom: 1%;
   left: 50%;
   transform: translateX(-50%);
-  width: 85%; /* largura responsiva */
-  max-width: 300px; /* largura máxima para telas grandes */
-  min-width: 200px; /* largura mínima */
-  padding: 1% 2%; /* padding em porcentagem */
+  width: 85%;
+  max-width: 300px;
+  min-width: 200px;
+  padding: 1% 2%;
   background: #ffffff;
   border: 2px solid #4CAF50;
   border-radius: 12px;
   box-shadow: inset 0 0 10px rgba(0, 128, 0, 0.2);
-  font-size: 32px; /* ← MUDE PARA PIXELS - controle absoluto */
+  font-size: 32px;
   z-index: 100;
   text-align: left;
-  transition: all 0.3s ease; /* transição suave */
-  overflow: hidden; /* esconde conteúdo quando recolhido */
+  transition: all 0.3s ease;
+  overflow: hidden;
 }
 
 /* Estado recolhido */
 .instruction-box.recolhido {
-  height: 40px; /* altura do botão quando recolhido */
-  width: 50px; /* largura menor quando recolhido */
+  height: 40px;
+  width: 50px;
   cursor: pointer;
 }
 
 /* Estado expandido */
 .instruction-box.expandido {
-  height: 250px; /* MUDEI de 'auto' para 400px - VOCÊ CONTROLA O TAMANHO */
-  max-height: none; /* REMOVI o limite máximo */
+  height: 250px;
+  max-height: none;
 }
 
 .instruction-item {
   display: flex;
   align-items: center;
-  gap: 3%; /* gap em porcentagem */
+  gap: 3%;
   margin-bottom: 1%;
   line-height: 1.2;
   font-family: 'Segoe UI', sans-serif;
   color: #333;
   transition: opacity 0.3s ease;
-  font-size: inherit; /* ← ADICIONE ESTA LINHA - HERDA DO PAI */
+  font-size: inherit;
 }
 
 /* Esconde os itens quando recolhido */
 .instruction-box.recolhido .instruction-item {
   opacity: 0;
-  display: none;
 }
 
 /* Mostra os itens quando expandido */
 .instruction-box.expandido .instruction-item {
   opacity: 1;
-  display: flex;
 }
 
 .instruction-item img {
-  width: 24px; /* tamanho fixo mínimo */
+  width: 24px;
   height: 24px;
   object-fit: contain;
-  flex-shrink: 0; /* não deixa encolher */
+  flex-shrink: 0;
 }
 
 /* Botão de fechar/expandir */
@@ -211,7 +209,6 @@ body {
   background: #f8fff8;
   border-color: #45a049;
 }
-
 /* =============================================
    COMPONENTES DE INTERFACE - BOTÕES E CONTROLES
    ============================================= */
