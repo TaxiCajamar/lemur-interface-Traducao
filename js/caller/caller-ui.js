@@ -960,19 +960,19 @@ window.rtcCore.setDataChannelCallback(async (mensagem) => {
           lang: receiverLang
         };
 
-        // ✅ SÓ INICIA CONEXÃO SE TIVER receiverId E APÓS TUDO ESTAR PRONTO
-        if (receiverId) {
-          document.getElementById('callActionBtn').style.display = 'none';
-          
-          if (localStream) {
-            const meuIdioma = await obterIdiomaCompleto(navigator.language);
-            
-            // ✅ PEQUENO ATRASO PARA GARANTIR QUE TUDO ESTÁ ESTÁVEL
-            setTimeout(() => {
-              iniciarConexaoVisual(receiverId, receiverToken, myId, localStream, meuIdioma);
-            }, 1000);
-          }
-        }
+       // ✅ SÓ INICIA CONEXÃO SE TIVER receiverId E APÓS TUDO ESTAR PRONTO
+if (receiverId) {
+  document.getElementById('callActionBtn').style.display = 'none';
+  
+  if (localStream) {
+    const meuIdioma = window.meuIdiomaLocal || 'pt-BR'; // USA O IDIOMA GUARDADO (IGUAL AO RECEIVER)
+    
+    // ✅ PEQUENO ATRASO PARA GARANTIR QUE TUDO ESTÁ ESTÁVEL
+    setTimeout(() => {
+      iniciarConexaoVisual(receiverId, receiverToken, myId, localStream, meuIdioma);
+    }, 1000);
+  }
+}
 
         const navegadorLang = await obterIdiomaCompleto(navigator.language);
 
@@ -1004,9 +1004,8 @@ window.onload = async () => {
     try {
         console.log('🚀 Iniciando aplicação caller automaticamente...');
         
-        // 1. Obtém o idioma para tradução
-        const params = new URLSearchParams(window.location.search);
-        const lang = params.get('lang') || navigator.language || 'pt-BR';
+        // 1. Obtém o idioma para tradução - APENAS DO NAVEGADOR (IGUAL AO RECEIVER)
+        const lang = navigator.language || 'pt-BR';
         
         // ✅✅✅ PRIMEIRO: Aplica bandeira e GUARDA o idioma
         await aplicarBandeiraLocal(lang);
