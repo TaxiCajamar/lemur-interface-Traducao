@@ -325,12 +325,12 @@ async function traduzirFrasesFixas() {
     console.log(`🌐 Traduzindo frases fixas para: ${idiomaExato}`);
 
     const frasesParaTraduzir = {
-      "translator-label": "Real-time translation.",
-      "qr-modal-title": "This is your online key",
+        "qr-modal-title": "This is your online key",
       "qr-modal-description": "You can ask to scan, share or print on your business card.",
-      "welcome-text": "Welcome! Let's begin.",
-  "translator-label": "Real-time translation.",
-  "tap-qr": "Tap the QR code to start.",
+      "translator-label": "Real-time translation.",      // ⬅️ PRIMEIRO ELEMENTO
+  "translator-label-2": "Real-time translation.",   // ⬅️ SEGUNDO ELEMENTO (NOVO)
+       "welcome-text": "Welcome! Let's begin.",
+    "tap-qr": "Tap the QR code to start.",
   "quick-scan": "Ask to scan the QR.",
   "wait-connection": "Waiting for connection.",
   "both-connected": "Both online.",
