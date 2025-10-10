@@ -1,3 +1,4 @@
+
 /* =============================================
    CONFIGURAÇÕES GERAIS E LAYOUT PRINCIPAL
    ============================================= */
@@ -29,44 +30,7 @@ body {
   position: relative;
   overflow-y: auto;
 }
-/* ============================================= */
-/* INSTRUCTION BOX INICIAL (APENAS NO LOADING) */
-/* ============================================= */
 
-.instruction-box-inicial {
-  position: absolute;
-  bottom: 10%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 85%;
-  max-width: 300px;
-  padding: 15px;
-  background: rgba(255, 255, 255, 0.95);
-  border: 2px solid #4CAF50;
-  border-radius: 12px;
-  box-shadow: inset 0 0 10px rgba(0, 128, 0, 0.2);
-  font-size: 16px;
-  z-index: 10000;
-  text-align: left;
-  transition: all 0.3s ease;
-}
-
-.instruction-box-inicial .instruction-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
-  line-height: 1.2;
-  font-family: 'Segoe UI', sans-serif;
-  color: #333;
-}
-
-.instruction-box-inicial .instruction-item img {
-  width: 30px !important;
-  height: 30px !important;
-  object-fit: contain;
-  flex-shrink: 0;
-}
 /* =============================================
    ANIMAÇÕES E EFEITOS VISUAIS
    ============================================= */
