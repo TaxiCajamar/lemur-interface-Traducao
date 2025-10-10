@@ -1,3 +1,4 @@
+
 // 🎯 CONTROLE DO TOGGLE DAS INSTRUÇÕES
 function setupInstructionToggle() {
     const instructionBox = document.getElementById('instructionBox');
@@ -296,46 +297,12 @@ async function aplicarBandeiraRemota(langCode) {
     }
 }
 
-// 🆕 FUNÇÃO PARA TRADUZIR FRASES INICIAIS
-async function traduzirFrasesIniciais() {
-  try {
-    const idiomaExato = window.meuIdiomaLocal || 'pt-BR';
-    console.log(`🌐 Traduzindo frases iniciais para: ${idiomaExato}`);
-
-    const frasesIniciais = {
-      "welcome-text-inicial": "Welcome! Let's begin.",
-      "translator-label-inicial": "Real-time translation.",
-      "tap-qr-inicial": "Tap the QR code to start.",
-      "quick-scan-inicial": "Ask to scan the QR.",
-      "wait-connection-inicial": "Waiting for connection.",
-      "both-connected-inicial": "Both online.",
-      "drop-voice-inicial": "Speak clearly.",
-      "check-replies-inicial": "Read the message.",
-      "flip-cam-inicial": "Flip the camera. Share!"
-    };
-
-    for (const [id, texto] of Object.entries(frasesIniciais)) {
-      const el = document.getElementById(id);
-      if (el) {
-        const traduzido = await translateText(texto, idiomaExato);
-        el.textContent = traduzido;
-        console.log(`✅ Traduzido inicial: ${texto} → ${traduzido}`);
-      }
-    }
-
-    console.log('✅ Frases iniciais traduzidas com sucesso');
-
-  } catch (error) {
-    console.error("❌ Erro ao traduzir frases iniciais:", error);
-  }
-}
-
 // ✅ FUNÇÃO PARA LIBERAR INTERFACE (FALLBACK)
 function liberarInterfaceFallback() {
     console.log('🔓 Usando fallback para liberar interface...');
     
     // Remove tela de loading
-    const loadingScreen = document.getElementById('mobileLoading');
+    const loadingScreen = document.getElementById('loadingScreen');
     if (loadingScreen) {
         loadingScreen.style.display = 'none';
         console.log('✅ Tela de loading removida');
@@ -1065,9 +1032,6 @@ window.onload = async () => {
         
         // ✅✅✅ PRIMEIRO: Aplica bandeira e GUARDA o idioma
         await aplicarBandeiraLocal(lang);
-
-        // 🆕 NOVO: Traduz as instruções iniciais (que aparecem no loading)
-        await traduzirFrasesIniciais();
 
         // ✅✅✅ DEPOIS: Traduz frases com o idioma JÁ GUARDADO  
         await traduzirFrasesFixas();
