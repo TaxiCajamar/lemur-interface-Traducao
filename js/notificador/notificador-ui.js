@@ -199,7 +199,7 @@ async function traduzirFrasesFixas() {
     
     console.log(`🌐 Traduzindo frases fixas para: ${idiomaExato}`);
 
-      const frasesParaTraduzir = {
+     const frasesParaTraduzir = {
        "translator-label": "Real-time translation.",      // ⬅️ PRIMEIRO ELEMENTO
   "translator-label-2": "Real-time translation.",   // ⬅️ SEGUNDO ELEMENTO (NOVO)
   "welcome-text": "Welcome! Let's begin.",
@@ -209,7 +209,6 @@ async function traduzirFrasesFixas() {
   "check-replies": "Read the message.",
   "flip-cam": "Flip the camera. Share!"
     };
-
 
     for (const [id, texto] of Object.entries(frasesParaTraduzir)) {
       const el = document.getElementById(id);
