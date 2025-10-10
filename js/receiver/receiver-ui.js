@@ -1,4 +1,3 @@
-
 // 🎯 CONTROLE DO TOGGLE DAS INSTRUÇÕES
 function setupInstructionToggle() {
     const instructionBox = document.getElementById('instructionBox');
@@ -55,53 +54,7 @@ let primeiraFraseTTS = true;
 let navegadorTTSPreparado = false;
 let ultimoIdiomaTTS = 'pt-BR';
 
-// 🕒 SISTEMA DE ESPERA DO LÊMURE ANCIOSO
-let timerEspera = null;
-
-function iniciarSistemaEspera() {
-    // 🔄 RESETA tudo primeiro
-    pararTimerEspera();
-    esconderLemurAncioso();
-    
-    // 🕒 INICIA NOVO TIMER de 7 segundos
-    timerEspera = setTimeout(() => {
-        mostrarLemurAncioso();
-    }, 7000); // 7 segundos
-    
-    console.log('⏰ Timer de espera iniciado: 7 segundos');
-}
-
-function pararTimerEspera() {
-    if (timerEspera) {
-        clearTimeout(timerEspera);
-        timerEspera = null;
-        console.log('⏹️ Timer de espera parado');
-    }
-}
-
-function mostrarLemurAncioso() {
-    const lemurAncioso = document.getElementById('lemurAnciosoWaiting');
-    if (lemurAncioso) {
-        lemurAncioso.classList.remove('hidden');
-        // Pequeno delay para a transição CSS funcionar
-        setTimeout(() => {
-            lemurAncioso.classList.add('visible');
-        }, 10);
-        console.log('🦊 Lêmure ancioso apareceu (após 7 segundos)');
-    }
-}
-
-function esconderLemurAncioso() {
-    const lemurAncioso = document.getElementById('lemurAnciosoWaiting');
-    if (lemurAncioso) {
-        lemurAncioso.classList.remove('visible');
-        // Espera a transição terminar antes de esconder completamente
-        setTimeout(() => {
-            lemurAncioso.classList.add('hidden');
-        }, 500);
-        console.log('🦊 Lêmure ancioso escondido');
-    }
-}
+// [Sistema de espera do lêmure removido]
 
 // 🎵 CARREGAR SOM DE DIGITAÇÃO
 function carregarSomDigitacao() {
@@ -833,8 +786,6 @@ async function iniciarCameraAposPermissoes() {
                 overlay.classList.add('hidden');
                 console.log('📱 QR Code fechado pelo usuário');
                 
-                // 🔄 PARA o timer de espera se existir
-                pararTimerEspera();
                 return;
             }
             
@@ -865,37 +816,15 @@ async function iniciarCameraAposPermissoes() {
             }
             
             console.log('✅ QR Code gerado/reativado!');
-            
-            // 🕒 INICIA O SISTEMA DE ESPERA DE 7 SEGUNDOS
-            iniciarSistemaEspera();
         });
 
-        // 🖱️ CONFIGURA O CLIQUE NO LÊMURE ANCIOSO (APENAS UMA VEZ)
-        const lemurAncioso = document.getElementById('lemurAnciosoWaiting');
-        if (lemurAncioso && !lemurAncioso.hasEventListener) {
-            lemurAncioso.addEventListener('click', function() {
-                console.log('🖱️ Lêmure ancioso clicado - escondendo e reativando QR Code');
-                
-                // 1. Esconde o lêmure
-                esconderLemurAncioso();
-                
-                // 2. Para qualquer timer ativo
-                pararTimerEspera();
-                
-                console.log('✅ QR Code reativado para escaneamento');
-            });
-            lemurAncioso.hasEventListener = true; // Marca para não adicionar novamente
-        }
+        // [Event listener do lêmure removido]
 
-        // 🔄 TAMBÉM esconde o lêmure quando o QR Code for fechado de outras formas
+        // Fechar QR Code ao clicar fora
         document.querySelector('.info-overlay').addEventListener('click', function(e) {
             if (e.target === this) {
                 this.classList.add('hidden');
                 console.log('📱 QR Code fechado (clique fora)');
-                
-                // 🔄 PARA o timer e esconde o lêmure
-                pararTimerEspera();
-                esconderLemurAncioso();
             }
         });
 
@@ -939,9 +868,7 @@ async function iniciarCameraAposPermissoes() {
 
             console.log('🎯 Caller fala:', idiomaDoCaller);
             
-            // 🔄 SE CONECTOU, PARA O SISTEMA DE ESPERA
-            pararTimerEspera();
-            esconderLemurAncioso();
+            // [Sistema de espera removido - conexão estabelecida]
 
             console.log('🎯 Eu (receiver) entendo:', lang);
 
