@@ -1,173 +1,279 @@
-// 🎯 VIGIA DE CÂMERA UNIVERSAL - PARA RECEIVER, CALLER E NOTIFICADOR
-// 📍 Localização: core/camera-vigilante.js (NA SUA ESTRUTURA ATUAL)
+// 🎯 VIGIA DE CÂMERA BILATERAL - PARA RECEIVER, CALLER E NOTIFICADOR
+// 📍 Localização: core/camera-vigilante.js
 
 class CameraVigilante {
     constructor() {
         this.estaMonitorando = false;
         this.intervaloMonitoramento = null;
-        this.ultimoFrameTime = null;
-        this.tentativasRecuperacao = 0;
+        this.ultimoFrameTimeLocal = null;
+        this.ultimoFrameTimeRemoto = null;
+        this.tentativasRecuperacaoLocal = 0;
+        this.tentativasRecuperacaoRemoto = 0;
         this.maxTentativas = 3;
         
-        console.log('👁️ Vigia de Câmera inicializado');
+        // 🔍 ESTADO DAS CÂMERAS
+        this.estadoCameras = {
+            local: 'ativa', // 'ativa', 'congelada', 'erro', 'inativa'
+            remota: 'ativa'
+        };
+        
+        console.log('👁️ Vigia de Câmera Bilateral inicializado');
     }
 
-    // 🎯 INICIAR MONITORAMENTO DA CÂMERA
+    // 🎯 INICIAR MONITORAMENTO BILATERAL
     iniciarMonitoramento() {
         if (this.estaMonitorando) {
             console.log('👁️ Vigia já está monitorando');
             return;
         }
 
-        console.log('👁️ Iniciando monitoramento da câmera...');
+        console.log('👁️ Iniciando monitoramento bilateral das câmeras...');
         this.estaMonitorando = true;
-        this.ultimoFrameTime = Date.now();
+        this.ultimoFrameTimeLocal = Date.now();
+        this.ultimoFrameTimeRemoto = Date.now();
 
-        // 👁️ OBSERVA MUDANÇAS NO VÍDEO
-        this.observarVideo();
+        // 👁️ OBSERVA AMBAS AS CÂMERAS
+        this.observarCameraLocal();
+        this.observarCameraRemota();
         
-        // ⚡ VERIFICAÇÃO PERIÓDICA
+        // ⚡ VERIFICAÇÃO PERIÓDICA BILATERAL
         this.intervaloMonitoramento = setInterval(() => {
-            this.verificarSaudeCamera();
-        }, 5000); // A cada 5 segundos
+            this.verificarSaudeCameras();
+        }, 5000);
 
-        console.log('✅ Vigia de câmera ativado');
+        console.log('✅ Vigia bilateral ativado');
     }
 
-    // 👁️ OBSERVAR MUDANÇAS NO ELEMENTO DE VÍDEO
-    observarVideo() {
+    // 👁️ OBSERVAR CÂMERA LOCAL
+    observarCameraLocal() {
         const localVideo = document.getElementById('localVideo');
         if (!localVideo) {
             console.log('⚠️ Elemento localVideo não encontrado');
+            this.estadoCameras.local = 'inativa';
             return;
         }
 
-        // 🎥 DETECTA QUANDO FRAMES ESTÃO SENDO ATUALIZADOS
         localVideo.addEventListener('timeupdate', () => {
-            this.ultimoFrameTime = Date.now();
+            this.ultimoFrameTimeLocal = Date.now();
+            this.estadoCameras.local = 'ativa';
         });
 
-        // 🔍 DETECTA ERROS NO VÍDEO
         localVideo.addEventListener('error', (error) => {
-            console.log('❌ Erro detectado no elemento de vídeo:', error);
-            this.tentarRecuperarCamera('erro_no_video');
+            console.log('❌ Erro na câmera local:', error);
+            this.estadoCameras.local = 'erro';
+            this.tentarRecuperarCameraLocal('erro_no_video');
         });
 
-        console.log('👀 Vigia observando elemento de vídeo');
+        console.log('👀 Vigia observando câmera local');
     }
 
-    // ⚡ VERIFICAR SAÚDE DA CÂMERA
-    verificarSaudeCamera() {
+    // 👁️ OBSERVAR CÂMERA REMOTA
+    observarCameraRemota() {
+        const remoteVideo = document.getElementById('remoteVideo');
+        if (!remoteVideo) {
+            console.log('⚠️ Elemento remoteVideo não encontrado');
+            this.estadoCameras.remota = 'inativa';
+            return;
+        }
+
+        remoteVideo.addEventListener('timeupdate', () => {
+            this.ultimoFrameTimeRemoto = Date.now();
+            this.estadoCameras.remota = 'ativa';
+        });
+
+        remoteVideo.addEventListener('error', (error) => {
+            console.log('❌ Erro na câmera remota:', error);
+            this.estadoCameras.remota = 'erro';
+            this.notificarProblemaRemoto('erro_remoto');
+        });
+
+        // 🔍 DETECTA SE O VÍDEO REMOTO ESTÁ VISÍVEL
+        this.observarVisibilidadeRemota();
+
+        console.log('👀 Vigia observando câmera remota');
+    }
+
+    // 🔍 OBSERVAR VISIBILIDADE DA CÂMERA REMOTA
+    observarVisibilidadeRemota() {
+        const remoteVideo = document.getElementById('remoteVideo');
+        if (!remoteVideo) return;
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) {
+                    console.log('⚠️ Câmera remota não está visível na tela');
+                    this.notificarProblemaRemoto('nao_visivel');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        observer.observe(remoteVideo);
+    }
+
+    // ⚡ VERIFICAR SAÚDE DE AMBAS AS CÂMERAS
+    verificarSaudeCameras() {
         if (!this.estaMonitorando) return;
 
         const agora = Date.now();
-        const tempoSemFrames = agora - this.ultimoFrameTime;
         
-        // 🚨 DETECTA CÂMERA CONGELADA (mais de 10 segundos sem frames)
-        if (tempoSemFrames > 10000) {
-            console.log('🚨 Câmera possivelmente congelada - sem frames há', tempoSemFrames + 'ms');
-            this.tentarRecuperarCamera('congelada');
-            return;
+        // 🎥 VERIFICA CÂMERA LOCAL
+        const tempoSemFramesLocal = agora - this.ultimoFrameTimeLocal;
+        if (tempoSemFramesLocal > 10000 && this.estadoCameras.local === 'ativa') {
+            console.log('🚨 Câmera LOCAL congelada - sem frames há', tempoSemFramesLocal + 'ms');
+            this.estadoCameras.local = 'congelada';
+            this.tentarRecuperarCameraLocal('congelada');
         }
 
-        // ✅ VERIFICA SE A STREAM AINDA EXISTE E ESTÁ ATIVA
-        if (window.localStream) {
-            const videoTrack = window.localStream.getVideoTracks()[0];
-            if (videoTrack) {
-                if (videoTrack.readyState === 'ended') {
-                    console.log('🚨 Track de vídeo terminou');
-                    this.tentarRecuperarCamera('track_terminada');
-                }
-            } else {
-                console.log('🚨 Nenhuma track de vídeo encontrada');
-                this.tentarRecuperarCamera('sem_track');
-            }
-        } else {
-            console.log('ℹ️ Nenhuma stream local ativa');
+        // 📡 VERIFICA CÂMERA REMOTA
+        const tempoSemFramesRemoto = agora - this.ultimoFrameTimeRemoto;
+        if (tempoSemFramesRemoto > 15000 && this.estadoCameras.remota === 'ativa') {
+            console.log('🚨 Câmera REMOTA congelada - sem frames há', tempoSemFramesRemoto + 'ms');
+            this.estadoCameras.remota = 'congelada';
+            this.notificarProblemaRemoto('congelada_remota');
         }
 
-        console.log('✅ Câmera saudável - frames atualizando normalmente');
+        // ✅ VERIFICA STREAMS ATIVAS
+        this.verificarStreamsAtivas();
+
+        console.log(`📊 Status: Local=${this.estadoCameras.local}, Remota=${this.estadoCameras.remota}`);
     }
 
-    // 🔄 TENTAR RECUPERAR CÂMERA AUTOMATICAMENTE
-    async tentarRecuperarCamera(motivo) {
-        if (this.tentativasRecuperacao >= this.maxTentativas) {
-            console.log('❌ Máximo de tentativas de recuperação atingido');
-            this.mostrarAvisoFinal();
+    // 🔄 VERIFICAR STREAMS ATIVAS
+    verificarStreamsAtivas() {
+        // 🎥 VERIFICA STREAM LOCAL
+        if (window.localStream) {
+            const videoTrackLocal = window.localStream.getVideoTracks()[0];
+            if (videoTrackLocal) {
+                if (videoTrackLocal.readyState === 'ended') {
+                    console.log('🚨 Track de vídeo LOCAL terminou');
+                    this.estadoCameras.local = 'erro';
+                    this.tentarRecuperarCameraLocal('track_terminada');
+                }
+            } else {
+                console.log('🚨 Nenhuma track de vídeo LOCAL encontrada');
+                this.estadoCameras.local = 'inativa';
+            }
+        }
+
+        // 📡 VERIFICA STREAM REMOTA (se disponível)
+        if (window.remoteStream) {
+            const videoTrackRemoto = window.remoteStream.getVideoTracks()[0];
+            if (videoTrackRemoto && videoTrackRemoto.readyState === 'ended') {
+                console.log('🚨 Track de vídeo REMOTA terminou');
+                this.estadoCameras.remota = 'erro';
+                this.notificarProblemaRemoto('track_remota_terminada');
+            }
+        }
+    }
+
+    // 🔄 TENTAR RECUPERAR CÂMERA LOCAL
+    async tentarRecuperarCameraLocal(motivo) {
+        if (this.tentativasRecuperacaoLocal >= this.maxTentativas) {
+            console.log('❌ Máximo de tentativas de recuperação LOCAL atingido');
+            this.mostrarAvisoFinal('local');
             return;
         }
 
-        this.tentativasRecuperacao++;
-        console.log(`🔄 Tentativa ${this.tentativasRecuperacao}/${this.maxTentativas} - Motivo: ${motivo}`);
+        this.tentativasRecuperacaoLocal++;
+        console.log(`🔄 Tentativa LOCAL ${this.tentativasRecuperacaoLocal}/${this.maxTentativas} - Motivo: ${motivo}`);
 
-        // 📢 AVISA O USUÁRIO
-        this.mostrarAvisoRecuperacao();
+        this.mostrarAvisoRecuperacao('local');
 
         try {
-            // 🛑 PARA MONITORAMENTO DURANTE A RECUPERAÇÃO
-            this.pararMonitoramento();
+            this.pararMonitoramentoTemporario();
 
-            // 🔧 TENTA RECUPERAR
-            await this.executarRecuperacao();
+            await this.executarRecuperacaoLocal();
 
-            // ✅ REINICIA MONITORAMENTO SE RECUPEROU
             this.iniciarMonitoramento();
-            this.tentativasRecuperacao = 0; // Reseta contador
-            this.mostrarSucessoRecuperacao();
+            this.tentativasRecuperacaoLocal = 0;
+            this.mostrarSucessoRecuperacao('local');
 
         } catch (error) {
-            console.log('❌ Falha na recuperação:', error);
-            // ⏳ AGUARDA E TENTA NOVAMENTE (SE AINDA TIVER TENTATIVAS)
-            if (this.tentativasRecuperacao < this.maxTentativas) {
+            console.log('❌ Falha na recuperação LOCAL:', error);
+            if (this.tentativasRecuperacaoLocal < this.maxTentativas) {
                 setTimeout(() => {
-                    this.tentarRecuperarCamera(motivo);
+                    this.tentarRecuperarCameraLocal(motivo);
                 }, 2000);
             }
         }
     }
 
-    // 🔧 EXECUTAR PROCESSO DE RECUPERAÇÃO
-    async executarRecuperacao() {
-        console.log('🔧 Executando recuperação de câmera...');
+    // 🔧 EXECUTAR RECUPERAÇÃO DA CÂMERA LOCAL
+    async executarRecuperacaoLocal() {
+        console.log('🔧 Executando recuperação da câmera LOCAL...');
 
-        // 1. 🛑 PARA STREAM ATUAL
         if (window.localStream) {
             window.localStream.getTracks().forEach(track => track.stop());
             window.localStream = null;
         }
 
-        // 2. ⏳ AGUARDA LIBERAÇÃO
         await new Promise(resolve => setTimeout(resolve, 1000));
 
-        // 3. 📹 TENTA NOVA CÂMERA (FRONTAL - MAIS CONFIÁVEL)
         try {
             const novaStream = await navigator.mediaDevices.getUserMedia({
                 video: { 
-                    facingMode: 'user', // ✅ Sempre frontal na recuperação
+                    facingMode: 'user',
                     width: { ideal: 1280 },
                     height: { ideal: 720 }
                 },
                 audio: false
             });
 
-            // 4. 🎥 ATUALIZA VÍDEO LOCAL
             const localVideo = document.getElementById('localVideo');
             if (localVideo) {
                 localVideo.srcObject = novaStream;
             }
 
-            // 5. 🔄 ATUALIZA STREAM GLOBAL
             window.localStream = novaStream;
-
-            // 6. 📡 ATUALIZA WEBRTC (SE CONECTADO)
             this.atualizarWebRTC(novaStream);
 
-            console.log('✅ Câmera recuperada com sucesso!');
+            console.log('✅ Câmera LOCAL recuperada com sucesso!');
+            this.estadoCameras.local = 'ativa';
             return true;
 
         } catch (error) {
-            console.log('❌ Não foi possível recuperar câmera:', error);
+            console.log('❌ Não foi possível recuperar câmera LOCAL:', error);
+            this.estadoCameras.local = 'erro';
             throw error;
+        }
+    }
+
+    // 📢 NOTIFICAR PROBLEMA NA CÂMERA REMOTA
+    notificarProblemaRemoto(motivo) {
+        console.log(`🚨 Problema na câmera REMOTA: ${motivo}`);
+        
+        // 📱 MOSTRA INDICADOR VISUAL PARA O USUÁRIO
+        this.mostrarIndicadorProblemaRemoto();
+        
+        // 🔄 TENTA REESTABELECER CONEXÃO (se aplicável)
+        if (motivo.includes('congelada') || motivo.includes('erro')) {
+            this.tentarReconexaoRemota();
+        }
+    }
+
+    // 📱 MOSTRAR INDICADOR DE PROBLEMA REMOTO
+    mostrarIndicadorProblemaRemoto() {
+        const videoWrapper = document.querySelector('.video-wrapper');
+        if (videoWrapper) {
+            // 🎨 ADICIONA BORDA VERMELHA PARA INDICAR PROBLEMA
+            videoWrapper.style.border = '0.3vw solid #ff4444';
+            videoWrapper.style.animation = 'pulse-alert 2s infinite';
+            
+            // 🔄 RESTAURA QUANDO A CÂMERA VOLTAR
+            setTimeout(() => {
+                if (this.estadoCameras.remota === 'ativa') {
+                    videoWrapper.style.border = '0.3vw solid #4CAF50';
+                    videoWrapper.style.animation = 'none';
+                }
+            }, 5000);
+        }
+    }
+
+    // 🔄 TENTAR RECONEXÃO REMOTA
+    tentarReconexaoRemota() {
+        if (window.rtcCore && typeof window.rtcCore.tentarReconexao === 'function') {
+            console.log('🔄 Tentando reconexão remota...');
+            window.rtcCore.tentarReconexao();
         }
     }
 
@@ -177,7 +283,7 @@ class CameraVigilante {
             const connectionState = window.rtcCore.peer.connectionState;
             
             if (connectionState === 'connected') {
-                console.log('🔄 Atualizando WebRTC com câmera recuperada...');
+                console.log('🔄 Atualizando WebRTC com câmera LOCAL recuperada...');
                 
                 try {
                     window.rtcCore.localStream = novaStream;
@@ -194,7 +300,7 @@ class CameraVigilante {
                     }
                     
                     if (videoUpdated) {
-                        console.log('✅ WebRTC atualizado com nova câmera');
+                        console.log('✅ WebRTC atualizado com nova câmera LOCAL');
                     }
                 } catch (webrtcError) {
                     console.error('❌ Erro ao atualizar WebRTC:', webrtcError);
@@ -203,42 +309,63 @@ class CameraVigilante {
         }
     }
 
-    // 📢 MOSTRAR AVISOS PARA O USUÁRIO
-    mostrarAvisoRecuperacao() {
-        // ✅ MENSAGEM NO CONSOLE - SEM MODIFICAR SUA ESTRUTURA
-        console.log('🔄 Recuperando câmera...');
+    // 📊 OBTER STATUS DAS CÂMERAS
+    obterStatusCameras() {
+        return {
+            local: this.estadoCameras.local,
+            remota: this.estadoCameras.remota,
+            timestamp: Date.now()
+        };
     }
 
-    mostrarSucessoRecuperacao() {
-        console.log('✅ Câmera recuperada!');
+    // 🛑 PARAR MONITORAMENTO TEMPORÁRIO
+    pararMonitoramentoTemporario() {
+        if (this.intervaloMonitoramento) {
+            clearInterval(this.intervaloMonitoramento);
+            this.intervaloMonitoramento = null;
+        }
+        this.estaMonitorando = false;
     }
 
-    mostrarAvisoFinal() {
-        console.log('❌ Câmera indisponível. Continuando sem vídeo.');
+    // 📢 MOSTRAR AVISOS
+    mostrarAvisoRecuperacao(tipo) {
+        console.log(`🔄 Recuperando câmera ${tipo.toUpperCase()}...`);
     }
 
-    // 🛑 PARAR MONITORAMENTO
+    mostrarSucessoRecuperacao(tipo) {
+        console.log(`✅ Câmera ${tipo.toUpperCase()} recuperada!`);
+    }
+
+    mostrarAvisoFinal(tipo) {
+        console.log(`❌ Câmera ${tipo.toUpperCase()} indisponível.`);
+    }
+
+    // 🛑 PARAR MONITORAMENTO COMPLETO
     pararMonitoramento() {
         if (this.intervaloMonitoramento) {
             clearInterval(this.intervaloMonitoramento);
             this.intervaloMonitoramento = null;
         }
         this.estaMonitorando = false;
-        console.log('🛑 Vigia de câmera pausado');
+        console.log('🛑 Vigia bilateral pausado');
     }
 
-    // 🔄 REINICIAR MONITORAMENTO (APÓS TROCA DE CÂMERA)
+    // 🔄 REINICIAR MONITORAMENTO
     reiniciarMonitoramento() {
         this.pararMonitoramento();
-        this.tentativasRecuperacao = 0;
-        this.ultimoFrameTime = Date.now();
+        this.tentativasRecuperacaoLocal = 0;
+        this.tentativasRecuperacaoRemoto = 0;
+        this.ultimoFrameTimeLocal = Date.now();
+        this.ultimoFrameTimeRemoto = Date.now();
+        this.estadoCameras.local = 'ativa';
+        this.estadoCameras.remota = 'ativa';
         this.iniciarMonitoramento();
     }
 
     // 🧹 LIMPAR RECURSOS
     destruir() {
         this.pararMonitoramento();
-        console.log('🧹 Vigia de câmera finalizado');
+        console.log('🧹 Vigia bilateral finalizado');
     }
 }
 
