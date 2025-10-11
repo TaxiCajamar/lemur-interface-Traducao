@@ -591,14 +591,6 @@ body {
   width: 100%;
 }
 
-/* 🆕 ESTILOS PARA COMPARTILHAR LINK - BLOCO ÚNICO */
-.compartilhar-container {
-    margin-top: 20px;
-    padding: 15px;
-    background: #f8f9fa;
-    border-radius: 12px;
-    border: 2px dashed #667eea;
-}
 /* 🆕 ESTILOS PARA BOTÃO COPIAR SIMPLES */
 .btn-copiar-simples {
     background: #667eea;
