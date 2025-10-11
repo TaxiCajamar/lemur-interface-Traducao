@@ -380,56 +380,27 @@ function setupCameraToggle() {
         }
     });
 
-    // ✅ FUNÇÃO PARA LIDAR COM NOVA STREAM
-    async function handleNewStream(newStream, cameraType) {
-        // Atualiza o vídeo local
-        const localVideo = document.getElementById('localVideo');
-        if (localVideo) {
-            localVideo.srcObject = newStream;
-        }
-
-        // ✅ ATUALIZAÇÃO CRÍTICA: Atualiza stream global
-        window.localStream = newStream;
-
-        // ✅ ATUALIZAÇÃO CRÍTICA: WebRTC
-        if (window.rtcCore && window.rtcCore.peer) {
-            const connectionState = window.rtcCore.peer.connectionState;
-            console.log(`📡 Estado da conexão WebRTC: ${connectionState}`);
-            
-            if (connectionState === 'connected') {
-                console.log('🔄 Atualizando WebRTC com nova câmera...');
-                
-                try {
-                    // Atualiza o stream local no core
-                    window.rtcCore.localStream = newStream;
-                    
-                    // Usa replaceTrack para atualizar a transmissão
-                    const newVideoTrack = newStream.getVideoTracks()[0];
-                    const senders = window.rtcCore.peer.getSenders();
-                    
-                    let videoUpdated = false;
-                    for (const sender of senders) {
-                        if (sender.track && sender.track.kind === 'video') {
-                            await sender.replaceTrack(newVideoTrack);
-                            videoUpdated = true;
-                            console.log('✅ Sender de vídeo atualizado no WebRTC');
-                        }
-                    }
-                    
-                    if (!videoUpdated) {
-                        console.log('⚠️ Nenhum sender de vídeo encontrado');
-                    }
-                } catch (webrtcError) {
-                    console.error('❌ Erro ao atualizar WebRTC:', webrtcError);
-                }
-            } else {
-                console.log(`ℹ️ WebRTC não conectado (${connectionState}), apenas atualização local`);
-            }
-        }
-
-        console.log(`✅ Câmera alterada para: ${cameraType === 'user' ? 'Frontal' : 'Traseira'}`);
+   // ✅ FUNÇÃO CORRIGIDA PARA LIDAR COM NOVA STREAM
+async function handleNewStream(newStream, cameraType) {
+    // Atualiza o vídeo local
+    const localVideo = document.getElementById('localVideo');
+    if (localVideo) {
+        localVideo.srcObject = newStream;
     }
 
+    // ✅✅✅ SOLUÇÃO: USA O MÉTODO NOVO DO WEBRTCORE
+    if (window.rtcCore && window.rtcCore.updateCameraStream) {
+        const sucesso = await window.rtcCore.updateCameraStream(newStream);
+        console.log(sucesso ? '✅ WebRTC atualizado' : '⚠️ Apenas local');
+    } else {
+        // Fallback para versão antiga
+        window.localStream = newStream;
+        if (window.rtcCore) window.rtcCore.localStream = newStream;
+        console.log('ℹ️ Usando fallback - apenas stream local');
+    }
+
+    console.log(`✅ Câmera alterada para: ${cameraType === 'user' ? 'Frontal' : 'Traseira'}`);
+}
     // ✅ FALLBACK PARA DISPOSITIVOS MÚLTIPLOS
     async function tryFallbackCameras(requestedCamera) {
         try {
