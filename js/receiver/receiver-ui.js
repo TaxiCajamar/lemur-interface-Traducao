@@ -832,27 +832,19 @@ document.getElementById('logo-traduz').addEventListener('click', function() {
     
     // Gera o QR Code
     QRCodeGenerator.generate("qrcode", callerUrl);
-    
-       // 🆕 🆕 🆕 CONFIGURA O VISUAL DO LINK E BOTÃO COPIAR
-    const linkVisual = document.getElementById('linkVisual');
+        // 🆕 🆕 🆕 CONFIGURA BOTÃO COPIAR SIMPLES
     const btnCopiar = document.getElementById('copiarLink');
-
-    if (linkVisual && btnCopiar) {
-        // Mostra uma versão reduzida do link para visualização
-        const urlReduzida = callerUrl.split('/').pop(); // Mostra apenas "caller.html?..."
-        linkVisual.textContent = urlReduzida;
-        console.log('🔗 Link para compartilhar:', callerUrl);
-        
+    if (btnCopiar) {
         btnCopiar.onclick = function() {
             navigator.clipboard.writeText(callerUrl).then(() => {
-                btnCopiar.textContent = '✅ Link Copiado!';
+                btnCopiar.textContent = '✅';
                 btnCopiar.classList.add('copiado');
                 console.log('📋 Link copiado para área de transferência');
                 
                 setTimeout(() => {
-                    btnCopiar.textContent = '📋 Copiar Link';
+                    btnCopiar.textContent = '📋';
                     btnCopiar.classList.remove('copiado');
-                }, 3000);
+                }, 2000);
             }).catch(err => {
                 console.log('❌ Erro ao copiar link:', err);
                 // Fallback para dispositivos sem clipboard API
@@ -863,10 +855,10 @@ document.getElementById('logo-traduz').addEventListener('click', function() {
                 document.execCommand('copy');
                 document.body.removeChild(textArea);
                 
-                btnCopiar.textContent = '✅ Copiado!';
+                btnCopiar.textContent = '✅';
                 setTimeout(() => {
-                    btnCopiar.textContent = '📋 Copiar Link';
-                }, 3000);
+                    btnCopiar.textContent = '📋';
+                }, 2000);
             });
         };
     }
