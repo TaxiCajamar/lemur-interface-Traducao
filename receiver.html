@@ -163,7 +163,7 @@
     <!-- OVERLAY DE QR CODE (INICIALMENTE OCULTO) -->
     <!-- ============================================= -->
 
-   <!-- 🧾 Overlay com QR Code E LINK -->
+<!-- 🧾 Overlay com QR Code E COMPARTILHAR -->
 <div class="info-overlay hidden">
   <h2 id="qr-modal-title">This is your online key</h2>
   <p class="qr-modal-description" id="qr-modal-description">
@@ -174,14 +174,18 @@
     <div id="qrcode"></div>
   </div>
   
-  <!-- 🆕 NOVA SEÇÃO: LINK ALTERNATIVO -->
-  <div class="link-alternativo">
-    <div class="link-titulo">🔗 Ou clique no link abaixo:</div>
+  <!-- 🆕 NOVA SEÇÃO: COMPARTILHAR LINK -->
+  <div class="compartilhar-container">
+    <div class="compartilhar-titulo">🔗 Compartilhe este link:</div>
+    
     <div class="link-container">
-      <a href="#" id="linkCaller" class="link-caller">Clique para iniciar chamada</a>
-      <button id="copiarLink" class="btn-copiar">📋</button>
+      <div class="link-visual" id="linkVisual">Copiando link...</div>
+      <button id="copiarLink" class="btn-copiar-grande">📋 Copiar Link</button>
     </div>
-    <div class="link-aviso">⚠️ Compartilhe este link com a pessoa</div>
+    
+    <div class="compartilhar-aviso">
+      ⚠️ Copie e compartilhe por WhatsApp, email, etc.
+    </div>
   </div>
 </div>
 
