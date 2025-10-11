@@ -832,6 +832,7 @@ document.getElementById('logo-traduz').addEventListener('click', function() {
     
     // Gera o QR Code
     QRCodeGenerator.generate("qrcode", callerUrl);
+    
         // 🆕 🆕 🆕 CONFIGURA BOTÃO COPIAR SIMPLES
     const btnCopiar = document.getElementById('copiarLink');
     if (btnCopiar) {
@@ -839,10 +840,10 @@ document.getElementById('logo-traduz').addEventListener('click', function() {
             navigator.clipboard.writeText(callerUrl).then(() => {
                 btnCopiar.textContent = '✅';
                 btnCopiar.classList.add('copiado');
-                console.log('📋 Link copiado para área de transferência');
+                console.log('🔗 Link copiado para área de transferência');
                 
                 setTimeout(() => {
-                    btnCopiar.textContent = '📋';
+                    btnCopiar.textContent = '🔗';
                     btnCopiar.classList.remove('copiado');
                 }, 2000);
             }).catch(err => {
@@ -857,7 +858,7 @@ document.getElementById('logo-traduz').addEventListener('click', function() {
                 
                 btnCopiar.textContent = '✅';
                 setTimeout(() => {
-                    btnCopiar.textContent = '📋';
+                    btnCopiar.textContent = '🔗';
                 }, 2000);
             });
         };
