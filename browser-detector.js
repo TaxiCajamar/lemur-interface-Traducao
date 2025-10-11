@@ -1,13 +1,15 @@
-// browser-detector.js - VERSÃO SUPER SIMPLES
-console.log('🎯 DETECTOR: Iniciado...');
+// browser-detector.js - VERSÃO CORRIGIDA
+console.log('🎯 DETECTOR: Iniciado - REDIRECIONANDO AGORA!');
 
-// SEMPRE redireciona no Safari - VAMOS TESTAR!
-if (true) { // ⬅️ Mude para true para TESTAR
-    console.log('🔴 TESTE: REDIRECIONANDO FORÇADO!');
+// PARA tudo e redireciona IMEDIATAMENTE
+const pagina = window.location.pathname.split('/').pop();
+
+if (pagina === 'receiver.html') {
+    console.log('🔄 Redirecionando para versão Safari...');
     
-    const pagina = window.location.pathname.split('/').pop();
+    // Para TODOS os outros scripts
+    window.stop(); // ⬅️ PARA o carregamento da página
     
-    if (pagina === 'receiver.html') {
-        window.location.href = 'safari-version/safari-receiver.html' + window.location.search;
-    }
+    // Redireciona
+    window.location.href = 'safari-version/safari-receiver.html' + window.location.search;
 }
