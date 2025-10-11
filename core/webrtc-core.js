@@ -1,217 +1,294 @@
-// core/webrtc-core.js
-import { getIceServers, SIGNALING_SERVER_URL } from './internet-config.js';
+// 🎯 VIGIA DE CÂMERA BILATERAL - CONEXÃO É PRIORIDADE
+// 📍 Localização: core/camera-vigilante.js
 
-class WebRTCCore {
-  constructor(socketUrl = SIGNALING_SERVER_URL) {
-    this.socket = io(socketUrl);
-    this.peer = null;
-    this.localStream = null;
-    this.remoteStreamCallback = null;
-    this.currentCaller = null;
-    this.dataChannel = null;
-    this.onDataChannelMessage = null;
-
-    window.rtcDataChannel = {
-        send: (message) => {
-            if (this.dataChannel && this.dataChannel.readyState === 'open') {
-                this.dataChannel.send(message);
-            }
-        },
-        isOpen: () => {
-            return this.dataChannel && this.dataChannel.readyState === 'open';
-        }
-    };
-
-    this.iceServers = getIceServers();
-  }
-
-  setupDataChannelHandlers() {
-    if (!this.dataChannel) return;
-    
-    this.dataChannel.onopen = () => {
-        console.log('DataChannel connected');
-    };
-
-    this.dataChannel.onmessage = (event) => {
-        console.log('Message received:', event.data);
-        if (this.onDataChannelMessage) {
-            this.onDataChannelMessage(event.data);
-        }
-    };
-
-    this.dataChannel.onerror = (error) => {
-        console.error('DataChannel error:', error);
-    };
-  }
-
-  initialize(userId) {
-    this.socket.emit('register', userId);
-  }
-
-  startCall(targetId, stream, callerLang) {
-    this.localStream = stream;
-    this.peer = new RTCPeerConnection({ iceServers: this.iceServers });
-
-    this.dataChannel = this.peer.createDataChannel('chat');
-    this.setupDataChannelHandlers();
-
-    stream.getTracks().forEach(track => {
-        this.peer.addTrack(track, stream);
-    });
-
-    this.peer.ontrack = event => {
-        if (this.remoteStreamCallback) {
-            this.remoteStreamCallback(event.streams[0]);
-        }
-    };
-
-    this.peer.onicecandidate = event => {
-        if (event.candidate) {
-            this.socket.emit('ice-candidate', {
-                to: targetId,
-                candidate: event.candidate
-            });
-        }
-    };
-
-    this.peer.createOffer()
-        .then(offer => this.peer.setLocalDescription(offer))
-        .then(() => {
-            this.socket.emit('call', {
-                to: targetId,
-                offer: this.peer.localDescription,
-                callerLang
-            });
-        });
-  }
-
-  handleIncomingCall(offer, localStream, callback) {
-    this.peer = new RTCPeerConnection({ iceServers: this.iceServers });
-
-    if (localStream) {
-        localStream.getTracks().forEach(track => {
-            this.peer.addTrack(track, localStream);
-        });
+class CameraVigilante {
+    constructor() {
+        this.estaMonitorando = false;
+        this.intervaloMonitoramento = null;
+        this.ultimoFrameTimeLocal = null;
+        this.ultimoFrameTimeRemoto = null;
+        this.tentativasRecuperacaoLocal = 0;
+        this.maxTentativas = 3;
+        
+        // 🔍 ESTADO DAS CÂMERAS
+        this.estadoCameras = {
+            local: 'ativa', // 'ativa', 'congelada', 'erro', 'inativa'
+            remota: 'ativa'
+        };
+        
+        console.log('👁️ Vigia de Câmera Bilateral inicializado');
     }
 
-    this.peer.ondatachannel = (event) => {
-        this.dataChannel = event.channel;
-        this.setupDataChannelHandlers();
-    };
-
-    this.peer.ontrack = event => callback(event.streams[0]);
-
-    this.peer.onicecandidate = event => {
-        if (event.candidate) {
-            this.socket.emit('ice-candidate', {
-                to: this.currentCaller,
-                candidate: event.candidate
-            });
+    // 🎯 INICIAR MONITORAMENTO BILATERAL
+    iniciarMonitoramento() {
+        if (this.estaMonitorando) {
+            console.log('👁️ Vigia já está monitorando');
+            return;
         }
-    };
 
-    this.peer.setRemoteDescription(new RTCSessionDescription(offer))
-        .then(() => this.peer.createAnswer())
-        .then(answer => this.peer.setLocalDescription(answer))
-        .then(() => {
-            this.socket.emit('answer', {
-                to: this.currentCaller,
-                answer: this.peer.localDescription
-            });
-        });
-  }
+        console.log('👁️ Iniciando monitoramento bilateral das câmeras...');
+        this.estaMonitorando = true;
+        this.ultimoFrameTimeLocal = Date.now();
+        this.ultimoFrameTimeRemoto = Date.now();
 
-  setupSocketHandlers() {
-    this.socket.on('acceptAnswer', data => {
-        if (this.peer) {
-            this.peer.setRemoteDescription(new RTCSessionDescription(data.answer));
-        }
-    });
+        // 👁️ OBSERVA AMBAS AS CÂMERAS
+        this.observarCameraLocal();
+        this.observarCameraRemota();
+        
+        // ⚡ VERIFICAÇÃO PERIÓDICA BILATERAL
+        this.intervaloMonitoramento = setInterval(() => {
+            this.verificarSaudeCameras();
+        }, 5000);
 
-    this.socket.on('ice-candidate', candidate => {
-        if (this.peer) {
-            this.peer.addIceCandidate(new RTCIceCandidate(candidate));
-        }
-    });
-
-    this.socket.on('incomingCall', data => {
-        this.currentCaller = data.from;
-        if (this.onIncomingCall) {
-            this.onIncomingCall(data.offer, data.callerLang);
-        }
-    });
-  }
-
-  setRemoteStreamCallback(callback) {
-    this.remoteStreamCallback = callback;
-  }
-
-  setDataChannelCallback(callback) {
-    this.onDataChannelMessage = callback;
-  }
-
-  sendMessage(message) {
-    if (this.dataChannel && this.dataChannel.readyState === 'open') {
-        this.dataChannel.send(message);
+        console.log('✅ Vigia bilateral ativado');
     }
-  }
 
-  /**
-   * 🎥 ATUALIZA STREAM DE VÍDEO DURANTA CHAMADA ATIVA
-   * Método seguro para alternar câmeras sem quebrar WebRTC
-   */
-  updateVideoStream(newStream) {
-    return new Promise(async (resolve, reject) => {
-      try {
-        if (!this.peer || this.peer.connectionState !== 'connected') {
-          console.log('❌ WebRTC não está conectado para atualizar stream');
-          reject(new Error('WebRTC não conectado'));
-          return;
+    // 👁️ OBSERVAR CÂMERA LOCAL
+    observarCameraLocal() {
+        const localVideo = document.getElementById('localVideo');
+        if (!localVideo) {
+            console.log('⚠️ Elemento localVideo não encontrado');
+            this.estadoCameras.local = 'inativa';
+            return;
         }
 
-        console.log('🔄 Atualizando stream de vídeo no WebRTC Core...');
-        
-        // Atualiza o stream local
-        this.localStream = newStream;
-        
-        // Obtém a nova track de vídeo
-        const newVideoTrack = newStream.getVideoTracks()[0];
-        
-        if (!newVideoTrack) {
-          reject(new Error('Nenhuma track de vídeo encontrada'));
-          return;
+        localVideo.addEventListener('timeupdate', () => {
+            this.ultimoFrameTimeLocal = Date.now();
+            this.estadoCameras.local = 'ativa';
+        });
+
+        localVideo.addEventListener('error', (error) => {
+            console.log('❌ Erro na câmera local:', error);
+            this.estadoCameras.local = 'erro';
+            this.tentarRecuperarCameraLocal('erro_no_video');
+        });
+
+        console.log('👀 Vigia observando câmera local');
+    }
+
+    // 👁️ OBSERVAR CÂMERA REMOTA
+    observarCameraRemota() {
+        const remoteVideo = document.getElementById('remoteVideo');
+        if (!remoteVideo) {
+            console.log('⚠️ Elemento remoteVideo não encontrado');
+            this.estadoCameras.remota = 'inativa';
+            return;
         }
 
-        // Encontra e atualiza TODOS os senders de vídeo
-        const senders = this.peer.getSenders();
-        let videoSendersUpdated = 0;
+        remoteVideo.addEventListener('timeupdate', () => {
+            this.ultimoFrameTimeRemoto = Date.now();
+            this.estadoCameras.remota = 'ativa';
+        });
+
+        remoteVideo.addEventListener('error', (error) => {
+            console.log('❌ Erro na câmera remota:', error);
+            this.estadoCameras.remota = 'erro';
+            // ⚠️ APENAS LOG - NÃO TENTA RECUPERAR RECEPÇÃO
+            console.log('⚠️ Problema na recepção da câmera remota - mantendo conexão');
+        });
+
+        console.log('👀 Vigia observando câmera remota');
+    }
+
+    // ⚡ VERIFICAR SAÚDE DE AMBAS AS CÂMERAS
+    verificarSaudeCameras() {
+        if (!this.estaMonitorando) return;
+
+        const agora = Date.now();
         
-        for (const sender of senders) {
-          if (sender.track && sender.track.kind === 'video') {
-            try {
-              await sender.replaceTrack(newVideoTrack);
-              videoSendersUpdated++;
-              console.log(`✅ Sender de vídeo ${videoSendersUpdated} atualizado`);
-            } catch (error) {
-              console.error('❌ Erro ao atualizar sender:', error);
+        // 🎥 VERIFICA CÂMERA LOCAL
+        const tempoSemFramesLocal = agora - this.ultimoFrameTimeLocal;
+        if (tempoSemFramesLocal > 10000 && this.estadoCameras.local === 'ativa') {
+            console.log('🚨 Câmera LOCAL congelada - sem frames há', tempoSemFramesLocal + 'ms');
+            this.estadoCameras.local = 'congelada';
+            this.tentarRecuperarCameraLocal('congelada');
+        }
+
+        // 📡 VERIFICA CÂMERA REMOTA (APENAS DETECÇÃO)
+        const tempoSemFramesRemoto = agora - this.ultimoFrameTimeRemoto;
+        if (tempoSemFramesRemoto > 15000 && this.estadoCameras.remota === 'ativa') {
+            console.log('🚨 Câmera REMOTA congelada - sem frames há', tempoSemFramesRemoto + 'ms');
+            this.estadoCameras.remota = 'congelada';
+            // ⚠️ APENAS LOG - NÃO INTERFERE NA CONEXÃO
+            console.log('⚠️ Câmera remota congelada - mantendo conexão WebRTC ativa');
+        }
+
+        // ✅ VERIFICA STREAMS ATIVAS
+        this.verificarStreamsAtivas();
+
+        console.log(`📊 Status: Local=${this.estadoCameras.local}, Remota=${this.estadoCameras.remota}`);
+    }
+
+    // 🔄 VERIFICAR STREAMS ATIVAS
+    verificarStreamsAtivas() {
+        // 🎥 VERIFICA STREAM LOCAL
+        if (window.localStream) {
+            const videoTrackLocal = window.localStream.getVideoTracks()[0];
+            if (videoTrackLocal) {
+                if (videoTrackLocal.readyState === 'ended') {
+                    console.log('🚨 Track de vídeo LOCAL terminou');
+                    this.estadoCameras.local = 'erro';
+                    this.tentarRecuperarCameraLocal('track_terminada');
+                }
+            } else {
+                console.log('🚨 Nenhuma track de vídeo LOCAL encontrada');
+                this.estadoCameras.local = 'inativa';
             }
-          }
         }
 
-        if (videoSendersUpdated > 0) {
-          console.log(`✅ ${videoSendersUpdated} senders de vídeo atualizados com sucesso`);
-          resolve(true);
-        } else {
-          console.log('⚠️ Nenhum sender de vídeo encontrado para atualizar');
-          resolve(false);
+        // 📡 VERIFICA STREAM REMOTA (APENAS DETECÇÃO)
+        if (window.remoteStream) {
+            const videoTrackRemoto = window.remoteStream.getVideoTracks()[0];
+            if (videoTrackRemoto && videoTrackRemoto.readyState === 'ended') {
+                console.log('🚨 Track de vídeo REMOTA terminou');
+                this.estadoCameras.remota = 'erro';
+                // ⚠️ APENAS LOG - NÃO TENTA RECUPERAR
+                console.log('⚠️ Stream remota terminou - mantendo conexão data channel');
+            }
         }
-        
-      } catch (error) {
-        console.error('❌ Erro crítico ao atualizar stream:', error);
-        reject(error);
-      }
-    });
-  }
+    }
+
+    // 🔄 TENTAR RECUPERAR CÂMERA LOCAL (APENAS SE NÃO QUEBRAR CONEXÃO)
+    async tentarRecuperarCameraLocal(motivo) {
+        if (this.tentativasRecuperacaoLocal >= this.maxTentativas) {
+            console.log('❌ Máximo de tentativas de recuperação LOCAL atingido - continuando sem vídeo local');
+            return;
+        }
+
+        this.tentativasRecuperacaoLocal++;
+        console.log(`🔄 Tentativa LOCAL ${this.tentativasRecuperacaoLocal}/${this.maxTentativas} - Motivo: ${motivo}`);
+
+        try {
+            // ⏸️ PAUSA MONITORAMENTO DURANTE RECUPERAÇÃO
+            this.pararMonitoramentoTemporario();
+
+            await this.executarRecuperacaoLocal();
+
+            // 🔄 REINICIA MONITORAMENTO
+            this.iniciarMonitoramento();
+            this.tentativasRecuperacaoLocal = 0;
+            console.log(`✅ Câmera LOCAL recuperada!`);
+
+        } catch (error) {
+            console.log('❌ Falha na recuperação LOCAL:', error);
+            console.log('🟡 Continuando sem câmera local - conexão WebRTC mantida');
+            
+            // 🔄 REINICIA MESMO COM FALHA (PARA MONITORAR NOVAMENTE)
+            this.iniciarMonitoramento();
+            
+            if (this.tentativasRecuperacaoLocal < this.maxTentativas) {
+                setTimeout(() => {
+                    this.tentarRecuperarCameraLocal(motivo);
+                }, 2000);
+            }
+        }
+    }
+
+    // 🔧 EXECUTAR RECUPERAÇÃO DA CÂMERA LOCAL
+    async executarRecuperacaoLocal() {
+        console.log('🔧 Executando recuperação da câmera LOCAL...');
+
+        // 🛑 PARA STREAM ATUAL (SE EXISTIR)
+        if (window.localStream) {
+            window.localStream.getTracks().forEach(track => track.stop());
+            window.localStream = null;
+        }
+
+        // ⏳ AGUARDA LIBERAÇÃO
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        try {
+            // 📹 TENTA NOVA CÂMERA
+            const novaStream = await navigator.mediaDevices.getUserMedia({
+                video: { 
+                    facingMode: 'user',
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                },
+                audio: false
+            });
+
+            // 🎥 ATUALIZA VÍDEO LOCAL
+            const localVideo = document.getElementById('localVideo');
+            if (localVideo) {
+                localVideo.srcObject = novaStream;
+            }
+
+            // 🔄 ATUALIZA STREAM GLOBAL
+            window.localStream = novaStream;
+
+            // 📡 ATUALIZA WEBRTC (SE CONECTADO) - MAS NÃO CRITICO
+            if (window.rtcCore && window.rtcCore.peer) {
+                const connectionState = window.rtcCore.peer.connectionState;
+                
+                if (connectionState === 'connected') {
+                    console.log('🔄 Tentando atualizar WebRTC com nova câmera...');
+                    try {
+                        await window.rtcCore.updateVideoStream(novaStream);
+                        console.log('✅ WebRTC atualizado com nova câmera');
+                    } catch (webrtcError) {
+                        console.log('⚠️ Falha ao atualizar WebRTC, mas conexão mantida:', webrtcError);
+                        // ⚠️ NÃO LANÇA ERRO - CONEXÃO CONTINUA
+                    }
+                }
+            }
+
+            console.log('✅ Câmera LOCAL recuperada com sucesso!');
+            this.estadoCameras.local = 'ativa';
+            return true;
+
+        } catch (error) {
+            console.log('❌ Não foi possível recuperar câmera LOCAL:', error);
+            this.estadoCameras.local = 'erro';
+            throw error;
+        }
+    }
+
+    // 📊 OBTER STATUS DAS CÂMERAS
+    obterStatusCameras() {
+        return {
+            local: this.estadoCameras.local,
+            remota: this.estadoCameras.remota,
+            timestamp: Date.now()
+        };
+    }
+
+    // 🛑 PARAR MONITORAMENTO TEMPORÁRIO
+    pararMonitoramentoTemporario() {
+        if (this.intervaloMonitoramento) {
+            clearInterval(this.intervaloMonitoramento);
+            this.intervaloMonitoramento = null;
+        }
+        this.estaMonitorando = false;
+    }
+
+    // 🛑 PARAR MONITORAMENTO COMPLETO
+    pararMonitoramento() {
+        if (this.intervaloMonitoramento) {
+            clearInterval(this.intervaloMonitoramento);
+            this.intervaloMonitoramento = null;
+        }
+        this.estaMonitorando = false;
+        console.log('🛑 Vigia bilateral pausado');
+    }
+
+    // 🔄 REINICIAR MONITORAMENTO
+    reiniciarMonitoramento() {
+        this.pararMonitoramento();
+        this.tentativasRecuperacaoLocal = 0;
+        this.ultimoFrameTimeLocal = Date.now();
+        this.ultimoFrameTimeRemoto = Date.now();
+        this.estadoCameras.local = 'ativa';
+        this.estadoCameras.remota = 'ativa';
+        this.iniciarMonitoramento();
+    }
+
+    // 🧹 LIMPAR RECURSOS
+    destruir() {
+        this.pararMonitoramento();
+        console.log('🧹 Vigia bilateral finalizado');
+    }
 }
 
-export { WebRTCCore };
+// 🌐 EXPORTAR PARA OS TRÊNS ARQUIVOS USAREM
+export { CameraVigilante };
