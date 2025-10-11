@@ -1,4 +1,4 @@
-// core/webrtc-core.js - VERSÃO ORIGINAL FUNCIONAL
+// core/webrtc-core.js
 import { getIceServers, SIGNALING_SERVER_URL } from './internet-config.js';
 
 class WebRTCCore {
