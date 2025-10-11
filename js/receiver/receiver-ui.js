@@ -362,21 +362,7 @@ function setupCameraToggle() {
                     audio: false
                 });
 
-                const success = await handleNewStream(newStream, currentCamera);
-                if (!success) {
-                    console.error('❌ Falha na troca de câmera');
-                    // Tenta fallback para câmera frontal
-                    try {
-                        const fallbackStream = await navigator.mediaDevices.getUserMedia({
-                            video: { facingMode: 'user' },
-                            audio: false
-                        });
-                        await handleNewStream(fallbackStream, 'user');
-                        currentCamera = 'user';
-                    } catch (fallbackError) {
-                        console.error('❌ Fallback também falhou:', fallbackError);
-                    }
-                }
+                await handleNewStream(newStream, currentCamera);
                 
             } catch (facingModeError) {
                 console.log('❌ facingMode falhou, tentando fallback...');
@@ -394,39 +380,54 @@ function setupCameraToggle() {
         }
     });
 
-    // ✅✅✅ FUNÇÃO CORRIGIDA PARA LIDAR COM NOVA STREAM
+    // ✅ FUNÇÃO PARA LIDAR COM NOVA STREAM
     async function handleNewStream(newStream, cameraType) {
-        console.log('🔄 Iniciando troca de câmera...');
-        
-        try {
-            // 1. Atualiza vídeo local
-            const localVideo = document.getElementById('localVideo');
-            if (localVideo) {
-                localVideo.srcObject = newStream;
-            }
-
-            // 2. Atualiza stream global
-            window.localStream = newStream;
-
-            // 3. ✅ ATUALIZAÇÃO WEBRTC - MÉTODO ROBUSTO
-            if (window.rtcCore && window.rtcCore.peer) {
-                const connectionState = window.rtcCore.peer.connectionState;
-                console.log(`📡 Estado WebRTC: ${connectionState}`);
-                
-                if (connectionState === 'connected') {
-                    await updateWebRTCStream(newStream, cameraType);
-                } else {
-                    console.log(`ℹ️ WebRTC não conectado (${connectionState}), apenas atualização local`);
-                }
-            }
-
-            console.log(`✅ Câmera alterada para: ${cameraType === 'user' ? 'Frontal' : 'Traseira'}`);
-            return true;
-            
-        } catch (error) {
-            console.error('❌ Erro na troca de câmera:', error);
-            return false;
+        // Atualiza o vídeo local
+        const localVideo = document.getElementById('localVideo');
+        if (localVideo) {
+            localVideo.srcObject = newStream;
         }
+
+        // ✅ ATUALIZAÇÃO CRÍTICA: Atualiza stream global
+        window.localStream = newStream;
+
+        // ✅ ATUALIZAÇÃO CRÍTICA: WebRTC
+        if (window.rtcCore && window.rtcCore.peer) {
+            const connectionState = window.rtcCore.peer.connectionState;
+            console.log(`📡 Estado da conexão WebRTC: ${connectionState}`);
+            
+            if (connectionState === 'connected') {
+                console.log('🔄 Atualizando WebRTC com nova câmera...');
+                
+                try {
+                    // Atualiza o stream local no core
+                    window.rtcCore.localStream = newStream;
+                    
+                    // Usa replaceTrack para atualizar a transmissão
+                    const newVideoTrack = newStream.getVideoTracks()[0];
+                    const senders = window.rtcCore.peer.getSenders();
+                    
+                    let videoUpdated = false;
+                    for (const sender of senders) {
+                        if (sender.track && sender.track.kind === 'video') {
+                            await sender.replaceTrack(newVideoTrack);
+                            videoUpdated = true;
+                            console.log('✅ Sender de vídeo atualizado no WebRTC');
+                        }
+                    }
+                    
+                    if (!videoUpdated) {
+                        console.log('⚠️ Nenhum sender de vídeo encontrado');
+                    }
+                } catch (webrtcError) {
+                    console.error('❌ Erro ao atualizar WebRTC:', webrtcError);
+                }
+            } else {
+                console.log(`ℹ️ WebRTC não conectado (${connectionState}), apenas atualização local`);
+            }
+        }
+
+        console.log(`✅ Câmera alterada para: ${cameraType === 'user' ? 'Frontal' : 'Traseira'}`);
     }
 
     // ✅ FALLBACK PARA DISPOSITIVOS MÚLTIPLOS
@@ -478,108 +479,6 @@ function setupCameraToggle() {
     }
 
     console.log('✅ Botão de alternar câmera configurado com tratamento robusto');
-}
-
-// ✅✅✅ FUNÇÃO AUXILIAR PARA ATUALIZAR WEBRTC
-async function updateWebRTCStream(newStream, cameraType) {
-    console.log('🔄 Atualizando WebRTC com nova stream...');
-    
-    try {
-        // Aguarda estabilização
-        await new Promise(resolve => setTimeout(resolve, 150));
-        
-        const newVideoTrack = newStream.getVideoTracks()[0];
-        if (!newVideoTrack) {
-            throw new Error('Nenhuma track de vídeo na nova stream');
-        }
-
-        // Aguarda a track estar pronta
-        await new Promise((resolve) => {
-            if (newVideoTrack.readyState === 'live') {
-                resolve();
-            } else {
-                newVideoTrack.onstart = resolve;
-                setTimeout(resolve, 500);
-            }
-        });
-
-        let videoUpdated = false;
-        const senders = window.rtcCore.peer.getSenders();
-
-        // ✅ MÉTODO 1: replaceTrack nos senders existentes
-        for (const sender of senders) {
-            if (sender.track && sender.track.kind === 'video') {
-                console.log('🔄 Substituindo track de vídeo...');
-                await sender.replaceTrack(newVideoTrack);
-                videoUpdated = true;
-                console.log('✅ Sender de vídeo atualizado');
-                break;
-            }
-        }
-
-        // ✅ MÉTODO 2: Se replaceTrack falhar, tenta renegociar
-        if (!videoUpdated) {
-            console.log('⚠️ ReplaceTrack falhou, tentando renegociação...');
-            await forceWebRTCRenegotiation(newStream);
-        }
-
-        // ✅ MÉTODO 3: Notifica o peer sobre a mudança
-        notifyCameraChange(cameraType);
-        
-        console.log('✅ WebRTC atualizado com sucesso');
-        
-    } catch (error) {
-        console.error('❌ Erro ao atualizar WebRTC:', error);
-        throw error;
-    }
-}
-
-// ✅✅✅ FORÇA RENEGOCIAÇÃO WEBRTC
-async function forceWebRTCRenegotiation(newStream) {
-    try {
-        console.log('🔄 Forçando renegociação WebRTC...');
-        
-        // Atualiza stream no core
-        window.rtcCore.localStream = newStream;
-        
-        // Recria a offer
-        if (window.rtcCore.renegotiate) {
-            await window.rtcCore.renegotiate();
-        } else {
-            console.log('⚠️ renegotiate não disponível, recriando conexão...');
-            await recreatePeerConnection(newStream);
-        }
-        
-        console.log('✅ Renegociação concluída');
-    } catch (error) {
-        console.error('❌ Falha na renegociação:', error);
-        throw error;
-    }
-}
-
-// ✅✅✅ NOTIFICA MUDANÇA DE CÂMERA VIA DATA CHANNEL
-function notifyCameraChange(cameraType) {
-    if (window.rtcDataChannel && window.rtcDataChannel.readyState === 'open') {
-        try {
-            const message = JSON.stringify({
-                type: 'camera_changed',
-                camera: cameraType,
-                timestamp: Date.now()
-            });
-            window.rtcDataChannel.send(message);
-            console.log('📢 Notificando mudança de câmera:', cameraType);
-        } catch (error) {
-            console.error('❌ Erro ao notificar mudança de câmera:', error);
-        }
-    }
-}
-
-// ✅✅✅ FUNÇÃO DE RECRIAÇÃO DE CONEXÃO (FALLBACK)
-async function recreatePeerConnection(newStream) {
-    console.log('🔄 Recriando conexão peer...');
-    // Esta função será implementada se necessário
-    // Por enquanto, apenas log
-    console.log('ℹ️ Função recreatePeerConnection chamada');
 }
 
 // ✅ FUNÇÃO PARA ESCONDER O BOTÃO CLICK QUANDO WEBRTC CONECTAR
