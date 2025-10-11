@@ -591,6 +591,74 @@ body {
   width: 100%;
 }
 
+/* 🆕 ESTILOS PARA LINK ALTERNATIVO */
+.link-alternativo {
+    margin-top: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border: 2px dashed #667eea;
+}
+
+.link-titulo {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #667eea;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.link-container {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.link-caller {
+    flex: 1;
+    font-size: 1.2rem;
+    color: #2d3748;
+    background: white;
+    padding: 12px 15px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    text-decoration: none;
+    word-break: break-all;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.link-caller:hover {
+    background: #edf2f7;
+}
+
+.btn-copiar {
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 15px;
+    font-size: 1.4rem;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.btn-copiar:hover {
+    background: #5a67d8;
+}
+
+.btn-copiar.copiado {
+    background: #48bb78;
+}
+
+.link-aviso {
+    font-size: 1.1rem;
+    color: #e53e3e;
+    text-align: center;
+    font-weight: bold;
+}
 /* ===== MODAL DE GRAVAÇÃO ===== */
 .recording-modal {
   position: fixed;
