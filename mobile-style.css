@@ -591,7 +591,7 @@ body {
   width: 100%;
 }
 
-/* 🆕 ESTILOS PARA LINK ALTERNATIVO */
+/* 🆕 ESTILOS PARA LINK ALTERNATIVO - BLOCO ÚNICO */
 .link-alternativo {
     margin-top: 20px;
     padding: 15px;
@@ -628,6 +628,7 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    text-align: center;
 }
 
 .link-caller:hover {
@@ -659,6 +660,8 @@ body {
     text-align: center;
     font-weight: bold;
 }
+
+
 /* ===== MODAL DE GRAVAÇÃO ===== */
 .recording-modal {
   position: fixed;
