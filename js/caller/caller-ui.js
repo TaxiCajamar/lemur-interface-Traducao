@@ -873,82 +873,93 @@ async function falarTextoSistemaHibrido(mensagem, elemento, imagemImpaciente, id
     }
 }
 
-// ✅ FUNÇÃO PARA INICIAR CÂMERA APÓS PERMISSÕES (COM ESPERA MELHORADA)
+// ✅ FUNÇÃO PARA INICIAR CÂMERA APÓS PERMISSÕES (MODO RESILIENTE)
 async function iniciarCameraAposPermissoes() {
     try {
-        if (!permissaoConcedida) {
-            throw new Error('Permissões não concedidas');
+        console.log('🎥 Tentando iniciar câmera CALLER (modo resiliente)...');
+        
+        // ✅ TENTA a câmera, mas NÃO TRAVA se falhar
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            },
+            audio: false
+        }).catch(error => {
+            console.log('⚠️ Câmera CALLER indisponível, continuando sem vídeo...', error);
+            return null; // ⬅️ RETORNA NULL EM VEZ DE THROW ERROR
+        });
+
+        // ✅ SE CÂMERA FUNCIONOU: Configura normalmente
+        if (stream) {
+            window.localStream = stream;
+            
+            const localVideo = document.getElementById('localVideo');
+            if (localVideo) {
+                localVideo.srcObject = stream;
+            }
+
+            // 🎥 CONFIGURA BOTÃO DE ALTERNAR CÂMERA (só se câmera funcionou)
+            setupCameraToggle();
+            
+            console.log('✅ Câmera CALLER iniciada com sucesso');
+        } else {
+            // ✅ SE CÂMERA FALHOU: Apenas avisa, mas continua
+            console.log('ℹ️ CALLER operando em modo áudio/texto (sem câmera)');
+            window.localStream = null;
         }
 
-        console.log('📹 Iniciando câmera...');
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-            video: true, 
-            audio: false 
-        });
-        
-        let localStream = stream;
-        window.localStream = localStream; // Armazena globalmente
-        document.getElementById('localVideo').srcObject = localStream;
-        console.log('✅ Câmera iniciada com sucesso');
-
-        // 🎥 CONFIGURA BOTÃO DE ALTERNAR CÂMERA NO CALLER
-        setupCameraToggle();
-
-        // ✅ CORREÇÃO: REMOVE LOADING QUANDO CÂMERA ESTIVER PRONTA (IGUAL AO RECEIVER)
+        // ✅✅✅ REMOVE LOADING INDEPENDENTE DA CÂMERA
         const mobileLoading = document.getElementById('mobileLoading');
         if (mobileLoading) {
             mobileLoading.style.display = 'none';
-            console.log('✅ Loader removido - câmera pronta');
         }
 
-        // ✅ PEQUENA PAUSA PARA ESTABILIZAR
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        console.log('🌐 Inicializando WebRTC...');
+        console.log('🌐 Inicializando WebRTC CALLER...');
         window.rtcCore = new WebRTCCore();
 
-      // Configura callbacks ANTES de inicializar
-window.rtcCore.setDataChannelCallback(async (mensagem) => {
-    iniciarSomDigitacao();
+        // ✅✅✅ CONFIGURA CALLBACKS ANTES DE INICIALIZAR (MANTÉM CÓDIGO ORIGINAL)
+        window.rtcCore.setDataChannelCallback(async (mensagem) => {
+            iniciarSomDigitacao();
 
-    console.log('📩 Mensagem recebida:', mensagem);
+            console.log('📩 Mensagem recebida no CALLER:', mensagem);
 
-    const elemento = document.getElementById('texto-recebido');
-    const imagemImpaciente = document.getElementById('lemurFixed');
-    
-    if (elemento) {
-        elemento.textContent = "";
-        elemento.style.opacity = '1';
-        elemento.style.transition = 'opacity 0.5s ease';
-        
-        elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
-        elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
-        elemento.style.border = '2px solid #ff0000';
-    }
+            const elemento = document.getElementById('texto-recebido');
+            const imagemImpaciente = document.getElementById('lemurFixed');
+            
+            if (elemento) {
+                elemento.textContent = "";
+                elemento.style.opacity = '1';
+                elemento.style.transition = 'opacity 0.5s ease';
+                
+                elemento.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
+                elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
+                elemento.style.border = '2px solid #ff0000';
+            }
 
-    if (imagemImpaciente) {
-        imagemImpaciente.style.display = 'block';
-    }
+            if (imagemImpaciente) {
+                imagemImpaciente.style.display = 'block';
+            }
 
-    // ✅✅✅ SOLUÇÃO DEFINITIVA: Usar o idioma GUARDADO
-    const idiomaExato = window.meuIdiomaLocal || 'pt-BR';
-    
-    console.log(`🎯 TTS Caller: Idioma guardado = ${idiomaExato}`);
-    
-    // 🎤 CHAMADA PARA SISTEMA HÍBRIDO TTS AVANÇADO
-    await falarTextoSistemaHibrido(mensagem, elemento, imagemImpaciente, idiomaExato);
-});
+            // ✅✅✅ SOLUÇÃO DEFINITIVA: Usar o idioma GUARDADO
+            const idiomaExato = window.meuIdiomaLocal || 'pt-BR';
+            
+            console.log(`🎯 TTS Caller: Idioma guardado = ${idiomaExato}`);
+            
+            // 🎤 CHAMADA PARA SISTEMA HÍBRIDO TTS AVANÇADO
+            await falarTextoSistemaHibrido(mensagem, elemento, imagemImpaciente, idiomaExato);
+        });
 
         const myId = crypto.randomUUID().substr(0, 8);
         document.getElementById('myId').textContent = myId;
 
-        console.log('🔌 Inicializando socket handlers...');
+        console.log('🔌 Inicializando socket handlers CALLER...');
         window.rtcCore.initialize(myId);
         window.rtcCore.setupSocketHandlers();
 
         // ✅ MARCA QUE O WEBRTC ESTÁ INICIALIZADO
         window.rtcCore.isInitialized = true;
-        console.log('✅ WebRTC inicializado com ID:', myId);
+        console.log('✅ WebRTC CALLER inicializado com ID:', myId);
 
         const urlParams = new URLSearchParams(window.location.search);
         const receiverId = urlParams.get('targetId') || '';
@@ -961,19 +972,20 @@ window.rtcCore.setDataChannelCallback(async (mensagem) => {
           lang: receiverLang
         };
 
-       // ✅ SÓ INICIA CONEXÃO SE TIVER receiverId E APÓS TUDO ESTAR PRONTO
-if (receiverId) {
-  document.getElementById('callActionBtn').style.display = 'none';
-  
-  if (localStream) {
-    const meuIdioma = window.meuIdiomaLocal || 'pt-BR'; // USA O IDIOMA GUARDADO (IGUAL AO RECEIVER)
-    
-    // ✅ PEQUENO ATRASO PARA GARANTIR QUE TUDO ESTÁ ESTÁVEL
-    setTimeout(() => {
-      iniciarConexaoVisual(receiverId, receiverToken, myId, localStream, meuIdioma);
-    }, 1000);
-  }
-}
+        // ✅✅✅ CORREÇÃO CRÍTICA: INICIA CONEXÃO MESMO SEM CÂMERA
+        if (receiverId) {
+          document.getElementById('callActionBtn').style.display = 'none';
+          
+          // ✅✅✅ REMOVEMOS a verificação "if (localStream)" - AGORA SEMPRE INICIA!
+          const meuIdioma = window.meuIdiomaLocal || 'pt-BR';
+          
+          // ✅ PEQUENO ATRASO PARA GARANTIR QUE TUDO ESTÁ ESTÁVEL
+          setTimeout(() => {
+            // ✅✅✅ ENVIA null se câmera falhou - WebRTC deve aceitar!
+            const streamParaEnviar = window.localStream || null;
+            iniciarConexaoVisual(receiverId, receiverToken, myId, streamParaEnviar, meuIdioma);
+          }, 1000);
+        }
 
         const navegadorLang = await obterIdiomaCompleto(navigator.language);
 
@@ -995,8 +1007,16 @@ if (receiverId) {
         aplicarBandeiraRemota(receiverLang);
 
     } catch (error) {
-        console.error("Erro ao iniciar câmera:", error);
-        throw error;
+        // ✅✅✅ EM CASO DE ERRO: Remove loading E continua
+        console.error("❌ Erro não crítico na câmera CALLER:", error);
+        
+        const mobileLoading = document.getElementById('mobileLoading');
+        if (mobileLoading) {
+            mobileLoading.style.display = 'none';
+        }
+        
+        // ✅ NÃO FAZ throw error! Apenas retorna normalmente
+        console.log('🟡 CALLER continua funcionando (áudio/texto)');
     }
 }
 
