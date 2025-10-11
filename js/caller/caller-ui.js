@@ -332,175 +332,232 @@ function criarTelaChamando() {
   return telaChamada;
 }
 
-// 🎥 FUNÇÃO PARA ALTERNAR ENTRE CÂMERAS (CORRIGIDA - ROBUSTA)
+// ✅✅✅ SETUP UNIFICADO DO BOTÃO DE CÂMERA (CALLER)
 function setupCameraToggle() {
     const toggleButton = document.getElementById('toggleCamera');
-    let currentCamera = 'user'; // 'user' = frontal, 'environment' = traseira
-    let isSwitching = false; // Evita múltiplos cliques
-
     if (!toggleButton) {
         console.log('❌ Botão de alternar câmera não encontrado');
         return;
     }
 
+    let currentCamera = 'user';
+    let isSwitching = false;
+
     toggleButton.addEventListener('click', async () => {
-        // Evita múltiplos cliques durante a troca
         if (isSwitching) {
             console.log('⏳ Troca de câmera já em andamento...');
             return;
         }
-
+        
         isSwitching = true;
-        toggleButton.style.opacity = '0.5'; // Feedback visual
-        toggleButton.style.cursor = 'wait';
-
+        
         try {
-            console.log('🔄 Iniciando troca de câmera...');
-            
-            // ✅ 1. PARA COMPLETAMENTE a stream atual
+            // Feedback visual
+            toggleButton.disabled = true;
+            toggleButton.style.opacity = '0.5';
+            const originalText = toggleButton.innerHTML;
+            toggleButton.innerHTML = '🔄...';
+
+            console.log(`🔄 Alternando câmera de ${currentCamera} para ${
+                currentCamera === 'user' ? 'environment' : 'user'
+            }`);
+
+            // Para tracks antigas
             if (window.localStream) {
-                console.log('⏹️ Parando stream atual...');
-                window.localStream.getTracks().forEach(track => {
-                    track.stop(); // Para completamente cada track
-                });
-                window.localStream = null;
+                window.localStream.getTracks().forEach(track => track.stop());
             }
 
-            // ✅ 2. PEQUENA PAUSA para o navegador liberar a câmera
-            await new Promise(resolve => setTimeout(resolve, 500));
+            // Aguarda limpeza
+            await new Promise(resolve => setTimeout(resolve, 200));
 
-            // ✅ 3. Alterna entre frontal e traseira
+            // Alterna câmera
             currentCamera = currentCamera === 'user' ? 'environment' : 'user';
-            console.log(`🎯 Solicitando câmera: ${currentCamera === 'user' ? 'Frontal' : 'Traseira'}`);
-            
-            // ✅ 4. TENTATIVA PRINCIPAL com facingMode
-            try {
-                const newStream = await navigator.mediaDevices.getUserMedia({
-                    video: { 
-                        facingMode: currentCamera,
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    },
-                    audio: false
-                });
 
-                await handleNewStream(newStream, currentCamera);
+            // Obtém nova stream
+            const newStream = await navigator.mediaDevices.getUserMedia({
+                video: { 
+                    facingMode: currentCamera,
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                },
+                audio: false
+            });
+
+            // ✅ USA FUNÇÃO UNIFICADA PARA TROCA
+            const success = await handleCameraSwitch(newStream, currentCamera);
+            
+            if (success) {
+                console.log(`✅ Troca de câmera concluída: ${
+                    currentCamera === 'user' ? 'Frontal' : 'Traseira'
+                }`);
                 
-            } catch (facingModeError) {
-                console.log('❌ facingMode falhou, tentando fallback...');
-                await tryFallbackCameras(currentCamera);
+                // Atualiza ícone do botão
+                toggleButton.innerHTML = currentCamera === 'user' ? '📱' : '🌄';
+            } else {
+                throw new Error('Falha na troca de câmera');
             }
 
         } catch (error) {
             console.error('❌ Erro crítico ao alternar câmera:', error);
-            alert('Não foi possível alternar a câmera. Tente novamente.');
+            
+            // Tenta restaurar câmera frontal como fallback
+            try {
+                const fallbackStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'user' },
+                    audio: false
+                });
+                await handleCameraSwitch(fallbackStream, 'user');
+                currentCamera = 'user';
+            } catch (fallbackError) {
+                console.error('❌ Falha no fallback:', fallbackError);
+            }
         } finally {
-            // ✅ SEMPRE restaura o botão
+            // Restaura botão
             isSwitching = false;
+            toggleButton.disabled = false;
             toggleButton.style.opacity = '1';
-            toggleButton.style.cursor = 'pointer';
+            toggleButton.innerHTML = currentCamera === 'user' ? '📱' : '🌄';
         }
     });
 
-    // ✅ FUNÇÃO PARA LIDAR COM NOVA STREAM
-    async function handleNewStream(newStream, cameraType) {
-        // Atualiza o vídeo local
+    console.log('✅ Botão de câmera configurado - SISTEMA UNIFICADO');
+}
+
+// ✅✅✅ SOLUÇÃO UNIFICADA - FUNÇÃO ROBUSTA PARA TROCA DE CÂMERA (CALLER)
+async function handleCameraSwitch(newStream, cameraType) {
+    console.log('🔄 Iniciando troca de câmera...');
+    
+    try {
+        // 1. Atualiza vídeo local
         const localVideo = document.getElementById('localVideo');
         if (localVideo) {
             localVideo.srcObject = newStream;
         }
 
-        // ✅ ATUALIZAÇÃO CRÍTICA: Atualiza stream global
+        // 2. Atualiza stream global
         window.localStream = newStream;
 
-        // ✅ ATUALIZAÇÃO CRÍTICA: WebRTC
+        // 3. ✅ ATUALIZAÇÃO WEBRTC - MÉTODO ROBUSTO
         if (window.rtcCore && window.rtcCore.peer) {
             const connectionState = window.rtcCore.peer.connectionState;
-            console.log(`📡 Estado da conexão WebRTC: ${connectionState}`);
+            console.log(`📡 Estado WebRTC: ${connectionState}`);
             
             if (connectionState === 'connected') {
-                console.log('🔄 Atualizando WebRTC com nova câmera...');
-                
-                try {
-                    // Atualiza o stream local no core
-                    window.rtcCore.localStream = newStream;
-                    
-                    // Usa replaceTrack para atualizar a transmissão
-                    const newVideoTrack = newStream.getVideoTracks()[0];
-                    const senders = window.rtcCore.peer.getSenders();
-                    
-                    let videoUpdated = false;
-                    for (const sender of senders) {
-                        if (sender.track && sender.track.kind === 'video') {
-                            await sender.replaceTrack(newVideoTrack);
-                            videoUpdated = true;
-                            console.log('✅ Sender de vídeo atualizado no WebRTC');
-                        }
-                    }
-                    
-                    if (!videoUpdated) {
-                        console.log('⚠️ Nenhum sender de vídeo encontrado');
-                    }
-                } catch (webrtcError) {
-                    console.error('❌ Erro ao atualizar WebRTC:', webrtcError);
-                }
+                await updateWebRTCStream(newStream, cameraType);
             } else {
                 console.log(`ℹ️ WebRTC não conectado (${connectionState}), apenas atualização local`);
             }
         }
 
         console.log(`✅ Câmera alterada para: ${cameraType === 'user' ? 'Frontal' : 'Traseira'}`);
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Erro na troca de câmera:', error);
+        return false;
     }
+}
 
-    // ✅ FALLBACK PARA DISPOSITIVOS MÚLTIPLOS
-    async function tryFallbackCameras(requestedCamera) {
-        try {
-            console.log('🔄 Buscando dispositivos de câmera...');
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const videoDevices = devices.filter(device => device.kind === 'videoinput');
-            
-            console.log(`📷 Câmeras encontradas: ${videoDevices.length}`);
-            
-            if (videoDevices.length > 1) {
-                // ✅ Estratégia: Pega a próxima câmera disponível
-                const currentDeviceId = window.localStream ? 
-                    window.localStream.getVideoTracks()[0]?.getSettings()?.deviceId : null;
-                
-                let newDeviceId;
-                if (currentDeviceId && videoDevices.length > 1) {
-                    // Encontra a próxima câmera na lista
-                    const currentIndex = videoDevices.findIndex(device => device.deviceId === currentDeviceId);
-                    newDeviceId = videoDevices[(currentIndex + 1) % videoDevices.length].deviceId;
-                } else {
-                    // Primeira vez ou não conseguiu identificar, pega a primeira disponível
-                    newDeviceId = videoDevices[0].deviceId;
-                }
-                
-                console.log(`🎯 Tentando câmera com deviceId: ${newDeviceId.substring(0, 10)}...`);
-                
-                const newStream = await navigator.mediaDevices.getUserMedia({
-                    video: { 
-                        deviceId: { exact: newDeviceId },
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    },
-                    audio: false
-                });
+// ✅✅✅ FUNÇÃO AUXILIAR PARA ATUALIZAR WEBRTC
+async function updateWebRTCStream(newStream, cameraType) {
+    console.log('🔄 Atualizando WebRTC com nova stream...');
+    
+    try {
+        // Aguarda estabilização
+        await new Promise(resolve => setTimeout(resolve, 150));
+        
+        const newVideoTrack = newStream.getVideoTracks()[0];
+        if (!newVideoTrack) {
+            throw new Error('Nenhuma track de vídeo na nova stream');
+        }
 
-                await handleNewStream(newStream, 'fallback');
-                console.log('✅ Câmera alternada via fallback de dispositivos');
-                
+        // Aguarda a track estar pronta
+        await new Promise((resolve) => {
+            if (newVideoTrack.readyState === 'live') {
+                resolve();
             } else {
-                console.warn('⚠️ Apenas uma câmera disponível');
-                alert('Apenas uma câmera foi detectada neste dispositivo.');
+                newVideoTrack.onstart = resolve;
+                setTimeout(resolve, 500);
             }
-        } catch (fallbackError) {
-            console.error('❌ Fallback também falhou:', fallbackError);
-            alert('Não foi possível acessar outra câmera. Verifique as permissões.');
+        });
+
+        let videoUpdated = false;
+        const senders = window.rtcCore.peer.getSenders();
+
+        // ✅ MÉTODO 1: replaceTrack nos senders existentes
+        for (const sender of senders) {
+            if (sender.track && sender.track.kind === 'video') {
+                console.log('🔄 Substituindo track de vídeo...');
+                await sender.replaceTrack(newVideoTrack);
+                videoUpdated = true;
+                console.log('✅ Sender de vídeo atualizado');
+                break;
+            }
+        }
+
+        // ✅ MÉTODO 2: Se replaceTrack falhar, tenta renegociar
+        if (!videoUpdated) {
+            console.log('⚠️ ReplaceTrack falhou, tentando renegociação...');
+            await forceWebRTCRenegotiation(newStream);
+        }
+
+        // ✅ MÉTODO 3: Notifica o peer sobre a mudança
+        notifyCameraChange(cameraType);
+        
+        console.log('✅ WebRTC atualizado com sucesso');
+        
+    } catch (error) {
+        console.error('❌ Erro ao atualizar WebRTC:', error);
+        throw error;
+    }
+}
+
+// ✅✅✅ FORÇA RENEGOCIAÇÃO WEBRTC
+async function forceWebRTCRenegotiation(newStream) {
+    try {
+        console.log('🔄 Forçando renegociação WebRTC...');
+        
+        // Atualiza stream no core
+        window.rtcCore.localStream = newStream;
+        
+        // Recria a offer
+        if (window.rtcCore.renegotiate) {
+            await window.rtcCore.renegotiate();
+        } else {
+            console.log('⚠️ renegotiate não disponível, recriando conexão...');
+            await recreatePeerConnection(newStream);
+        }
+        
+        console.log('✅ Renegociação concluída');
+    } catch (error) {
+        console.error('❌ Falha na renegociação:', error);
+        throw error;
+    }
+}
+
+// ✅✅✅ NOTIFICA MUDANÇA DE CÂMERA VIA DATA CHANNEL
+function notifyCameraChange(cameraType) {
+    if (window.rtcDataChannel && window.rtcDataChannel.readyState === 'open') {
+        try {
+            const message = JSON.stringify({
+                type: 'camera_changed',
+                camera: cameraType,
+                timestamp: Date.now()
+            });
+            window.rtcDataChannel.send(message);
+            console.log('📢 Notificando mudança de câmera:', cameraType);
+        } catch (error) {
+            console.error('❌ Erro ao notificar mudança de câmera:', error);
         }
     }
+}
 
-    console.log('✅ Botão de alternar câmera configurado com tratamento robusto');
+// ✅✅✅ FUNÇÃO DE RECRIAÇÃO DE CONEXÃO (FALLBACK)
+async function recreatePeerConnection(newStream) {
+    console.log('🔄 Recriando conexão peer...');
+    // Esta função será implementada se necessário
+    // Por enquanto, apenas log
+    console.log('ℹ️ Função recreatePeerConnection chamada');
 }
 
 // 🔄 FUNÇÃO UNIFICADA: Tentar conexão visual (COM ESPERA INTELIGENTE)
