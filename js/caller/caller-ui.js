@@ -1,5 +1,6 @@
 // 📦 Importa o núcleo WebRTC
 import { WebRTCCore } from '../../core/webrtc-core.js';
+import { CameraVigilante } from '../../core/camera-vigilante.js';
 
 // 🎵 VARIÁVEIS DE ÁUDIO
 let audioContext = null;
@@ -903,6 +904,12 @@ async function iniciarCameraAposPermissoes() {
             setupCameraToggle();
             
             console.log('✅ Câmera CALLER iniciada com sucesso');
+
+            // 🆕 🆕 🆕 ADICIONAR ESTAS 2 LINHAS AQUI 🆕 🆕 🆕
+    window.cameraVigilante = new CameraVigilante();
+    window.cameraVigilante.iniciarMonitoramento();
+    // 🆕 🆕 🆕 FIM DAS 2 LINHAS 🆕 🆕 🆕
+        
         } else {
             // ✅ SE CÂMERA FALHOU: Apenas avisa, mas continua
             console.log('ℹ️ CALLER operando em modo áudio/texto (sem câmera)');
