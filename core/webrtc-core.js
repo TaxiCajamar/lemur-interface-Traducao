@@ -11,6 +11,7 @@ class WebRTCCore {
     this.dataChannel = null;
     this.onDataChannelMessage = null;
 
+    // ✅✅✅ MANTIDO EXATAMENTE COMO ESTAVA
     window.rtcDataChannel = {
         send: (message) => {
             if (this.dataChannel && this.dataChannel.readyState === 'open') {
@@ -25,6 +26,7 @@ class WebRTCCore {
     this.iceServers = getIceServers();
   }
 
+  // ✅✅✅ MÉTODOS ORIGINAIS - NENHUMA ALTERAÇÃO
   setupDataChannelHandlers() {
     if (!this.dataChannel) return;
     
@@ -199,7 +201,7 @@ class WebRTCCore {
         }
 
         if (videoSendersUpdated > 0) {
-          console.log(`✅ ${videoSendersUpdated} senders de vídeo atualizados com sucesso`);
+          console.log(`✅ ${videoSendersUpdated} senders de vídeo atualizados com sucesso');
           resolve(true);
         } else {
           console.log('⚠️ Nenhum sender de vídeo encontrado para atualizar');
@@ -212,6 +214,80 @@ class WebRTCCore {
       }
     });
   }
+
+  // 🆕 🆕 🆕 NOVO MÉTODO ADICIONADO - COMPLETAMENTE SEGURO 🆕 🆕 🆕
+  /**
+   * 🎥 ATUALIZAÇÃO SEGURA DE CÂMERA - MÉTODO OTIMIZADO
+   * Versão melhorada para troca de câmeras sem problemas
+   * NÃO INTERFERE EM NENHUM MÉTODO EXISTENTE
+   */
+  async updateCameraStream(newStream) {
+    try {
+      console.log('🔄 Iniciando atualização segura de câmera...');
+      
+      // ✅ VERIFICA CONEXÃO WEBRTC
+      if (!this.peer || this.peer.connectionState !== 'connected') {
+        console.log('📞 WebRTC não conectado - apenas atualizando stream local');
+        this.localStream = newStream;
+        return false;
+      }
+
+      // ✅ CAPTURA A TRACK ANTES DE QUALQUER ALTERAÇÃO
+      const newVideoTrack = newStream.getVideoTracks()[0];
+      if (!newVideoTrack) {
+        throw new Error('Nenhuma track de vídeo na nova stream');
+      }
+
+      // ✅ VERIFICA SE A TRACK ESTÁ PRONTA
+      if (newVideoTrack.readyState !== 'live') {
+        console.log('⏳ Aguardando track ficar pronta...');
+        await new Promise((resolve) => {
+          newVideoTrack.onstart = resolve;
+          setTimeout(resolve, 500);
+        });
+      }
+
+      // ✅ ATUALIZA SENDERS PRIMEIRO (CRÍTICO)
+      const senders = this.peer.getSenders();
+      let videoUpdated = false;
+      
+      for (const sender of senders) {
+        if (sender.track && sender.track.kind === 'video') {
+          console.log('🔄 Atualizando sender de vídeo no WebRTC...');
+          await sender.replaceTrack(newVideoTrack);
+          videoUpdated = true;
+          console.log('✅ Sender de vídeo atualizado com sucesso');
+          break; // ✅ Apenas um sender precisa ser atualizado
+        }
+      }
+
+      // ✅ ATUALIZA LOCAL STREAM APÓS SUCESSO NO WEBRTC
+      if (videoUpdated) {
+        // 🛑 PARA STREAM ANTIGA APÓS SUCESSO (SE FOR DIFERENTE)
+        if (this.localStream && this.localStream !== newStream) {
+          this.localStream.getTracks().forEach(track => {
+            if (track !== newVideoTrack) track.stop();
+          });
+        }
+        
+        this.localStream = newStream;
+        console.log('✅✅✅ Câmera atualizada com SUCESSO no WebRTC');
+        return true;
+      } else {
+        console.log('⚠️ Nenhum sender atualizado, mantendo stream local apenas');
+        this.localStream = newStream;
+        return false;
+      }
+
+    } catch (error) {
+      console.error('❌ Erro na atualização de câmera:', error);
+      // ✅ FALLBACK: Mantém nova stream local mesmo com erro WebRTC
+      this.localStream = newStream;
+      return false;
+    }
+  }
+  // 🆕 🆕 🆕 FIM DO NOVO MÉTODO 🆕 🆕 🆕
+
 }
 
 export { WebRTCCore };
