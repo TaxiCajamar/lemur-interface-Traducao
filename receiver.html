@@ -163,14 +163,27 @@
     <!-- OVERLAY DE QR CODE (INICIALMENTE OCULTO) -->
     <!-- ============================================= -->
 
-    <!-- 🧾 Overlay com QR Code -->
-    <div class="info-overlay hidden">
-      <h2 id="qr-modal-title">This is your online key</h2>
-      <div id="qrcode" class="qrcode-container"></div>
-      <p class="qr-modal-description" id="qr-modal-description">
-        You can ask to scan, share or print on your business card.
-      </p>
+   <!-- 🧾 Overlay com QR Code E LINK -->
+<div class="info-overlay hidden">
+  <h2 id="qr-modal-title">This is your online key</h2>
+  <p class="qr-modal-description" id="qr-modal-description">
+    You can ask to scan, share or print on your business card.
+  </p>
+  
+  <div class="qrcode-container">
+    <div id="qrcode"></div>
+  </div>
+  
+  <!-- 🆕 NOVA SEÇÃO: LINK ALTERNATIVO -->
+  <div class="link-alternativo">
+    <div class="link-titulo">🔗 Ou clique no link abaixo:</div>
+    <div class="link-container">
+      <a href="#" id="linkCaller" class="link-caller">Clique para iniciar chamada</a>
+      <button id="copiarLink" class="btn-copiar">📋</button>
     </div>
+    <div class="link-aviso">⚠️ Compartilhe este link com a pessoa</div>
+  </div>
+</div>
 
     <!-- ============================================= -->
     <!-- ÁREA DE EXIBIÇÃO DE TEXTO TRADUZIDO -->
