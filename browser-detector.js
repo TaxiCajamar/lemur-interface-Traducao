@@ -1,8 +1,20 @@
-// browser-detector.js - VERSÃO AVISO VISUAL
-console.log('🎯 DETECTOR: Mostrando aviso visual para Safari');
+// browser-detector.js - VERSÃO CORRIGIDA
+console.log('🔍 Detector: Verificando navegador...');
+
+function isSafariOrIOS() {
+    const isSafari = /safari/i.test(navigator.userAgent) && !/chrome/i.test(navigator.userAgent);
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    return isSafari || isIOS;
+}
 
 function mostrarAvisoSafari() {
-    // Cria um aviso GRANDE na tela
+    if (!isSafariOrIOS()) {
+        console.log('✅ Navegador normal (Chrome/Android), continuando...');
+        return; // ⬅️ NÃO FAZ NADA NO CHROME
+    }
+    
+    console.log('📱 Safari/iPhone detectado! Mostrando aviso...');
+    
     const aviso = document.createElement('div');
     aviso.style.cssText = `
         position: fixed;
@@ -10,7 +22,7 @@ function mostrarAvisoSafari() {
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0,0,0,0.9);
+        background: rgba(0,0,0,0.95);
         color: white;
         z-index: 99999;
         display: flex;
@@ -44,11 +56,6 @@ function mostrarAvisoSafari() {
     `;
     
     document.body.appendChild(aviso);
-    
-    // Também tenta redirecionar automaticamente como fallback
-    setTimeout(() => {
-        window.location.href = 'safari-version/safari-receiver.html' + window.location.search;
-    }, 5000); // Tenta depois de 5 segundos
 }
 
 // Executa quando a página carregar
