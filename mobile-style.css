@@ -591,8 +591,8 @@ body {
   width: 100%;
 }
 
-/* 🆕 ESTILOS PARA LINK ALTERNATIVO - BLOCO ÚNICO */
-.link-alternativo {
+/* 🆕 ESTILOS PARA COMPARTILHAR LINK - BLOCO ÚNICO */
+.compartilhar-container {
     margin-top: 20px;
     padding: 15px;
     background: #f8f9fa;
@@ -600,7 +600,7 @@ body {
     border: 2px dashed #667eea;
 }
 
-.link-titulo {
+.compartilhar-titulo {
     font-size: 1.4rem;
     font-weight: bold;
     color: #667eea;
@@ -610,57 +610,53 @@ body {
 
 .link-container {
     display: flex;
+    flex-direction: column;
     gap: 10px;
     align-items: center;
     margin-bottom: 10px;
 }
 
-.link-caller {
-    flex: 1;
-    font-size: 1.2rem;
+.link-visual {
+    width: 100%;
+    font-size: 1.1rem;
     color: #2d3748;
     background: white;
     padding: 12px 15px;
     border-radius: 8px;
     border: 1px solid #e2e8f0;
-    text-decoration: none;
     word-break: break-all;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
     text-align: center;
+    font-family: monospace;
 }
 
-.link-caller:hover {
-    background: #edf2f7;
-}
-
-.btn-copiar {
+.btn-copiar-grande {
     background: #667eea;
     color: white;
     border: none;
     border-radius: 8px;
-    padding: 12px 15px;
-    font-size: 1.4rem;
+    padding: 15px 20px;
+    font-size: 1.3rem;
     cursor: pointer;
-    transition: background 0.3s ease;
+    transition: all 0.3s ease;
+    width: 100%;
+    font-weight: bold;
 }
 
-.btn-copiar:hover {
+.btn-copiar-grande:hover {
     background: #5a67d8;
+    transform: translateY(-2px);
 }
 
-.btn-copiar.copiado {
+.btn-copiar-grande.copiado {
     background: #48bb78;
 }
 
-.link-aviso {
+.compartilhar-aviso {
     font-size: 1.1rem;
     color: #e53e3e;
     text-align: center;
     font-weight: bold;
 }
-
 
 /* ===== MODAL DE GRAVAÇÃO ===== */
 .recording-modal {
