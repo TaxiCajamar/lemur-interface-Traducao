@@ -481,38 +481,50 @@ window.enviarMensagemTraduzida = function(mensagemTraduzida) {
     }
 };
 
-// ✅ FUNÇÃO PRINCIPAL PARA INICIAR CÂMERA E WEBRTC
+// ✅ FUNÇÃO PRINCIPAL PARA INICIAR CÂMERA E WEBRTC (MODO RESILIENTE)
 async function iniciarCameraAposPermissoes() {
     try {
-        if (!permissaoConcedida) {
-            throw new Error('Permissões não concedidas');
-        }
-
-        console.log('📹 Iniciando câmera para notificador...');
+        console.log('🎥 Tentando iniciar câmera NOTIFICADOR (modo resiliente)...');
         
+        // ✅ TENTA a câmera, mas NÃO TRAVA se falhar
         const stream = await navigator.mediaDevices.getUserMedia({
-            video: true,
+            video: {
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            },
             audio: false
+        }).catch(error => {
+            console.log('⚠️ Câmera NOTIFICADOR indisponível, continuando sem vídeo...', error);
+            return null; // ⬅️ RETORNA NULL EM VEZ DE THROW ERROR
         });
 
-        window.localStream = stream;
+        // ✅ SE CÂMERA FUNCIONOU: Configura normalmente
+        if (stream) {
+            window.localStream = stream;
 
-        const localVideo = document.getElementById('localVideo');
-        if (localVideo) {
-            localVideo.srcObject = stream;
-            
-            const mobileLoading = document.getElementById('mobileLoading');
-            if (mobileLoading) {
-                mobileLoading.style.display = 'none';
+            const localVideo = document.getElementById('localVideo');
+            if (localVideo) {
+                localVideo.srcObject = stream;
             }
+
+            setupCameraToggle();
+            console.log('✅ Câmera NOTIFICADOR iniciada com sucesso');
+        } else {
+            // ✅ SE CÂMERA FALHOU: Apenas avisa, mas continua
+            console.log('ℹ️ NOTIFICADOR operando em modo áudio/texto (sem câmera)');
+            window.localStream = null;
         }
 
-        setupCameraToggle();
+        // ✅✅✅ REMOVE LOADING INDEPENDENTE DA CÂMERA
+        const mobileLoading = document.getElementById('mobileLoading');
+        if (mobileLoading) {
+            mobileLoading.style.display = 'none';
+        }
 
         console.log('🌐 Inicializando WebRTC...');
         window.rtcCore = new WebRTCCore();
 
-        // ✅ SIMPLIFICADO: Apenas o essencial do Notificador
+        // ✅✅✅ MANTÉM TODO O CÓDIGO ORIGINAL DAQUI PARA BAIXO
         const params = new URLSearchParams(window.location.search);
         const myId = window.location.href.split('?')[1]?.split('&')[0] || '';
         const lang = params.get('lang') || 'pt-BR';
@@ -556,8 +568,9 @@ async function iniciarCameraAposPermissoes() {
         });
 
         window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
-            if (!window.localStream) return;
-
+            // ✅✅✅ REMOVEMOS a verificação "if (!window.localStream) return;"
+            // AGORA aceita chamadas mesmo sem câmera!
+            
             console.log('🎯 Caller fala:', idiomaDoCaller);
             console.log('🎯 Eu (notificador) entendo:', lang);
 
@@ -566,7 +579,10 @@ async function iniciarCameraAposPermissoes() {
 
             console.log('🎯 Vou traduzir:', idiomaDoCaller, '→', lang);
 
-            window.rtcCore.handleIncomingCall(offer, window.localStream, (remoteStream) => {
+            // ✅✅✅ ENVIA stream local SE disponível, senão null
+            const streamParaUsar = window.localStream || null;
+            
+            window.rtcCore.handleIncomingCall(offer, streamParaUsar, (remoteStream) => {
                 remoteStream.getAudioTracks().forEach(track => track.enabled = false);
 
                 const remoteVideo = document.getElementById('remoteVideo');
@@ -607,14 +623,16 @@ async function iniciarCameraAposPermissoes() {
         }, 1000);
 
     } catch (error) {
-        console.error("Erro ao iniciar câmera:", error);
+        // ✅✅✅ EM CASO DE ERRO: Remove loading E continua
+        console.error("❌ Erro não crítico na câmera NOTIFICADOR:", error);
         
         const mobileLoading = document.getElementById('mobileLoading');
         if (mobileLoading) {
             mobileLoading.style.display = 'none';
         }
         
-        throw error;
+        // ✅ NÃO FAZ throw error! Apenas retorna normalmente
+        console.log('🟡 NOTIFICADOR continua funcionando (áudio/texto)');
     }
 }
 
