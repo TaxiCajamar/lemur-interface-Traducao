@@ -285,12 +285,7 @@ function setupCameraToggle() {
                 localVideo.srcObject = newStream;
             }
 
-            if (window.rtcCore && window.rtcCore.updateCameraStream) {
-    const sucesso = await window.rtcCore.updateCameraStream(newStream);
-    console.log(sucesso ? '✅ WebRTC atualizado' : '⚠️ Apenas local');
-} else {
-    window.localStream = newStream; // Fallback seguro
-}
+            window.localStream = newStream;
 
             console.log(`✅ Câmera alterada para: ${currentCamera === 'user' ? 'Frontal' : 'Traseira'}`);
 
