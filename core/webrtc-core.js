@@ -212,17 +212,6 @@ class WebRTCCore {
       }
     });
   }
-
-  // 🔄 MÉTODO PARA TENTAR RECONEXÃO (USADO PELO VIGILANTE)
-  tentarReconexao() {
-    console.log('🔄 WebRTC Core: Tentando reconexão...');
-    // Aqui você pode implementar lógica de reconexão se necessário
-    // Por enquanto é apenas um placeholder para o vigilante
-  }
 }
 
-// 🌐 EXPORTAR A CLASSE PRINCIPAL
 export { WebRTCCore };
-
-// 🌐 EXPORTAR SERVIDORES ICE TAMBÉM
-export { getIceServers, SIGNALING_SERVER_URL };
