@@ -395,9 +395,10 @@ body {
 
 #texto-recebido {
   position: absolute;
-  top:65%;
+  /* ⬇️ ÂNCORA NA BASE - fixa o bottom e deixa o top flexível */
+  bottom: 20%; /* Ajuste conforme sua necessidade */
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
   font-size: 1.2em;
   padding: 2vh 2vw;
   margin: 2vh 0;
@@ -405,12 +406,24 @@ body {
   border-radius: 1vh;
   background-color: #f8f9fa;
   width: 90%;
-  height: 15%;
-  max-width: 500px;
+  
+  /* ⬇️ CRESCIMENTO VERTICAL FLEXÍVEL */
+  min-height: 60px; /* Altura mínima */
+  max-height: 200px; /* Altura máxima */
+  overflow-y: auto; /* Scroll quando necessário */
+  
+  /* ⬇️ COMPORTAMENTO DO TEXTO */
+  white-space: pre-wrap; /* Preserva quebras de linha */
+  word-wrap: break-word; /* Quebra palavras longas */
   text-align: center;
+  
+  /* ⬇️ ALINHAMENTO DO TEXTO DENTRO DO BOX */
+  display: flex;
+  align-items: flex-end; /* ⬅️ CRÍTICO: texto começa embaixo */
+  justify-content: center;
+  
   color: #333;
   font-weight: bold;
-  display: block;
   opacity: 1;
   visibility: visible;
   box-sizing: border-box;
