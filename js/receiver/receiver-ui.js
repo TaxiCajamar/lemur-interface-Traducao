@@ -709,44 +709,61 @@ async function falarTextoSistemaHibrido(mensagem, elemento, imagemImpaciente, id
     }
 }
 
-// ✅ FUNÇÃO PARA INICIAR CÂMERA APÓS PERMISSÕES
+// ✅ NOVO BLOCO - CÂMERA RESILIENTE
 async function iniciarCameraAposPermissoes() {
     try {
-        if (!permissaoConcedida) {
-            throw new Error('Permissões não concedidas');
-        }
-
+        console.log('🎥 Tentando iniciar câmera (modo resiliente)...');
+        
+        // ✅ TENTA a câmera, mas NÃO TRAVA se falhar
         const stream = await navigator.mediaDevices.getUserMedia({
-            video: true,
+            video: {
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            },
             audio: false
+        }).catch(error => {
+            console.log('⚠️ Câmera indisponível, continuando sem vídeo...', error);
+            return null; // ⬅️ RETORNA NULL EM VEZ DE THROW ERROR
         });
 
-        let localStream = stream;
-        window.localStream = localStream; // Armazena globalmente
+        // ✅ SE CÂMERA FUNCIONOU: Configura normalmente
+        if (stream) {
+            window.localStream = stream;
 
-        const localVideo = document.getElementById('localVideo');
-        if (localVideo) {
-            localVideo.srcObject = localStream;
-            
-            // ✅ MOSTRA BOTÃO E REMOVE LOADING QUANDO CÂMERA ESTIVER PRONTA
-            const mobileLoading = document.getElementById('mobileLoading');
-            if (mobileLoading) {
-                mobileLoading.style.display = 'none';
+            const localVideo = document.getElementById('localVideo');
+            if (localVideo) {
+                localVideo.srcObject = stream;
             }
 
-            // Aparece 2 segundos após a câmera carregar
-            setTimeout(() => {
-                const elementoClick = document.getElementById('click');
-                if (elementoClick) {
-                    elementoClick.style.display = 'block';
-                    elementoClick.classList.add('piscar-suave'); // Começa a piscar
-                }
-            }, 500);
+            // 🎥 CONFIGURA BOTÃO DE ALTERNAR CÂMERA (só se câmera funcionou)
+            setupCameraToggle();
+            
+            console.log('✅ Câmera iniciada com sucesso');
+        } else {
+            // ✅ SE CÂMERA FALHOU: Apenas avisa, mas continua
+            console.log('ℹ️ Sistema operando em modo áudio/texto (sem câmera)');
+            window.localStream = null;
         }
 
-        // 🎥 CONFIGURA BOTÃO DE ALTERNAR CÂMERA
-        setupCameraToggle();
+        // ✅✅✅ REMOVE LOADING INDEPENDENTE DA CÂMERA
+        const mobileLoading = document.getElementById('mobileLoading');
+        if (mobileLoading) {
+            mobileLoading.style.display = 'none';
+        }
 
+        // ✅✅✅ MOSTRA BOTÃO CLICK INDEPENDENTE DA CÂMERA
+        setTimeout(() => {
+            const elementoClick = document.getElementById('click');
+            if (elementoClick) {
+                elementoClick.style.display = 'block';
+                elementoClick.classList.add('piscar-suave');
+                console.log('🟡 Botão click ativado (com/sem câmera)');
+            }
+        }, 500);
+        
+        // ... continua o código ORIGINAL daqui para baixo ...
+        // (MANTÉM todo o resto do código que estava aqui)
+        
         window.rtcCore = new WebRTCCore();
 
         const url = window.location.href;
@@ -864,7 +881,10 @@ async function iniciarCameraAposPermissoes() {
         });
 
         window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
-            if (!localStream) return;
+            // ✅✅✅ REMOVEMOS a verificação "if (!localStream) return;"
+            // AGORA aceita chamadas mesmo sem câmera!
+            
+            console.log('📞 Chamada recebida - Com/Sem câmera');
 
             console.log('🎯 Caller fala:', idiomaDoCaller);
             
@@ -877,7 +897,7 @@ async function iniciarCameraAposPermissoes() {
 
             console.log('🎯 Vou traduzir:', idiomaDoCaller, '→', lang);
 
-            window.rtcCore.handleIncomingCall(offer, localStream, (remoteStream) => {
+            window.rtcCore.handleIncomingCall(offer, window.localStream, (remoteStream) => {
                 remoteStream.getAudioTracks().forEach(track => track.enabled = false);
 
                 const overlay = document.querySelector('.info-overlay');
@@ -936,15 +956,16 @@ async function iniciarCameraAposPermissoes() {
         esconderClickQuandoConectar();
 
     } catch (error) {
-        console.error("Erro ao iniciar câmera:", error);
+        // ✅✅✅ EM CASO DE ERRO: Remove loading E continua
+        console.error("❌ Erro não crítico na câmera:", error);
         
-        // ✅ EM CASO DE ERRO TAMBÉM REMOVE LOADING
         const mobileLoading = document.getElementById('mobileLoading');
         if (mobileLoading) {
             mobileLoading.style.display = 'none';
         }
         
-        throw error;
+        // ✅ NÃO FAZ throw error! Apenas retorna normalmente
+        console.log('🟡 Sistema continua funcionando (áudio/texto)');
     }
 }
 
