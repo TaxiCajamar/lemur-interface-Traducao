@@ -833,28 +833,26 @@ document.getElementById('logo-traduz').addEventListener('click', function() {
     // Gera o QR Code
     QRCodeGenerator.generate("qrcode", callerUrl);
     
-    // 🆕 🆕 🆕 CONFIGURA O LINK CLICÁVEL
-    const linkCaller = document.getElementById('linkCaller');
-    if (linkCaller) {
-        linkCaller.href = callerUrl;
-        // 🆕 Mostra texto amigável para mobile
-        linkCaller.textContent = 'Clique para iniciar chamada';
-        console.log('🔗 Link configurado:', callerUrl);
-    }
-    
-    // 🆕 🆕 🆕 CONFIGURA BOTÃO COPIAR
+       // 🆕 🆕 🆕 CONFIGURA O VISUAL DO LINK E BOTÃO COPIAR
+    const linkVisual = document.getElementById('linkVisual');
     const btnCopiar = document.getElementById('copiarLink');
-    if (btnCopiar) {
+
+    if (linkVisual && btnCopiar) {
+        // Mostra uma versão reduzida do link para visualização
+        const urlReduzida = callerUrl.split('/').pop(); // Mostra apenas "caller.html?..."
+        linkVisual.textContent = urlReduzida;
+        console.log('🔗 Link para compartilhar:', callerUrl);
+        
         btnCopiar.onclick = function() {
             navigator.clipboard.writeText(callerUrl).then(() => {
-                btnCopiar.textContent = '✅';
+                btnCopiar.textContent = '✅ Link Copiado!';
                 btnCopiar.classList.add('copiado');
                 console.log('📋 Link copiado para área de transferência');
                 
                 setTimeout(() => {
-                    btnCopiar.textContent = '📋';
+                    btnCopiar.textContent = '📋 Copiar Link';
                     btnCopiar.classList.remove('copiado');
-                }, 2000);
+                }, 3000);
             }).catch(err => {
                 console.log('❌ Erro ao copiar link:', err);
                 // Fallback para dispositivos sem clipboard API
@@ -865,10 +863,10 @@ document.getElementById('logo-traduz').addEventListener('click', function() {
                 document.execCommand('copy');
                 document.body.removeChild(textArea);
                 
-                btnCopiar.textContent = '✅';
+                btnCopiar.textContent = '✅ Copiado!';
                 setTimeout(() => {
-                    btnCopiar.textContent = '📋';
-                }, 2000);
+                    btnCopiar.textContent = '📋 Copiar Link';
+                }, 3000);
             });
         };
     }
