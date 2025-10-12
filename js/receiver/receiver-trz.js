@@ -137,21 +137,36 @@ function initializeTranslator() {
         console.log('📱 Modal de gravação escondido');
     }
 
-// ✅ FUNÇÃO DE PERMISSÃO HÍBRIDA MOBILE (ATUALIZADA)
+// ✅ FUNÇÃO DE PERMISSÃO COM FEEDBACK VISUAL
 async function requestMicrophonePermissionOnClick() {
     try {
-        console.log('🎤 Solicitando permissão (modo mobile híbrido)...');
-        
-        // ✅ PRIMEIRO: No Safari, verifica se já tem permissão do receiver-ui.js
-        if (isMobileSafari() && window.microphonePermissionGranted && window.microphoneStream) {
-            console.log('📱 Safari: Reutilizando stream de ÁUDIO existente do receiver-ui.js');
-            microphonePermissionGranted = true;
-            recordButton.disabled = false;
-            return true;
+        // ✅ FEEDBACK VISUAL IMEDIATO
+        if (recordButton) {
+            recordButton.style.background = 'yellow';
+            recordButton.textContent = '🎤?';
         }
         
-        // ✅ SEGUNDO: Se não tem stream no Safari ou é Chrome, solicita normalmente
-        console.log('🎤 Solicitando permissão de microfone...');
+        // ✅ SAFARI: Se já tem permissão, usa diretamente
+        if (isMobileSafari() && window.microphonePermissionGranted && window.microphoneStream) {
+            const audioTracks = window.microphoneStream.getAudioTracks();
+            
+            if (audioTracks.length > 0) {
+                // ✅ SUCESSO: Já tem microfone
+                if (recordButton) {
+                    recordButton.style.background = 'green';
+                    recordButton.textContent = '🎤✓';
+                }
+                microphonePermissionGranted = true;
+                recordButton.disabled = false;
+                return true;
+            }
+        }
+        
+        // ✅ TENTA SOLICITAR MICROFONE
+        if (recordButton) {
+            recordButton.style.background = 'orange';
+            recordButton.textContent = '🎤...';
+        }
         
         const stream = await navigator.mediaDevices.getUserMedia({ 
             audio: {
@@ -161,14 +176,17 @@ async function requestMicrophonePermissionOnClick() {
             }
         });
         
-        // ✅ HÍBRIDO: Comportamento diferente por navegador
+        // ✅ SUCESSO: Microfone concedido
+        if (recordButton) {
+            recordButton.style.background = 'green';
+            recordButton.textContent = '🎤✓';
+        }
+        
+        // ✅ GUARDA para reutilizar
         if (isMobileSafari()) {
-            // ✅ SAFARI: Guarda o stream para reutilizar
             window.microphoneStream = stream;
             window.microphonePermissionGranted = true;
-            console.log('✅ Safari: Stream de microfone guardado');
         } else {
-            // ✅ CHROME: Comportamento original - para o stream
             setTimeout(() => {
                 stream.getTracks().forEach(track => track.stop());
             }, 100);
@@ -177,23 +195,20 @@ async function requestMicrophonePermissionOnClick() {
         microphonePermissionGranted = true;
         recordButton.disabled = false;
         
-        console.log('✅ Microfone autorizado (mobile híbrido)');
         return true;
         
     } catch (error) {
-        console.error('❌ Permissão de microfone negada:', error);
-        recordButton.disabled = true;
-        
-        // Mensagem específica por navegador
-        if (isMobileSafari()) {
-            alert('No Safari: Para usar o tradutor, permita o acesso ao MICROFONE quando solicitado.');
-        } else {
-            alert('Para usar o tradutor de voz, permita o acesso ao microfone quando solicitado.');
+        // ✅ ERRO: Microfone negado
+        if (recordButton) {
+            recordButton.style.background = 'red';
+            recordButton.textContent = '🎤❌';
+            recordButton.disabled = true;
         }
+        
+        alert('Microfone negado. Toque em "Permitir" quando solicitado.');
         return false;
     }
 }
-
     function startRecording() {
         if (isRecording || isTranslating) {
             console.log('⚠️ Já está gravando ou traduzindo');
