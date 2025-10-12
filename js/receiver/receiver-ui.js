@@ -160,47 +160,45 @@ async function solicitarTodasPermissoes() {
         let stream;
         
         if (isMobileSafari()) {
-    console.log('📱 Safari iOS detectado - estratégia específica');
-    // ✅ SAFARI: Pede vídeo E áudio juntos
-    stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-        },
-        audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            sampleRate: 44100
-        }
-    });
-    
-    // ✅✅✅ CORREÇÃO CRÍTICA: SEPARA as tracks de áudio das de vídeo
-    const audioTracks = stream.getAudioTracks();
-    const videoTracks = stream.getVideoTracks();
-    
-    console.log(`🎯 Safari: ${audioTracks.length} track(s) de áudio, ${videoTracks.length} track(s) de vídeo`);
-    
-    // ✅ PARA APENAS AS TRACKS DE VÍDEO (mantém áudio ativo)
-    videoTracks.forEach(track => {
-        console.log('⏹️ Parando track de vídeo do Safari');
-        track.stop();
-    });
-    
-    // ✅ GUARDA APENAS AS TRACKS DE ÁUDIO para o tradutor
-    if (audioTracks.length > 0) {
-        // Cria um novo stream apenas com áudio
-        const audioStream = new MediaStream(audioTracks);
-        window.microphoneStream = audioStream;
-        window.microphonePermissionGranted = true;
-        console.log('✅ Safari: Stream de ÁUDIO guardado para tradutor (vídeo parado)');
-    } else {
-        console.log('❌ Safari: Nenhuma track de áudio encontrada');
-        window.microphonePermissionGranted = false;
-    }
-    
-} else {
-    // ... mantém o código Chrome original ...
-}
+            console.log('📱 Safari iOS detectado - estratégia específica');
+            // ✅ SAFARI: Pede vídeo E áudio juntos
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                },
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    sampleRate: 44100
+                }
+            });
+            
+            // ✅✅✅ CORREÇÃO CRÍTICA: SEPARA as tracks de áudio das de vídeo
+            const audioTracks = stream.getAudioTracks();
+            const videoTracks = stream.getVideoTracks();
+            
+            console.log(`🎯 Safari: ${audioTracks.length} track(s) de áudio, ${videoTracks.length} track(s) de vídeo`);
+            
+            // ✅ PARA APENAS AS TRACKS DE VÍDEO (mantém áudio ativo)
+            videoTracks.forEach(track => {
+                console.log('⏹️ Parando track de vídeo do Safari');
+                track.stop();
+            });
+            
+            // ✅ GUARDA APENAS AS TRACKS DE ÁUDIO para o tradutor
+            if (audioTracks.length > 0) {
+                // Cria um novo stream apenas com áudio
+                const audioStream = new MediaStream(audioTracks);
+                window.microphoneStream = audioStream;
+                window.microphonePermissionGranted = true;
+                console.log('✅ Safari: Stream de ÁUDIO guardado para tradutor (vídeo parado)');
+            } else {
+                console.log('❌ Safari: Nenhuma track de áudio encontrada');
+                window.microphonePermissionGranted = false;
+            }
+            
+        } else {
             console.log('🔵 Chrome/Android - comportamento normal');
             // ✅ CHROME: Comportamento original
             stream = await navigator.mediaDevices.getUserMedia({
