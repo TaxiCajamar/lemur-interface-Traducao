@@ -1,10 +1,5 @@
 // ===== TRADUTOR OTIMIZADO E SINCRONIZADO - RECEIVER =====
 
-// 🌐 DETECÇÃO DE NAVEGADOR MOBILE
-function isMobileSafari() {
-    return /iP(hone|od|ad).+Safari/i.test(navigator.userAgent);
-}
-
 // ===== FUNÇÃO DE TRADUÇÃO ATUALIZADA =====
 async function translateText(text) {
     try {
@@ -13,7 +8,7 @@ async function translateText(text) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 text: text,
-                targetLang: window.meuIdiomaRemoto || 'en'
+                targetLang: window.meuIdiomaRemoto || 'en' // ✅ USA IDIOMA GUARDADO
             })
         });
 
@@ -27,58 +22,6 @@ async function translateText(text) {
     }
 }
 
-// ✅ FUNÇÃO PARA PROCESSAR TEXTO (Safari + Chrome)
-async function processarTextoParaTraducao(texto) {
-    if (!texto.trim()) return;
-    
-    console.log('🎤 Processando texto para tradução:', texto);
-    
-    const textoRecebido = document.getElementById('texto-recebido');
-    if (textoRecebido) {
-        textoRecebido.textContent = "Traduzindo...";
-        textoRecebido.style.opacity = '1';
-    }
-    
-    try {
-        const translation = await translateText(texto);
-        
-        if (translation && translation.trim() !== "") {
-            console.log(`🌐 Traduzido: "${texto}" → "${translation}"`);
-            
-            enviarParaOutroCelular(translation);
-            
-            if (textoRecebido) {
-                textoRecebido.textContent = translation;
-            }
-        } else {
-            console.log('❌ Tradução vazia ou falhou');
-            if (textoRecebido) {
-                textoRecebido.textContent = "Erro na tradução";
-            }
-        }
-    } catch (error) {
-        console.error('Erro na tradução:', error);
-        if (textoRecebido) {
-            textoRecebido.textContent = "Erro na tradução";
-        }
-    }
-}
-
-// ===== FUNÇÃO PARA ENVIAR TEXTO =====
-function enviarParaOutroCelular(texto) {
-    if (window.rtcCore && window.rtcCore.dataChannel && 
-        window.rtcCore.dataChannel.readyState === 'open') {
-        window.rtcCore.dataChannel.send(texto);
-        console.log('✅ Texto enviado via WebRTC Core:', texto);
-        return true;
-    } else {
-        console.log('⏳ Canal WebRTC não disponível. Estado:', 
-            window.rtcCore ? window.rtcCore.dataChannel?.readyState : 'rtcCore não existe');
-        setTimeout(() => enviarParaOutroCelular(texto), 1000);
-        return false;
-    }
-}
-
 // ===== INICIALIZAÇÃO DO TRADUTOR SINCRONIZADA =====
 function initializeTranslator() {
     console.log('🎯 Iniciando tradutor receiver...');
@@ -86,6 +29,7 @@ function initializeTranslator() {
     // ===== VERIFICAÇÃO DE DEPENDÊNCIAS CRÍTICAS =====
     console.log('🔍 Verificando dependências do receiver-ui.js...');
     
+    // ✅ VERIFICA SE RECEIVER-UI.JS JÁ CONFIGUROU TUDO
     if (!window.meuIdiomaLocal || !window.meuIdiomaRemoto) {
         console.log('⏳ Aguardando receiver-ui.js configurar idiomas...', {
             meuIdiomaLocal: window.meuIdiomaLocal,
@@ -95,6 +39,7 @@ function initializeTranslator() {
         return;
     }
     
+    // ✅ VERIFICA SE WEBRTC ESTÁ PRONTO
     if (!window.rtcCore) {
         console.log('⏳ Aguardando WebRTC inicializar...');
         setTimeout(initializeTranslator, 500);
@@ -119,76 +64,20 @@ function initializeTranslator() {
     const sendButton = document.getElementById('sendButton');
     const speakerButton = document.getElementById('speakerButton');
     const textoRecebido = document.getElementById('texto-recebido');
-
-    // ✅ SAFARI: CONFIGURAÇÃO DO INPUT NATIVO
-    let safariVoiceInput = null;
-
-    if (isMobileSafari()) {
-        console.log('📱 Safari iOS detectado - usando input de voz nativo');
-        
-        if (recordButton) {
-            recordButton.style.display = 'none';
-        }
-        
-        safariVoiceInput = document.createElement('input');
-        safariVoiceInput.type = 'text';
-        safariVoiceInput.placeholder = 'Toque aqui e diga algo...';
-        safariVoiceInput.setAttribute('speech', '');
-        safariVoiceInput.setAttribute('x-webkit-speech', '');
-        safariVoiceInput.style.width = '80%';
-        safariVoiceInput.style.padding = '15px';
-        safariVoiceInput.style.margin = '10px auto';
-        safariVoiceInput.style.fontSize = '16px';
-        safariVoiceInput.style.border = '2px solid #007AFF';
-        safariVoiceInput.style.borderRadius = '25px';
-        safariVoiceInput.style.textAlign = 'center';
-        safariVoiceInput.style.display = 'block';
-        
-        safariVoiceInput.addEventListener('change', function() {
-            const textoFalado = this.value.trim();
-            if (textoFalado) {
-                console.log('🎤 Safari - Texto falado:', textoFalado);
-                processarTextoParaTraducao(textoFalado);
-                this.value = '';
-            }
-        });
-        
-        safariVoiceInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                const textoFalado = this.value.trim();
-                if (textoFalado) {
-                    console.log('🎤 Safari - Texto digitado:', textoFalado);
-                    processarTextoParaTraducao(textoFalado);
-                    this.value = '';
-                }
-            }
-        });
-        
-        if (recordButton && recordButton.parentNode) {
-            recordButton.parentNode.appendChild(safariVoiceInput);
-        }
-    }
-
+    
     if (!recordButton || !textoRecebido) {
         console.log('⏳ Aguardando elementos do tradutor...');
         setTimeout(initializeTranslator, 300);
         return;
     }
 
-    // 🎙️ CONFIGURAÇÃO DE VOZ (apenas para Chrome)
+    // 🎙️ CONFIGURAÇÃO DE VOZ
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const SpeechSynthesis = window.speechSynthesis;
     
-    let recognition = null;
-    
-    if (!isMobileSafari() && SpeechRecognition) {
-        recognition = new SpeechRecognition();
-        recognition.lang = IDIOMA_ORIGEM;
-        recognition.continuous = false;
-        recognition.interimResults = true;
-    } else if (!isMobileSafari()) {
+    if (!SpeechRecognition) {
         console.log('❌ SpeechRecognition não suportado');
-        if (recordButton) recordButton.style.display = 'none';
+        recordButton.style.display = 'none';
         return;
     }
     
@@ -196,8 +85,13 @@ function initializeTranslator() {
         console.log('❌ SpeechSynthesis não suportado');
         speakerButton.style.display = 'none';
     }
+    
+    const recognition = new SpeechRecognition();
+    recognition.lang = IDIOMA_ORIGEM; // ✅ IDIOMA LOCAL GUARDADO
+    recognition.continuous = false;
+    recognition.interimResults = true;
 
-    // ⏱️ VARIÁVEIS DE ESTADO
+    // ⏱️ VARIÁVEIS DE ESTADO (COMPLETAS)
     let isRecording = false;
     let isTranslating = false;
     let recordingStartTime = 0;
@@ -223,7 +117,7 @@ function initializeTranslator() {
         }
     }
 
-    // 🎙️ CONTROLES DE GRAVAÇÃO
+    // 🎙️ CONTROLES DE GRAVAÇÃO (COM TODOS OS VISUAIS)
     function showRecordingModal() {
         if (recordingModal) recordingModal.classList.add('visible');
         recordingStartTime = Date.now();
@@ -238,17 +132,10 @@ function initializeTranslator() {
         console.log('📱 Modal de gravação escondido');
     }
 
-    // ✅ FUNÇÃO DE PERMISSÃO
+    // ✅ FUNÇÃO SIMPLIFICADA DE PERMISSÃO (APENAS NO CLIQUE)
     async function requestMicrophonePermissionOnClick() {
         try {
-            console.log('🎤 Solicitando permissão...');
-            
-            if (isMobileSafari() && window.microphonePermissionGranted && window.microphoneStream) {
-                console.log('📱 Safari: Reutilizando stream existente');
-                microphonePermissionGranted = true;
-                recordButton.disabled = false;
-                return true;
-            }
+            console.log('🎤 Solicitando permissão de microfone...');
             
             const stream = await navigator.mediaDevices.getUserMedia({ 
                 audio: {
@@ -258,54 +145,40 @@ function initializeTranslator() {
                 }
             });
             
-            if (isMobileSafari()) {
-                window.microphoneStream = stream;
-                window.microphonePermissionGranted = true;
-                console.log('✅ Safari: Stream de microfone guardado');
-            } else {
-                setTimeout(() => {
-                    stream.getTracks().forEach(track => track.stop());
-                }, 100);
-            }
+            // ✅ PARA O STREAM IMEDIATAMENTE (só precisamos da permissão)
+            setTimeout(() => {
+                stream.getTracks().forEach(track => track.stop());
+            }, 100);
             
             microphonePermissionGranted = true;
             recordButton.disabled = false;
             
-            console.log('✅ Microfone autorizado');
+            console.log('✅ Microfone autorizado via clique');
             return true;
             
         } catch (error) {
             console.error('❌ Permissão de microfone negada:', error);
             recordButton.disabled = true;
             
-            if (isMobileSafari()) {
-                alert('No Safari: Toque em "Permitir" quando solicitado o microfone.');
-            } else {
-                alert('Para usar o tradutor de voz, permita o acesso ao microfone quando solicitado.');
-            }
+            // Mostra alerta para usuário
+            alert('Para usar o tradutor de voz, permita o acesso ao microfone quando solicitado.');
             return false;
         }
     }
 
     function startRecording() {
-        if (isMobileSafari()) {
-            console.log('📱 Safari: Use o campo de texto com microfone');
-            if (safariVoiceInput) {
-                safariVoiceInput.focus();
-            }
-            return;
-        }
-        
         if (isRecording || isTranslating) {
             console.log('⚠️ Já está gravando ou traduzindo');
             return;
         }
         
         try {
+            // ✅ SOLICITA PERMISSÃO APENAS NA PRIMEIRA VEZ
             if (!microphonePermissionGranted) {
                 console.log('🎤 Primeira vez - solicitando permissão...');
                 requestMicrophonePermissionOnClick().then(permitted => {
                     if (permitted) {
+                        // Se permissão concedida, inicia gravação
                         doStartRecording();
                     }
                 });
@@ -321,17 +194,14 @@ function initializeTranslator() {
     }
 
     function doStartRecording() {
-        if (!recognition) {
-            console.log('❌ Recognition não disponível');
-            return;
-        }
-        
         recognition.start();
         isRecording = true;
         
+        // ✅ VISUAL: Botão fica verde
         recordButton.classList.add('recording');
         showRecordingModal();
         
+        // ✅ VISUAL: Desabilita botão speaker durante gravação
         if (speakerButton) {
             speakerButton.disabled = true;
         }
@@ -346,13 +216,13 @@ function initializeTranslator() {
         }
         
         isRecording = false;
-        if (recognition) {
-            recognition.stop();
-        }
+        recognition.stop();
         
+        // ✅ VISUAL: Botão volta ao normal
         recordButton.classList.remove('recording');
         hideRecordingModal();
         
+        // ✅ VISUAL: Reativa botão speaker após gravação
         if (speakerButton) {
             speakerButton.disabled = false;
         }
@@ -370,6 +240,7 @@ function initializeTranslator() {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
         
+        // ✅ USA O IDIOMA REMOTO CORRETO (GUARDADO)
         utterance.lang = window.meuIdiomaRemoto || 'en-US';
         utterance.rate = 0.9;
         utterance.volume = 0.8;
@@ -421,56 +292,73 @@ function initializeTranslator() {
         }
     }
 
-    // 🎙️ EVENTOS DE RECONHECIMENTO (apenas para Chrome)
-    if (recognition) {
-        recognition.onresult = function(event) {
-            let finalTranscript = '';
-            
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-                if (event.results[i].isFinal) {
-                    finalTranscript += event.results[i][0].transcript;
-                }
-            }
-            
-            if (finalTranscript && !isTranslating) {
-                const now = Date.now();
-                if (now - lastTranslationTime > 1000) {
-                    lastTranslationTime = now;
-                    isTranslating = true;
-                    
-                    console.log(`🎤 Reconhecido: "${finalTranscript}"`);
-                    
-                    translateText(finalTranscript).then(translation => {
-                        if (translation && translation.trim() !== "") {
-                            console.log(`🌐 Traduzido: "${finalTranscript}" → "${translation}"`);
-                            enviarParaOutroCelular(translation);
-                        } else {
-                            console.log('❌ Tradução vazia ou falhou');
-                        }
-                        isTranslating = false;
-                    }).catch(error => {
-                        console.error('Erro na tradução:', error);
-                        isTranslating = false;
-                    });
-                }
-            }
-        };
-        
-        recognition.onerror = function(event) {
-            console.log('❌ Erro recognition:', event.error);
-            stopRecording();
-        };
-        
-        recognition.onend = function() {
-            if (isRecording) {
-                console.log('🔚 Reconhecimento terminado automaticamente');
-                stopRecording();
-            }
-        };
+    // ===== FUNÇÃO MELHORADA PARA ENVIAR TEXTO =====
+    function enviarParaOutroCelular(texto) {
+        // ✅ USA O CANAL DO WEBRTCCORE CORRETAMENTE
+        if (window.rtcCore && window.rtcCore.dataChannel && 
+            window.rtcCore.dataChannel.readyState === 'open') {
+            window.rtcCore.dataChannel.send(texto);
+            console.log('✅ Texto enviado via WebRTC Core:', texto);
+            return true;
+        } else {
+            console.log('⏳ Canal WebRTC não disponível. Estado:', 
+                window.rtcCore ? window.rtcCore.dataChannel?.readyState : 'rtcCore não existe');
+            setTimeout(() => enviarParaOutroCelular(texto), 1000);
+            return false;
+        }
     }
 
-    // 🎮 EVENTOS DE BOTÃO
-    if (recordButton && !isMobileSafari()) {
+    // 🎙️ EVENTOS DE RECONHECIMENTO (COM TRADUÇÃO CORRETA)
+    recognition.onresult = function(event) {
+        let finalTranscript = '';
+        
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            if (event.results[i].isFinal) {
+                finalTranscript += event.results[i][0].transcript;
+            }
+        }
+        
+        // ✅ PROCESSO DE TRADUÇÃO CORRETO E SINCRONIZADO
+        if (finalTranscript && !isTranslating) {
+            const now = Date.now();
+            if (now - lastTranslationTime > 1000) {
+                lastTranslationTime = now;
+                isTranslating = true;
+                
+                console.log(`🎤 Reconhecido: "${finalTranscript}"`);
+                
+                translateText(finalTranscript).then(translation => {
+                    if (translation && translation.trim() !== "") {
+                        console.log(`🌐 Traduzido: "${finalTranscript}" → "${translation}"`);
+                        
+                        // ✅ ENVIA VIA FUNÇÃO MELHORADA
+                        enviarParaOutroCelular(translation);
+                    } else {
+                        console.log('❌ Tradução vazia ou falhou');
+                    }
+                    isTranslating = false;
+                }).catch(error => {
+                    console.error('Erro na tradução:', error);
+                    isTranslating = false;
+                });
+            }
+        }
+    };
+    
+    recognition.onerror = function(event) {
+        console.log('❌ Erro recognition:', event.error);
+        stopRecording();
+    };
+    
+    recognition.onend = function() {
+        if (isRecording) {
+            console.log('🔚 Reconhecimento terminado automaticamente');
+            stopRecording();
+        }
+    };
+
+    // 🎮 EVENTOS DE BOTÃO (COM TODOS OS VISUAIS ORIGINAIS)
+    if (recordButton) {
         recordButton.addEventListener('touchstart', function(e) {
             e.preventDefault();
             if (recordButton.disabled || isTranslating) {
@@ -538,17 +426,23 @@ function initializeTranslator() {
     }
 
     // ✅ CONFIGURAÇÃO FINAL SINCRONIZADA
-    console.log(`🎯 Tradutor receiver sincronizado: ${window.meuIdiomaLocal} → ${window.meuIdiomaRemoto}`);
+    console.log(`🎯 Tradutor receiver completamente sincronizado: ${window.meuIdiomaLocal} → ${window.meuIdiomaRemoto}`);
+    console.log('🔍 Estado final:', {
+        recordButton: !!recordButton,
+        speakerButton: !!speakerButton,
+        textoRecebido: !!textoRecebido,
+        rtcCore: !!window.rtcCore,
+        dataChannel: window.rtcCore ? window.rtcCore.dataChannel?.readyState : 'não disponível'
+    });
     
-    if (!isMobileSafari()) {
-        recordButton.disabled = false;
-    }
+    recordButton.disabled = false;
 }
 
-// ✅ INICIALIZAÇÃO ROBUSTA
+// ✅ INICIALIZAÇÃO ROBUSTA COM VERIFICAÇÃO
 function startTranslatorSafely() {
-    console.log('🚀 Iniciando tradutor receiver...');
+    console.log('🚀 Iniciando tradutor receiver com verificação de segurança...');
     
+    // Verifica se o DOM está pronto
     if (document.readyState === 'loading') {
         console.log('⏳ DOM ainda carregando...');
         document.addEventListener('DOMContentLoaded', function() {
@@ -560,5 +454,5 @@ function startTranslatorSafely() {
     }
 }
 
-// Inicia o tradutor
+// Inicia o tradutor de forma segura
 startTranslatorSafely();
