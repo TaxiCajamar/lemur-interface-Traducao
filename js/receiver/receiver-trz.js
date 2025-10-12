@@ -154,19 +154,16 @@ function initializeTranslator() {
                     sampleRate: 44100
                 }
             });
-            
             // ✅ HÍBRIDO: Comportamento diferente por navegador
-            if (/iP(hone|od|ad).+Safari/i.test(navigator.userAgent)) {
-                // ✅ SAFARI: Guarda o stream para reutilizar
-                window.microphoneStream = stream;
-                window.microphonePermissionGranted = true;
-                console.log('✅ Safari: Stream de microfone guardado');
-            } else {
-                // ✅ CHROME: Comportamento original - para o stream
-                setTimeout(() => {
-                    stream.getTracks().forEach(track => track.stop());
-                }, 100);
-            }
+if (/iP(hone|od|ad).+Safari/i.test(navigator.userAgent)) {
+    // ✅ SAFARI: Já temos o stream do receiver-ui.js, não precisa guardar novamente
+    console.log('✅ Safari: Stream já disponível via receiver-ui.js');
+} else {
+    // ✅ CHROME: Comportamento original - para o stream
+    setTimeout(() => {
+        stream.getTracks().forEach(track => track.stop());
+    }, 100);
+}
             
             microphonePermissionGranted = true;
             recordButton.disabled = false;
