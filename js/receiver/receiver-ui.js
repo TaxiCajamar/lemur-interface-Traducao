@@ -219,34 +219,7 @@ async function solicitarTodasPermissoes() {
         window.permissoesConcedidas = false;
         throw error;
     }
-} else {
-            console.log('🔵 Chrome/Android - comportamento normal');
-            // ✅ CHROME: Comportamento original
-            stream = await navigator.mediaDevices.getUserMedia({
-                video: true,
-                audio: true
-            });
-            
-            // Para as tracks normalmente (comportamento original)
-            stream.getTracks().forEach(track => track.stop());
-        }
-        
-        console.log('✅ Todas as permissões concedidas!');
-        
-        permissaoConcedida = true;
-        window.permissoesConcedidas = true;
-        window.audioContext = audioContext;
-        
-        return true;
-        
-    } catch (error) {
-        console.error('❌ Erro nas permissões:', error);
-        permissaoConcedida = false;
-        window.permissoesConcedidas = false;
-        throw error;
-    }
 }
-
 // 🎯 FUNÇÃO PARA OBTER IDIOMA COMPLETO
 async function obterIdiomaCompleto(lang) {
     if (!lang) return 'pt-BR';
