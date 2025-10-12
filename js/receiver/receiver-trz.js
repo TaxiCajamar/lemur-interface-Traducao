@@ -132,9 +132,19 @@ function initializeTranslator() {
         console.log('📱 Modal de gravação escondido');
     }
 
-    // ✅ FUNÇÃO SIMPLIFICADA DE PERMISSÃO (APENAS NO CLIQUE)
+    // ✅ FUNÇÃO DE PERMISSÃO HÍBRIDA MOBILE
     async function requestMicrophonePermissionOnClick() {
         try {
+            console.log('🎤 Solicitando permissão (modo mobile híbrido)...');
+            
+            // ✅ PRIMEIRO: No Safari, verifica se já tem permissão do receiver-ui.js
+            if (window.microphonePermissionGranted && window.microphoneStream) {
+                console.log('📱 Safari: Reutilizando stream existente do receiver-ui.js');
+                microphonePermissionGranted = true;
+                recordButton.disabled = false;
+                return true;
+            }
+            
             console.log('🎤 Solicitando permissão de microfone...');
             
             const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -145,23 +155,35 @@ function initializeTranslator() {
                 }
             });
             
-            // ✅ PARA O STREAM IMEDIATAMENTE (só precisamos da permissão)
-            setTimeout(() => {
-                stream.getTracks().forEach(track => track.stop());
-            }, 100);
+            // ✅ HÍBRIDO: Comportamento diferente por navegador
+            if (/iP(hone|od|ad).+Safari/i.test(navigator.userAgent)) {
+                // ✅ SAFARI: Guarda o stream para reutilizar
+                window.microphoneStream = stream;
+                window.microphonePermissionGranted = true;
+                console.log('✅ Safari: Stream de microfone guardado');
+            } else {
+                // ✅ CHROME: Comportamento original - para o stream
+                setTimeout(() => {
+                    stream.getTracks().forEach(track => track.stop());
+                }, 100);
+            }
             
             microphonePermissionGranted = true;
             recordButton.disabled = false;
             
-            console.log('✅ Microfone autorizado via clique');
+            console.log('✅ Microfone autorizado (mobile híbrido)');
             return true;
             
         } catch (error) {
             console.error('❌ Permissão de microfone negada:', error);
             recordButton.disabled = true;
             
-            // Mostra alerta para usuário
-            alert('Para usar o tradutor de voz, permita o acesso ao microfone quando solicitado.');
+            // Mensagem específica por navegador
+            if (/iP(hone|od|ad).+Safari/i.test(navigator.userAgent)) {
+                alert('No Safari: Toque em "Permitir" quando solicitado o microfone.');
+            } else {
+                alert('Para usar o tradutor de voz, permita o acesso ao microfone quando solicitado.');
+            }
             return false;
         }
     }
