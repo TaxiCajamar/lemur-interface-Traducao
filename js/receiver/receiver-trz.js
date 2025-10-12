@@ -527,6 +527,7 @@ async function processarTextoParaTraducao(texto) {
     }
 }
 
+
 // ===== INICIALIZAÇÃO DO TRADUTOR SINCRONIZADA =====
 function initializeTranslator() {
     console.log('🎯 Iniciando tradutor receiver...');
@@ -556,7 +557,7 @@ function initializeTranslator() {
     const IDIOMA_DESTINO = window.meuIdiomaRemoto || 'en';
     const IDIOMA_FALA = window.meuIdiomaRemoto || 'en-US';
     
-    console.log('🔤 Idiomas sincronizados:', { 
+    console.log('🔤 Idiomas sincronizada:', { 
         origem: IDIOMA_ORIGEM, 
         destino: IDIOMA_DESTINO,
         fala: IDIOMA_FALA 
@@ -569,58 +570,83 @@ function initializeTranslator() {
     const sendButton = document.getElementById('sendButton');
     const speakerButton = document.getElementById('speakerButton');
     const textoRecebido = document.getElementById('texto-recebido');
+    const safariVoiceInput = document.getElementById('safariVoiceInput');
 
-    // ✅ SAFARI: ABRE TECLADO NATIVO QUANDO CLICA NO MICROFONE
-    if (isMobileSafari()) {
-        console.log('📱 Safari iOS - configurando teclado nativo');
+    // ✅✅✅ SOLUÇÃO SAFARI: QUANDO CLICA NO MICROFONE → ABRE TECLADO NATIVO
+    if (isMobileSafari() && recordButton && safariVoiceInput) {
+        console.log('📱 Safari iOS detectado - configurando microfone nativo');
         
-        // 1. ENCONTRA o campo de input do tradutor que JÁ EXISTE
-        const campoEntrada = document.querySelector('input[type="text"]') || 
-                            document.getElementById('texto-entrada') ||
-                            document.querySelector('.text-input') ||
-                            document.querySelector('input');
-        
-        if (campoEntrada) {
-            console.log('✅ Safari: Campo de entrada encontrado');
+        recordButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('🎤 Safari: Abrindo teclado nativo com microfone...');
             
-            // 2. QUANDO CLICA NO BOTÃO MICROFONE → ABRE TECLADO
-            recordButton.addEventListener('click', function(e) {
-                e.preventDefault();
-                console.log('📱 Safari: Abrindo teclado nativo...');
-                campoEntrada.focus(); // ⬅️ ISSO ABRE TECLADO DO IPHONE
-            });
+            // ⬇️⬇️⬇️ ISSO ABRE O TECLADO DO IPHONE COM MICROFONE ⬇️⬇️⬇️
+            safariVoiceInput.focus();
             
-            // 3. QUANDO USUÁRIO TERMINA DE FALAR/DIGITAR → ENVIA PARA TRADUÇÃO
-            campoEntrada.addEventListener('change', function() {
-                const texto = this.value.trim();
-                if (texto) {
-                    console.log('🎤 Safari - Texto para traduzir:', texto);
-                    
-                    // ⬇️⬇️⬇️ SEU CÓDIGO ORIGINAL FAZ O RESTO ⬇️⬇️⬇️
-                    // - Envia para API de tradução
-                    // - Recebe tradução
-                    // - Envia via WebRTC para outro celular
-                    processarTextoParaTraducao(texto);
-                    
-                    this.value = ''; // Limpa campo
+            // Feedback visual opcional
+            if (textoRecebido) {
+                textoRecebido.textContent = "Fale agora...";
+                textoRecebido.style.opacity = '1';
+            }
+        });
+
+        // ⬇️⬇️⬇️ QUANDO USUÁRIO TERMINA DE FALAR/DIGITAR ⬇️⬇️⬇️
+        safariVoiceInput.addEventListener('change', function() {
+            const textoFalado = this.value.trim();
+            if (textoFalado) {
+                console.log('🎤 Safari - Texto capturado:', textoFalado);
+                
+                // ⬇️⬇️⬇️ SEQUÊNCIA ORIGINAL DO SEU PROJETO ⬇️⬇️⬇️
+                // 1. Mostra "Traduzindo..." 
+                if (textoRecebido) {
+                    textoRecebido.textContent = "Traduzindo...";
                 }
-            });
-            
-            // 4. TAMBÉM CAPTURA ENTER (caso usuário digite)
-            campoEntrada.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    const texto = this.value.trim();
-                    if (texto) {
-                        console.log('🎤 Safari - Texto com Enter:', texto);
-                        processarTextoParaTraducao(texto);
-                        this.value = '';
+                
+                // 2. Envia para API de tradução
+                translateText(textoFalado).then(translation => {
+                    if (translation && translation.trim() !== "") {
+                        console.log(`🌐 Traduzido: "${textoFalado}" → "${translation}"`);
+                        
+                        // 3. Envia via WebRTC para outro celular
+                        enviarParaOutroCelular(translation);
+                        
+                        // 4. Feedback visual local
+                        if (textoRecebido) {
+                            textoRecebido.textContent = translation;
+                        }
                     }
+                });
+                
+                // Limpa o campo para próxima mensagem
+                this.value = '';
+            }
+        });
+
+        // Também captura Enter (caso usuário digite)
+        safariVoiceInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const textoDigitado = this.value.trim();
+                if (textoDigitado) {
+                    console.log('⌨️ Safari - Texto digitado:', textoDigitado);
+                    
+                    // Mesma sequência de tradução
+                    translateText(textoDigitado).then(translation => {
+                        if (translation) {
+                            enviarParaOutroCelular(translation);
+                            if (textoRecebido) {
+                                textoRecebido.textContent = translation;
+                            }
+                        }
+                    });
+                    
+                    this.value = '';
                 }
-            });
-        } else {
-            console.log('❌ Safari: Nenhum campo de entrada encontrado');
-        }
+            }
+        });
     }
+
+    // ⬇️⬇️⬇️ O RESTO DO SEU CÓDIGO ORIGINAL CONTINUA IGUAL ⬇️⬇️⬇️
+    // (MANTENHA todo o código que já estava aqui para Chrome/Android)
 
     if (!recordButton || !textoRecebido) {
         console.log('⏳ Aguardando elementos do tradutor...');
@@ -628,7 +654,7 @@ function initializeTranslator() {
         return;
     }
 
-    // 🎙️ CONFIGURAÇÃO DE VOZ (apenas para Chrome)
+    // 🎙️ CONFIGURAÇÃO DE VOZ (APENAS PARA CHROME - CÓDIGO ORIGINAL)
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const SpeechSynthesis = window.speechSynthesis;
     
