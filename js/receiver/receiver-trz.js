@@ -1,5 +1,10 @@
 // ===== TRADUTOR OTIMIZADO E SINCRONIZADO - RECEIVER =====
 
+// 🌐 DETECÇÃO DE NAVEGADOR MOBILE (para uso no tradutor)
+function isMobileSafari() {
+    return /iP(hone|od|ad).+Safari/i.test(navigator.userAgent);
+}
+
 // ===== FUNÇÃO DE TRADUÇÃO ATUALIZADA =====
 async function translateText(text) {
     try {
