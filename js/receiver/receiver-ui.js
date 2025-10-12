@@ -44,6 +44,21 @@ import { WebRTCCore } from '../../core/webrtc-core.js';
 import { QRCodeGenerator } from '../qrcode/qr-code-utils.js';
 import { CameraVigilante } from '../../core/camera-vigilante.js';
 
+// 🌐 DETECÇÃO DE NAVEGADOR MOBILE (Android/Chrome vs iPhone/Safari)
+function isMobileSafari() {
+    return /iP(hone|od|ad).+Safari/i.test(navigator.userAgent);
+}
+
+function isChromeMobile() {
+    return /Android.*Chrome|Chrome.*Mobile/i.test(navigator.userAgent);
+}
+
+console.log('📱 Navegador mobile detectado:', {
+    isMobileSafari: isMobileSafari(),
+    isChromeMobile: isChromeMobile(),
+    userAgent: navigator.userAgent
+});
+
 // 🎵 VARIÁVEIS DE ÁUDIO
 let audioContext = null;
 let somDigitacao = null;
@@ -137,19 +152,47 @@ function iniciarAudio() {
     console.log('🎵 Áudio desbloqueado!');
 }
 
-// 🎤 SOLICITAR TODAS AS PERMISSÕES DE UMA VEZ
+// 🎤 SOLICITAR TODAS AS PERMISSÕES - HÍBRIDA MOBILE
 async function solicitarTodasPermissoes() {
     try {
-        console.log('🎯 Solicitando todas as permissões...');
+        console.log('🎯 Solicitando permissões (modo mobile híbrido)...');
         
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: true
-        });
+        let stream;
+        
+        if (isMobileSafari()) {
+            console.log('📱 Safari iOS detectado - estratégia específica');
+            // ✅ SAFARI: Pede vídeo E áudio juntos, mas mantém áudio
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                },
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    sampleRate: 44100
+                }
+            });
+            
+            // ✅ SAFARI: Guarda stream de áudio globalmente para o tradutor
+            window.microphoneStream = stream;
+            window.microphonePermissionGranted = true;
+            
+            console.log('✅ Safari: Stream de áudio guardado para tradutor');
+            
+        } else {
+            console.log('🔵 Chrome/Android - comportamento normal');
+            // ✅ CHROME: Comportamento original
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: true
+            });
+            
+            // Para as tracks normalmente (comportamento original)
+            stream.getTracks().forEach(track => track.stop());
+        }
         
         console.log('✅ Todas as permissões concedidas!');
-        
-        stream.getTracks().forEach(track => track.stop());
         
         permissaoConcedida = true;
         window.permissoesConcedidas = true;
