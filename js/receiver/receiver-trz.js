@@ -27,6 +27,44 @@ async function translateText(text) {
     }
 }
 
+// ✅ FUNÇÃO PARA PROCESSAR TEXTO (Safari + Chrome)
+async function processarTextoParaTraducao(texto) {
+    if (!texto.trim()) return;
+    
+    console.log('🎤 Processando texto para tradução:', texto);
+    
+    // Mostra feedback visual
+    const textoRecebido = document.getElementById('texto-recebido');
+    if (textoRecebido) {
+        textoRecebido.textContent = "Traduzindo...";
+        textoRecebido.style.opacity = '1';
+    }
+    
+    try {
+        // Traduz o texto
+        const translation = await translateText(texto);
+        
+        if (translation && translation.trim() !== "") {
+            console.log(`🌐 Traduzido: "${texto}" → "${translation}"`);
+            
+            // Envia via WebRTC
+            enviarParaOutroCelular(translation);
+            
+            // Mostra no elemento de texto recebido (feedback local)
+            if (textoRecebido) {
+                textoRecebido.textContent = translation;
+            }
+        } else {
+            console.log('❌ Tradução vazia ou falhou');
+        }
+    } catch (error) {
+        console.error('Erro na tradução:', error);
+        if (textoRecebido) {
+            textoRecebido.textContent = "Erro na tradução";
+        }
+    }
+}
+
 // ===== INICIALIZAÇÃO DO TRADUTOR SINCRONIZADA =====
 function initializeTranslator() {
     console.log('🎯 Iniciando tradutor receiver...');
@@ -69,20 +107,83 @@ function initializeTranslator() {
     const sendButton = document.getElementById('sendButton');
     const speakerButton = document.getElementById('speakerButton');
     const textoRecebido = document.getElementById('texto-recebido');
-    
+
+    // ✅ SAFARI: CONFIGURAÇÃO DO INPUT NATIVO
+    let safariVoiceInput = null;
+
+    // Se for Safari, cria input de voz nativo
+    if (isMobileSafari()) {
+        console.log('📱 Safari iOS detectado - usando input de voz nativo');
+        
+        // Esconde o botão de gravação original
+        if (recordButton) {
+            recordButton.style.display = 'none';
+        }
+        
+        // Cria input com suporte a ditado
+        safariVoiceInput = document.createElement('input');
+        safariVoiceInput.type = 'text';
+        safariVoiceInput.placeholder = 'Toque aqui e diga algo...';
+        safariVoiceInput.setAttribute('speech', '');
+        safariVoiceInput.setAttribute('x-webkit-speech', '');
+        safariVoiceInput.style.width = '80%';
+        safariVoiceInput.style.padding = '15px';
+        safariVoiceInput.style.margin = '10px auto';
+        safariVoiceInput.style.fontSize = '16px';
+        safariVoiceInput.style.border = '2px solid #007AFF';
+        safariVoiceInput.style.borderRadius = '25px';
+        safariVoiceInput.style.textAlign = 'center';
+        safariVoiceInput.style.display = 'block';
+        
+        // Adiciona evento quando o usuário termina de falar/digitar
+        safariVoiceInput.addEventListener('change', function() {
+            const textoFalado = this.value.trim();
+            if (textoFalado) {
+                console.log('🎤 Safari - Texto falado:', textoFalado);
+                processarTextoParaTraducao(textoFalado);
+                this.value = ''; // Limpa o campo
+            }
+        });
+        
+        // Também captura Enter (caso o usuário digite)
+        safariVoiceInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const textoFalado = this.value.trim();
+                if (textoFalado) {
+                    console.log('🎤 Safari - Texto digitado:', textoFalado);
+                    processarTextoParaTraducao(textoFalado);
+                    this.value = ''; // Limpa o campo
+                }
+            }
+        });
+        
+        // Adiciona o input na interface (no lugar do botão de gravação)
+        if (recordButton && recordButton.parentNode) {
+            recordButton.parentNode.appendChild(safariVoiceInput);
+        }
+    }
+
     if (!recordButton || !textoRecebido) {
         console.log('⏳ Aguardando elementos do tradutor...');
         setTimeout(initializeTranslator, 300);
         return;
     }
 
-    // 🎙️ CONFIGURAÇÃO DE VOZ
+    // 🎙️ CONFIGURAÇÃO DE VOZ (apenas para Chrome)
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const SpeechSynthesis = window.speechSynthesis;
     
-    if (!SpeechRecognition) {
+    let recognition = null;
+    
+    // Só configura recognition se NÃO for Safari e se a API existir
+    if (!isMobileSafari() && SpeechRecognition) {
+        recognition = new SpeechRecognition();
+        recognition.lang = IDIOMA_ORIGEM;
+        recognition.continuous = false;
+        recognition.interimResults = true;
+    } else if (!isMobileSafari()) {
         console.log('❌ SpeechRecognition não suportado');
-        recordButton.style.display = 'none';
+        if (recordButton) recordButton.style.display = 'none';
         return;
     }
     
@@ -90,11 +191,6 @@ function initializeTranslator() {
         console.log('❌ SpeechSynthesis não suportado');
         speakerButton.style.display = 'none';
     }
-    
-    const recognition = new SpeechRecognition();
-    recognition.lang = IDIOMA_ORIGEM; // ✅ IDIOMA LOCAL GUARDADO
-    recognition.continuous = false;
-    recognition.interimResults = true;
 
     // ⏱️ VARIÁVEIS DE ESTADO (COMPLETAS)
     let isRecording = false;
@@ -137,79 +233,72 @@ function initializeTranslator() {
         console.log('📱 Modal de gravação escondido');
     }
 
-// ✅ FUNÇÃO DE PERMISSÃO COM FEEDBACK VISUAL
-async function requestMicrophonePermissionOnClick() {
-    try {
-        // ✅ FEEDBACK VISUAL IMEDIATO
-        if (recordButton) {
-            recordButton.style.background = 'yellow';
-            recordButton.textContent = '🎤?';
-        }
-        
-        // ✅ SAFARI: Se já tem permissão, usa diretamente
-        if (isMobileSafari() && window.microphonePermissionGranted && window.microphoneStream) {
-            const audioTracks = window.microphoneStream.getAudioTracks();
+    // ✅ FUNÇÃO DE PERMISSÃO HÍBRIDA MOBILE
+    async function requestMicrophonePermissionOnClick() {
+        try {
+            console.log('🎤 Solicitando permissão (modo mobile híbrido)...');
             
-            if (audioTracks.length > 0) {
-                // ✅ SUCESSO: Já tem microfone
-                if (recordButton) {
-                    recordButton.style.background = 'green';
-                    recordButton.textContent = '🎤✓';
-                }
+            // ✅ PRIMEIRO: No Safari, verifica se já tem permissão do receiver-ui.js
+            if (isMobileSafari() && window.microphonePermissionGranted && window.microphoneStream) {
+                console.log('📱 Safari: Reutilizando stream existente do receiver-ui.js');
                 microphonePermissionGranted = true;
                 recordButton.disabled = false;
                 return true;
             }
-        }
-        
-        // ✅ TENTA SOLICITAR MICROFONE
-        if (recordButton) {
-            recordButton.style.background = 'orange';
-            recordButton.textContent = '🎤...';
-        }
-        
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-            audio: {
-                echoCancellation: true,
-                noiseSuppression: true,
-                sampleRate: 44100
+            
+            console.log('🎤 Solicitando permissão de microfone...');
+            
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    sampleRate: 44100
+                }
+            });
+            
+            // ✅ HÍBRIDO: Comportamento diferente por navegador
+            if (isMobileSafari()) {
+                // ✅ SAFARI: Guarda o stream para reutilizar
+                window.microphoneStream = stream;
+                window.microphonePermissionGranted = true;
+                console.log('✅ Safari: Stream de microfone guardado');
+            } else {
+                // ✅ CHROME: Comportamento original - para o stream
+                setTimeout(() => {
+                    stream.getTracks().forEach(track => track.stop());
+                }, 100);
             }
-        });
-        
-        // ✅ SUCESSO: Microfone concedido
-        if (recordButton) {
-            recordButton.style.background = 'green';
-            recordButton.textContent = '🎤✓';
-        }
-        
-        // ✅ GUARDA para reutilizar
-        if (isMobileSafari()) {
-            window.microphoneStream = stream;
-            window.microphonePermissionGranted = true;
-        } else {
-            setTimeout(() => {
-                stream.getTracks().forEach(track => track.stop());
-            }, 100);
-        }
-        
-        microphonePermissionGranted = true;
-        recordButton.disabled = false;
-        
-        return true;
-        
-    } catch (error) {
-        // ✅ ERRO: Microfone negado
-        if (recordButton) {
-            recordButton.style.background = 'red';
-            recordButton.textContent = '🎤❌';
+            
+            microphonePermissionGranted = true;
+            recordButton.disabled = false;
+            
+            console.log('✅ Microfone autorizado (mobile híbrido)');
+            return true;
+            
+        } catch (error) {
+            console.error('❌ Permissão de microfone negada:', error);
             recordButton.disabled = true;
+            
+            // Mensagem específica por navegador
+            if (isMobileSafari()) {
+                alert('No Safari: Toque em "Permitir" quando solicitado o microfone.');
+            } else {
+                alert('Para usar o tradutor de voz, permita o acesso ao microfone quando solicitado.');
+            }
+            return false;
+        }
+    }
+
+    function startRecording() {
+        // ✅ Se for Safari, não usa gravação - já tem input nativo
+        if (isMobileSafari()) {
+            console.log('📱 Safari: Use o campo de texto com microfone');
+            if (safariVoiceInput) {
+                safariVoiceInput.focus(); // Foca no input
+            }
+            return;
         }
         
-        alert('Microfone negado. Toque em "Permitir" quando solicitado.');
-        return false;
-    }
-}
-    function startRecording() {
         if (isRecording || isTranslating) {
             console.log('⚠️ Já está gravando ou traduzindo');
             return;
@@ -237,6 +326,11 @@ async function requestMicrophonePermissionOnClick() {
     }
 
     function doStartRecording() {
+        if (!recognition) {
+            console.log('❌ Recognition não disponível');
+            return;
+        }
+        
         recognition.start();
         isRecording = true;
         
@@ -259,7 +353,9 @@ async function requestMicrophonePermissionOnClick() {
         }
         
         isRecording = false;
-        recognition.stop();
+        if (recognition) {
+            recognition.stop();
+        }
         
         // ✅ VISUAL: Botão volta ao normal
         recordButton.classList.remove('recording');
@@ -351,57 +447,59 @@ async function requestMicrophonePermissionOnClick() {
         }
     }
 
-    // 🎙️ EVENTOS DE RECONHECIMENTO (COM TRADUÇÃO CORRETA)
-    recognition.onresult = function(event) {
-        let finalTranscript = '';
-        
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-            if (event.results[i].isFinal) {
-                finalTranscript += event.results[i][0].transcript;
+    // 🎙️ EVENTOS DE RECONHECIMENTO (apenas para Chrome)
+    if (recognition) {
+        recognition.onresult = function(event) {
+            let finalTranscript = '';
+            
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                if (event.results[i].isFinal) {
+                    finalTranscript += event.results[i][0].transcript;
+                }
             }
-        }
-        
-        // ✅ PROCESSO DE TRADUÇÃO CORRETO E SINCRONIZADO
-        if (finalTranscript && !isTranslating) {
-            const now = Date.now();
-            if (now - lastTranslationTime > 1000) {
-                lastTranslationTime = now;
-                isTranslating = true;
-                
-                console.log(`🎤 Reconhecido: "${finalTranscript}"`);
-                
-                translateText(finalTranscript).then(translation => {
-                    if (translation && translation.trim() !== "") {
-                        console.log(`🌐 Traduzido: "${finalTranscript}" → "${translation}"`);
-                        
-                        // ✅ ENVIA VIA FUNÇÃO MELHORADA
-                        enviarParaOutroCelular(translation);
-                    } else {
-                        console.log('❌ Tradução vazia ou falhou');
-                    }
-                    isTranslating = false;
-                }).catch(error => {
-                    console.error('Erro na tradução:', error);
-                    isTranslating = false;
-                });
+            
+            // ✅ PROCESSO DE TRADUÇÃO CORRETO E SINCRONIZADO
+            if (finalTranscript && !isTranslating) {
+                const now = Date.now();
+                if (now - lastTranslationTime > 1000) {
+                    lastTranslationTime = now;
+                    isTranslating = true;
+                    
+                    console.log(`🎤 Reconhecido: "${finalTranscript}"`);
+                    
+                    translateText(finalTranscript).then(translation => {
+                        if (translation && translation.trim() !== "") {
+                            console.log(`🌐 Traduzido: "${finalTranscript}" → "${translation}"`);
+                            
+                            // ✅ ENVIA VIA FUNÇÃO MELHORADA
+                            enviarParaOutroCelular(translation);
+                        } else {
+                            console.log('❌ Tradução vazia ou falhou');
+                        }
+                        isTranslating = false;
+                    }).catch(error => {
+                        console.error('Erro na tradução:', error);
+                        isTranslating = false;
+                    });
+                }
             }
-        }
-    };
-    
-    recognition.onerror = function(event) {
-        console.log('❌ Erro recognition:', event.error);
-        stopRecording();
-    };
-    
-    recognition.onend = function() {
-        if (isRecording) {
-            console.log('🔚 Reconhecimento terminado automaticamente');
+        };
+        
+        recognition.onerror = function(event) {
+            console.log('❌ Erro recognition:', event.error);
             stopRecording();
-        }
-    };
+        };
+        
+        recognition.onend = function() {
+            if (isRecording) {
+                console.log('🔚 Reconhecimento terminado automaticamente');
+                stopRecording();
+            }
+        };
+    }
 
     // 🎮 EVENTOS DE BOTÃO (COM TODOS OS VISUAIS ORIGINAIS)
-    if (recordButton) {
+    if (recordButton && !isMobileSafari()) {
         recordButton.addEventListener('touchstart', function(e) {
             e.preventDefault();
             if (recordButton.disabled || isTranslating) {
@@ -475,10 +573,13 @@ async function requestMicrophonePermissionOnClick() {
         speakerButton: !!speakerButton,
         textoRecebido: !!textoRecebido,
         rtcCore: !!window.rtcCore,
-        dataChannel: window.rtcCore ? window.rtcCore.dataChannel?.readyState : 'não disponível'
+        dataChannel: window.rtcCore ? window.rtcCore.dataChannel?.readyState : 'não disponível',
+        isMobileSafari: isMobileSafari()
     });
     
-    recordButton.disabled = false;
+    if (!isMobileSafari()) {
+        recordButton.disabled = false;
+    }
 }
 
 // ✅ INICIALIZAÇÃO ROBUSTA COM VERIFICAÇÃO
