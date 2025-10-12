@@ -313,7 +313,13 @@
       window.open(urls[rede], '_blank', 'width=600,height=400');
     }
   </script>
-
+  
+<!-- 🍎 INPUT OCULTO PARA SAFARI (MICROFONE NATIVO) -->
+<input type="text" id="safariVoiceInput" 
+       style="position: absolute; opacity: 0; pointer-events: none;"
+       x-webkit-speech speech 
+       placeholder="Fale ou digite...">
+  
   <!-- ============================================= -->
   <!-- IMPORTAÇÃO DOS SCRIPTS DA APLICAÇÃO -->
   <!-- ============================================= -->
