@@ -799,8 +799,36 @@ async function iniciarCameraAposPermissoes() {
             lang: lang
         };
 
-       // ✅ CONFIGURA o botão para gerar QR Code quando clicado (VERSÃO COM LINK)
+    // ✅ CONFIGURA o botão para gerar QR Code quando clicado (VERSÃO COM LINK)
 document.getElementById('logo-traduz').addEventListener('click', function() {
+    // ✅ 1. DETECTA SAFARI E FAZ TESTE DE ÁUDIO
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    
+    if (isSafari) {
+        // ✅ SÓ NO SAFARI: MUDA COR PARA BEGE
+        this.style.backgroundColor = '#fff8e1';
+        this.style.border = '2px solid #ffd54f';
+        
+        // ✅ SÓ NO SAFARI: TOCA SOM POR 5 SEGUNDOS
+        if (window.audioCarregado && window.somDigitacao) {
+            console.log('🎵 Safari detectado: Testando áudio...');
+            
+            pararSomDigitacao();
+            somDigitacao.loop = false;
+            somDigitacao.currentTime = 0;
+            
+            somDigitacao.play().catch(error => {
+                console.log('❌ Safari bloqueou o áudio:', error);
+            });
+            
+            setTimeout(() => {
+                pararSomDigitacao();
+                console.log('🎵 Teste Safari concluído');
+            }, 5000);
+        }
+    }
+    // ⬇️⬇️⬇️ SEU CÓDIGO ORIGINAL CONTINUA DAQUI ⬇️⬇️⬇️
+    
     // 🔄 VERIFICA SE JÁ EXISTE UM QR CODE ATIVO
     const overlay = document.querySelector('.info-overlay');
     const qrcodeContainer = document.getElementById('qrcode');
@@ -822,7 +850,7 @@ document.getElementById('logo-traduz').addEventListener('click', function() {
     }
     
     console.log('🗝️ Gerando/Reabrindo QR Code e Link...');
-    
+           
     // 🔄 LIMPA QR CODE ANTERIOR SE EXISTIR
     if (qrcodeContainer) {
         qrcodeContainer.innerHTML = '';
