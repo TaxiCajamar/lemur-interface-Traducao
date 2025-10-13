@@ -42,7 +42,7 @@ body {
 /* ===== SUBTÍTULO DE TRADUÇÃO ===== */
 .translator-label {
   position: absolute;
-  top: 10%;
+  top: 13%;
   left: 50%;
   transform: translateX(-50%);
   color: #333;
@@ -861,7 +861,7 @@ receiver.html #texto-recebido {
 
 .social-links-fixed {
   position: absolute !important;
-  top: 18% !important; /* ⬅️ TESTE: 15%, 18%, 20%, 22% */
+  top: 19% !important; /* ⬅️ TESTE: 15%, 18%, 20%, 22% */
   left: 50% !important;
   transform: translateX(-50%) !important;
   display: flex !important;
@@ -870,7 +870,7 @@ receiver.html #texto-recebido {
   margin: 0 !important;
   flex-wrap: wrap !important;
   width: 80% !important;
-  z-index: 9999 !important;
+  z-index: 100 !important;
 }
 
 .social-btn-fixed {
