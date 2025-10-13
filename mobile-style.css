@@ -861,7 +861,7 @@ receiver.html #texto-recebido {
 
 .social-links-fixed {
   position: absolute !important;
-  top: 19% !important; /* ⬅️ TESTE: 15%, 18%, 20%, 22% */
+  top: 17% !important; /* ⬅️ TESTE: 15%, 18%, 20%, 22% */
   left: 50% !important;
   transform: translateX(-50%) !important;
   display: flex !important;
