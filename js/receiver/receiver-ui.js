@@ -837,80 +837,76 @@ document.getElementById('logo-traduz').addEventListener('click', function() {
             carregarETocarMP3();
         }
         
-        function carregarETocarMP3() {
-            // 🆕 FEEDBACK: Baixando
-            this.innerHTML = '🔊 Baixando som...';
+       function carregarETocarMP3() {
+    // 🆕 CORREÇÃO: Usa o áudio JÁ CARREGADO em vez de fetch!
+    if (window.audioCarregado && window.somDigitacao) {
+        console.log('🎵 Safari: Usando áudio pré-carregado...');
+        
+        // 🆕 FEEDBACK: Preparando
+        this.innerHTML = '🔊 Preparando áudio...';
+        
+        try {
+            // Para qualquer áudio anterior
+            pararSomDigitacao();
             
-            fetch('assets/audio/keyboard.mp3')
-                .then(response => {
-                    if (!response.ok) throw new Error('Erro no download');
+            // Configura para tocar uma vez
+            somDigitacao.loop = false;
+            somDigitacao.currentTime = 0;
+            somDigitacao.volume = 0.3;
+            
+            // 🆕 FEEDBACK: Tocando!
+            this.innerHTML = '🎵 TOCANDO AGORA!';
+            this.style.color = '#27ae60';
+            this.style.backgroundColor = '#d5f4e6';
+            
+            // Tenta tocar o áudio JÁ CARREGADO
+            somDigitacao.play().then(() => {
+                console.log('✅ Áudio tocando via elemento Audio!');
+                
+                // 🆕 FEEDBACK: Contagem regressiva
+                let segundos = 5;
+                const intervalo = setInterval(() => {
+                    this.innerHTML = `🎵 Tocando... ${segundos}s`;
+                    segundos--;
                     
-                    // 🆕 FEEDBACK: Decodificando
-                    this.innerHTML = '⚙️ Decodificando...';
-                    return response.arrayBuffer();
-                })
-                .then(arrayBuffer => {
-                    return window.audioContext.decodeAudioData(arrayBuffer);
-                })
-                .then(audioBuffer => {
-                    // 🆕 FEEDBACK: Tocando!
-                    this.innerHTML = '🎵 TOCANDO AGORA!';
-                    this.style.color = '#27ae60';
-                    this.style.backgroundColor = '#d5f4e6';
-                    
-                    const source = window.audioContext.createBufferSource();
-                    source.buffer = audioBuffer;
-                    
-                    const gainNode = window.audioContext.createGain();
-                    gainNode.gain.value = 0.3;
-                    
-                    source.connect(gainNode);
-                    gainNode.connect(window.audioContext.destination);
-                    source.start();
-                    
-                    console.log('✅ Áudio tocando!');
-                    
-                    // 🆕 FEEDBACK: Contagem regressiva
-                    let segundos = 5;
-                    const intervalo = setInterval(() => {
-                        this.innerHTML = `🎵 Tocando... ${segundos}s`;
-                        segundos--;
-                        
-                        if (segundos < 0) {
-                            clearInterval(intervalo);
-                            this.innerHTML = textoOriginal;
-                            this.style.color = '';
-                            this.style.backgroundColor = '#fff8e1';
-                        }
-                    }, 1000);
-                    
-                    // Para após 5 segundos
-                    setTimeout(() => {
-                        source.stop();
+                    if (segundos < 0) {
+                        clearInterval(intervalo);
+                        pararSomDigitacao();
                         this.innerHTML = '✅ Teste concluído!';
                         setTimeout(() => {
                             this.innerHTML = textoOriginal;
                             this.style.color = '';
+                            this.style.backgroundColor = '#fff8e1';
                         }, 2000);
-                    }, 5000);
-                    
-                })
-                .catch(error => {
-                    // 🆕 FEEDBACK: Erro
-                    this.innerHTML = '❌ Áudio bloqueado';
-                    this.style.color = '#c0392b';
-                    this.style.backgroundColor = '#fadbd8';
-                    
-                    console.log('❌ Erro no áudio:', error);
-                    
-                    // Volta ao normal após 3 segundos
-                    setTimeout(() => {
-                        this.innerHTML = textoOriginal;
-                        this.style.color = '';
-                        this.style.backgroundColor = '#fff8e1';
-                    }, 3000);
-                });
+                    }
+                }, 1000);
+                
+            }).catch(error => {
+                console.log('❌ Safari bloqueou áudio:', error);
+                this.innerHTML = '❌ Safari bloqueou';
+                this.style.color = '#c0392b';
+                this.style.backgroundColor = '#fadbd8';
+                
+                // Tenta fallback após 2 segundos
+                setTimeout(() => {
+                    tentarFallbackAudio();
+                }, 2000);
+            });
+            
+        } catch (error) {
+            console.log('❌ Erro no áudio:', error);
+            this.innerHTML = '❌ Erro no áudio';
+            this.style.color = '#c0392b';
+            this.style.backgroundColor = '#fadbd8';
         }
+        
+    } else {
+        this.innerHTML = '❌ Áudio não carregado';
+        this.style.color = '#c0392b';
+        this.style.backgroundColor = '#fadbd8';
+        console.log('❌ Áudio ainda não foi carregado');
+    }
+}
         
         // ✅ CORREÇÃO: MOVER AQUI DENTRO
         function tentarFallbackAudio() {
