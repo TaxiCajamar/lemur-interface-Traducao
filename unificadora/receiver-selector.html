@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lemur Tradução</title>
+    <style>
+        /* ===== ESTILOS GERAIS ===== */
+        html {
+            height: 100%;
+            font-size: clamp(14px, 2.5vw, 18px);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            transition: background-color 0.5s;
+        }
+
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-size: 1em;
+            background: linear-gradient(135deg, #aee2ff 0%, #88c9ff 100%);
+        }
+
+        .box-principal {
+            width: 100%;
+            max-width: 600px;
+            height: 100%;
+            margin: 0 auto;
+            padding: 2vh 2vw;
+            box-sizing: border-box;
+            background-color: #aee2ff;
+            position: relative;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* ===== ESTILOS DA TELA DE SELEÇÃO ===== */
+        .titulo-principal {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #1a5276;
+            margin-bottom: 0.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .subtitulo {
+            font-size: 1.2em;
+            color: #2c3e50;
+            margin-bottom: 3em;
+            max-width: 80%;
+            line-height: 1.4;
+        }
+
+        .container-botoes {
+            display: flex;
+            flex-direction: column;
+            gap: 2em;
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .botao-dispositivo {
+            background: white;
+            border: none;
+            border-radius: 20px;
+            padding: 1.5em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1em;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .botao-dispositivo:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 25px rgba(0,0,0,0.2);
+            background: #f8f9fa;
+        }
+
+        .imagem-dispositivo {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+        }
+
+        .texto-botao {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .badge-producao {
+            background: #27ae60;
+            color: white;
+            padding: 0.3em 0.8em;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-top: 0.5em;
+        }
+
+        .badge-desenvolvimento {
+            background: #e67e22;
+            color: white;
+            padding: 0.3em 0.8em;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-top: 0.5em;
+        }
+
+        .carregando {
+            display: none;
+            font-size: 1.1em;
+            color: #1a5276;
+            margin-top: 2em;
+        }
+
+        .carregando.ativo {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="box-principal">
+        <h1 class="titulo-principal" id="titulo-welcome">Welcome</h1>
+        <p class="subtitulo" id="subtitulo-selecionar">Select to continue</p>
+        
+        <div class="container-botoes">
+            <!-- Android → Receiver Original -->
+            <a href="../receiver.html" class="botao-dispositivo" id="botao-android">
+                <img src="../assets/images/andrid.png" alt="Android" class="imagem-dispositivo" onerror="this.style.display='none'">
+                <span class="texto-botao">Android</span>
+                <span class="badge-producao">Produção</span>
+            </a>
+            
+            <!-- iPhone → Em Desenvolvimento -->
+            <a href="#" class="botao-dispositivo" id="botao-iphone">
+                <img src="../assets/images/iphone.png" alt="iPhone" class="imagem-dispositivo" onerror="this.style.display='none'">
+                <span class="texto-botao">iPhone</span>
+                <span class="badge-desenvolvimento">Em Breve</span>
+            </a>
+        </div>
+        
+        <div class="carregando" id="loading">🚀 Iniciando...</div>
+    </div>
+
+    <script>
+        async function traduzirFrases() {
+            try {
+                console.log('🌐 Traduzindo frases...');
+                
+                // Traduz "Welcome"
+                const responseTitulo = await fetch('https://chat-tradutor-bvvx.onrender.com/translate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        text: "Welcome", 
+                        targetLang: 'pt' 
+                    })
+                });
+                
+                const resultadoTitulo = await responseTitulo.json();
+                if (resultadoTitulo.translatedText) {
+                    document.getElementById('titulo-welcome').textContent = resultadoTitulo.translatedText;
+                }
+                
+                // Traduz "Select to continue"  
+                const responseSubtitulo = await fetch('https://chat-tradutor-bvvx.onrender.com/translate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        text: "Select to continue", 
+                        targetLang: 'pt' 
+                    })
+                });
+                
+                const resultadoSubtitulo = await responseSubtitulo.json();
+                if (resultadoSubtitulo.translatedText) {
+                    document.getElementById('subtitulo-selecionar').textContent = resultadoSubtitulo.translatedText;
+                }
+                
+                console.log('✅ Frases traduzidas!');
+                
+            } catch (error) {
+                console.log('❌ Erro na tradução:', error);
+            }
+        }
+
+        // Configuração dos botões
+        document.getElementById('botao-android').addEventListener('click', function(e) {
+            console.log('📱 Android selecionado');
+            document.getElementById('loading').classList.add('ativo');
+        });
+
+        document.getElementById('botao-iphone').addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('🍎 iPhone selecionado');
+            document.getElementById('loading').classList.add('ativo');
+            
+            setTimeout(() => {
+                alert('📱 Versão iPhone em desenvolvimento!');
+                document.getElementById('loading').classList.remove('ativo');
+            }, 1000);
+        });
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Tela de seleção iniciada');
+            traduzirFrases();
+        });
+    </script>
+</body>
+</html>
