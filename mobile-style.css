@@ -853,3 +853,56 @@ receiver.html #texto-recebido {
     font-size: 1em;
   }
 }
+/* ... todo o seu CSS anterior ... */
+
+/* ============================================= */
+/* 🎯 SOLUÇÃO DEFINITIVA - REDES SOCIAIS FIXAS  */
+/* ============================================= */
+
+.social-links-fixed {
+  position: absolute !important;
+  top: 18% !important; /* ⬅️ TESTE: 15%, 18%, 20%, 22% */
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  display: flex !important;
+  gap: 4px !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  flex-wrap: wrap !important;
+  width: 80% !important;
+  z-index: 9999 !important;
+}
+
+.social-btn-fixed {
+  width: 26px !important;
+  height: 26px !important;
+  border: none !important;
+  border-radius: 4px !important;
+  color: white !important;
+  font-weight: bold !important;
+  cursor: pointer !important;
+  font-size: 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: transform 0.2s !important;
+  text-decoration: none !important;
+}
+
+.social-btn-fixed:hover {
+  transform: scale(1.1) !important;
+}
+
+.social-btn-fixed.instagram { 
+  background: linear-gradient(45deg, #405DE6, #5851DB, #833AB4, #C13584, #E1306C, #FD1D1D, #F56040, #F77737, #FCAF45, #FFDC80) !important; 
+}
+
+.social-btn-fixed.website { 
+  background: #6c5ce7 !important; 
+}
+
+.social-btn-fixed.facebook { background: #3b5998 !important; }
+.social-btn-fixed.twitter { background: #1da1f2 !important; }
+.social-btn-fixed.linkedin { background: #0077b5 !important; }
+.social-btn-fixed.whatsapp { background: #25d366 !important; }
+.social-btn-fixed.telegram { background: #0088cc !important; }
