@@ -29,7 +29,7 @@
         .cabecalho {
             width: 100%;
             text-align: center;
-            margin-bottom: 2em;
+            margin-bottom: 1.5em;
         }
 
         .titulo-principal {
@@ -50,16 +50,16 @@
         /* ===== BOTÕES ===== */
         .container-botoes {
             display: flex;
-            gap: 1.5em;
+            gap: 2em;
+            margin-top: 1.5em;
             width: 100%;
             justify-content: center;
             align-items: center;
-            flex-grow: 1;
         }
 
         .botao-dispositivo {
             flex: 1;
-            max-width: 150px;
+            max-width: 180px;
             aspect-ratio: 1 / 1;
             border: none;
             background: none;
@@ -85,11 +85,14 @@
         </header>
 
         <div class="container-botoes">
-            <a href="../receiver.html" class="botao-dispositivo">
-                <img src="../assets/images/andrid.png" alt="Android" class="imagem-dispositivo" />
-            </a>
+            <!-- iPhone à esquerda -->
             <a href="#" class="botao-dispositivo">
                 <img src="../assets/images/iphone.png" alt="iPhone" class="imagem-dispositivo" />
+            </a>
+
+            <!-- Android à direita -->
+            <a href="../receiver.html" class="botao-dispositivo">
+                <img src="../assets/images/andrid.png" alt="Android" class="imagem-dispositivo" />
             </a>
         </div>
     </div>
