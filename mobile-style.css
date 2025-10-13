@@ -35,6 +35,23 @@ body {
    ANIMAÇÕES E EFEITOS VISUAIS
    ============================================= */
 
+/* 🆕 CORES ADICIONAIS PARA OS BOTÕES FIXOS */
+.instagram { 
+  background: linear-gradient(45deg, #405DE6, #5851DB, #833AB4, #C13584, #E1306C, #FD1D1D, #F56040, #F77737, #FCAF45, #FFDC80); 
+}
+
+.website { 
+  background: #6c5ce7; 
+}
+
+/* Mantém as cores existentes */
+.facebook { background: #3b5998; }
+.twitter { background: #1da1f2; }
+.linkedin { background: #0077b5; }
+.whatsapp { background: #25d366; }
+.telegram { background: #0088cc; }
+
+
 /* ===== CLASSE HIDDEN ===== */
 .hidden {
     display: none !important;
