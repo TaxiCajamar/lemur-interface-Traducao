@@ -57,20 +57,22 @@
 
         .container-botoes {
             display: flex;
-            flex-direction: column;
-            gap: 2em;
+            flex-direction: row;
+            gap: 1.5em;
             width: 100%;
-            max-width: 300px;
+            max-width: 350px;
+            justify-content: center;
+            align-items: center;
         }
 
         .botao-dispositivo {
-            background: white;
-            border: none;
+            background: transparent;
+            border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 20px;
             padding: 1.5em;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -81,14 +83,16 @@
 
         .botao-dispositivo:hover {
             transform: translateY(-5px);
-            box-shadow: 0 12px 25px rgba(0,0,0,0.2);
-            background: #f8f9fa;
+            box-shadow: 0 12px 25px rgba(0,0,0,0.15);
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.5);
         }
 
         .imagem-dispositivo {
-            width: 80px;
-            height: 80px;
+            width: 70px;
+            height: 70px;
             object-fit: contain;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
         }
 
         .texto-botao {
@@ -154,47 +158,6 @@
     </div>
 
     <script>
-        async function traduzirFrases() {
-            try {
-                console.log('🌐 Traduzindo frases...');
-                
-                // Traduz "Welcome"
-                const responseTitulo = await fetch('https://chat-tradutor-bvvx.onrender.com/translate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        text: "Welcome", 
-                        targetLang: 'pt' 
-                    })
-                });
-                
-                const resultadoTitulo = await responseTitulo.json();
-                if (resultadoTitulo.translatedText) {
-                    document.getElementById('titulo-welcome').textContent = resultadoTitulo.translatedText;
-                }
-                
-                // Traduz "Select to continue"  
-                const responseSubtitulo = await fetch('https://chat-tradutor-bvvx.onrender.com/translate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        text: "Select to continue", 
-                        targetLang: 'pt' 
-                    })
-                });
-                
-                const resultadoSubtitulo = await responseSubtitulo.json();
-                if (resultadoSubtitulo.translatedText) {
-                    document.getElementById('subtitulo-selecionar').textContent = resultadoSubtitulo.translatedText;
-                }
-                
-                console.log('✅ Frases traduzidas!');
-                
-            } catch (error) {
-                console.log('❌ Erro na tradução:', error);
-            }
-        }
-
         // Configuração dos botões
         document.getElementById('botao-android').addEventListener('click', function(e) {
             console.log('📱 Android selecionado');
@@ -215,7 +178,6 @@
         // Inicialização
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 Tela de seleção iniciada');
-            traduzirFrases();
         });
     </script>
 </body>
