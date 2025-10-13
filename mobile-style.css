@@ -56,7 +56,7 @@ body {
 /* ===== REDES SOCIAIS FIXAS (NOVO - MENORES E MAIS PARA CIMA) ===== */
 .social-links-fixed {
   position: absolute;
-  top: 15%; /* ⬅️ MAIS PARA CIMA - logo abaixo do subtítulo */
+  top: 10%; /* ⬅️ MAIS PARA CIMA - logo abaixo do subtítulo */
   left: 50%;
   transform: translateX(-50%);
   display: flex;
