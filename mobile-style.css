@@ -42,7 +42,7 @@ body {
 /* ===== SUBTÍTULO DE TRADUÇÃO ===== */
 .translator-label {
   position: absolute;
-  top: 15%;
+  top: 10%;
   left: 50%;
   transform: translateX(-50%);
   color: #333;
@@ -865,7 +865,7 @@ receiver.html #texto-recebido {
   left: 50% !important;
   transform: translateX(-50%) !important;
   display: flex !important;
-  gap: 4px !important;
+  gap: 6px !important;
   justify-content: center !important;
   margin: 0 !important;
   flex-wrap: wrap !important;
