@@ -801,32 +801,75 @@ async function iniciarCameraAposPermissoes() {
 
     // ✅ CONFIGURA o botão para gerar QR Code quando clicado (VERSÃO COM LINK)
 document.getElementById('logo-traduz').addEventListener('click', function() {
-    // ✅ 1. DETECTA SAFARI E FAZ TESTE DE ÁUDIO
+    // ✅ 1. DETECTA SAFARI
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     
     if (isSafari) {
-        // ✅ SÓ NO SAFARI: MUDA COR PARA BEGE
+        // ✅ 2. SÓ NO SAFARI: MUDA COR PARA BEGE
         this.style.backgroundColor = '#fff8e1';
         this.style.border = '2px solid #ffd54f';
         
-        // ✅ SÓ NO SAFARI: TOCA SOM POR 5 SEGUNDOS
-        if (window.audioCarregado && window.somDigitacao) {
-            console.log('🎵 Safari detectado: Testando áudio...');
-            
-            pararSomDigitacao();
-            somDigitacao.loop = false;
-            somDigitacao.currentTime = 0;
-            
-            somDigitacao.play().catch(error => {
-                console.log('❌ Safari bloqueou o áudio:', error);
+        // ✅ 3. 🆕 FORÇA LIBERAÇÃO DO ÁUDIO NO SAFARI
+        console.log('🔓 Safari: Forçando liberação de áudio...');
+        
+        // 🆕 Tenta criar/reativar AudioContext primeiro
+        if (!window.audioContext) {
+            window.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        
+        // 🆕 Toca um som quase mudo para "enganar" o Safari
+        if (window.audioContext.state === 'suspended') {
+            window.audioContext.resume().then(() => {
+                console.log('✅ AudioContext reativado no Safari');
+                tocarTesteAudioSafari();
             });
-            
-            setTimeout(() => {
+        } else {
+            tocarTesteAudioSafari();
+        }
+        
+        function tocarTesteAudioSafari() {
+            // ✅ SÓ NO SAFARI: TOCA SOM POR 5 SEGUNDOS (AGORA COM GARANTIA)
+            if (window.audioCarregado && window.somDigitacao) {
+                console.log('🎵 Safari: Testando áudio com garantia...');
+                
                 pararSomDigitacao();
-                console.log('🎵 Teste Safari concluído');
-            }, 5000);
+                somDigitacao.loop = false;
+                somDigitacao.currentTime = 0;
+                
+                // 🆕 TENTATIVA MAIS AGRESSIVA PARA SAFARI
+                const playPromise = somDigitacao.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        console.log('✅ Safari: Áudio liberado com sucesso!');
+                    }).catch(error => {
+                        console.log('❌ Safari ainda bloqueou áudio:', error);
+                        // 🆕 TENTATIVA ALTERNATIVA
+                        tentarFallbackAudio();
+                    });
+                }
+                
+                setTimeout(() => {
+                    pararSomDigitacao();
+                    console.log('🎵 Teste Safari concluído');
+                }, 5000);
+            }
+        }
+        
+        function tentarFallbackAudio() {
+            console.log('🔄 Tentando fallback de áudio para Safari...');
+            // 🆕 Fallback: Toca um bip via Web Audio API
+            const oscillator = window.audioContext.createOscillator();
+            const gainNode = window.audioContext.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(window.audioContext.destination);
+            gainNode.gain.value = 0.001; // Quase mudo
+            oscillator.start();
+            oscillator.stop(window.audioContext.currentTime + 0.1);
+            console.log('🔊 Fallback de áudio executado');
         }
     }
+    
     // ⬇️⬇️⬇️ SEU CÓDIGO ORIGINAL CONTINUA DAQUI ⬇️⬇️⬇️
     
     // 🔄 VERIFICA SE JÁ EXISTE UM QR CODE ATIVO
