@@ -805,57 +805,114 @@ document.getElementById('logo-traduz').addEventListener('click', function() {
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     
     if (isSafari) {
-        // ✅ 2. SÓ NO SAFARI: MUDA COR PARA BEGE
+        // ✅ 1. MUDA COR PARA BEGE (já funciona)
         this.style.backgroundColor = '#fff8e1';
         this.style.border = '2px solid #ffd54f';
         
-        // ✅ 3. 🆕 FORÇA LIBERAÇÃO DO ÁUDIO NO SAFARI
-        console.log('🔓 Safari: Forçando liberação de áudio...');
+        // ✅ 2. 🆕 FEEDBACK VISUAL IMEDIATO
+        const textoOriginal = this.innerHTML;
+        this.innerHTML = '🔓 Liberando áudio Safari...';
+        this.style.color = '#d35400';
         
-        // 🆕 Tenta criar/reativar AudioContext primeiro
+        console.log('🎯 Safari detectado - tentando liberar áudio...');
+        
+        // ✅ 3. ESTRATÉGIA WEB AUDIO API
         if (!window.audioContext) {
             window.audioContext = new (window.AudioContext || window.webkitAudioContext)();
         }
         
-        // 🆕 Toca um som quase mudo para "enganar" o Safari
+        // ✅ 4. 🆕 FEEDBACK DURANTE O PROCESSO
+        setTimeout(() => {
+            this.innerHTML = '⬇️ Baixando MP3...';
+        }, 500);
+        
         if (window.audioContext.state === 'suspended') {
             window.audioContext.resume().then(() => {
-                console.log('✅ AudioContext reativado no Safari');
-                tocarTesteAudioSafari();
+                this.innerHTML = '✅ Áudio ativado!';
+                setTimeout(() => {
+                    carregarETocarMP3();
+                }, 800);
             });
         } else {
-            tocarTesteAudioSafari();
+            carregarETocarMP3();
         }
         
-        function tocarTesteAudioSafari() {
-            // ✅ SÓ NO SAFARI: TOCA SOM POR 5 SEGUNDOS (AGORA COM GARANTIA)
-            if (window.audioCarregado && window.somDigitacao) {
-                console.log('🎵 Safari: Testando áudio com garantia...');
-                
-                pararSomDigitacao();
-                somDigitacao.loop = false;
-                somDigitacao.currentTime = 0;
-                
-                // 🆕 TENTATIVA MAIS AGRESSIVA PARA SAFARI
-                const playPromise = somDigitacao.play();
-                
-                if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        console.log('✅ Safari: Áudio liberado com sucesso!');
-                    }).catch(error => {
-                        console.log('❌ Safari ainda bloqueou áudio:', error);
-                        // 🆕 TENTATIVA ALTERNATIVA
-                        tentarFallbackAudio();
-                    });
-                }
-                
-                setTimeout(() => {
-                    pararSomDigitacao();
-                    console.log('🎵 Teste Safari concluído');
-                }, 5000);
-            }
+        function carregarETocarMP3() {
+            // 🆕 FEEDBACK: Baixando
+            this.innerHTML = '🔊 Baixando som...';
+            
+            fetch('assets/audio/keyboard.mp3')
+                .then(response => {
+                    if (!response.ok) throw new Error('Erro no download');
+                    
+                    // 🆕 FEEDBACK: Decodificando
+                    this.innerHTML = '⚙️ Decodificando...';
+                    return response.arrayBuffer();
+                })
+                .then(arrayBuffer => {
+                    return window.audioContext.decodeAudioData(arrayBuffer);
+                })
+                .then(audioBuffer => {
+                    // 🆕 FEEDBACK: Tocando!
+                    this.innerHTML = '🎵 TOCANDO AGORA!';
+                    this.style.color = '#27ae60';
+                    this.style.backgroundColor = '#d5f4e6';
+                    
+                    const source = window.audioContext.createBufferSource();
+                    source.buffer = audioBuffer;
+                    
+                    const gainNode = window.audioContext.createGain();
+                    gainNode.gain.value = 0.3;
+                    
+                    source.connect(gainNode);
+                    gainNode.connect(window.audioContext.destination);
+                    source.start();
+                    
+                    console.log('✅ Áudio tocando!');
+                    
+                    // 🆕 FEEDBACK: Contagem regressiva
+                    let segundos = 5;
+                    const intervalo = setInterval(() => {
+                        this.innerHTML = `🎵 Tocando... ${segundos}s`;
+                        segundos--;
+                        
+                        if (segundos < 0) {
+                            clearInterval(intervalo);
+                            this.innerHTML = textoOriginal;
+                            this.style.color = '';
+                            this.style.backgroundColor = '#fff8e1';
+                        }
+                    }, 1000);
+                    
+                    // Para após 5 segundos
+                    setTimeout(() => {
+                        source.stop();
+                        this.innerHTML = '✅ Teste concluído!';
+                        setTimeout(() => {
+                            this.innerHTML = textoOriginal;
+                            this.style.color = '';
+                        }, 2000);
+                    }, 5000);
+                    
+                })
+                .catch(error => {
+                    // 🆕 FEEDBACK: Erro
+                    this.innerHTML = '❌ Áudio bloqueado';
+                    this.style.color = '#c0392b';
+                    this.style.backgroundColor = '#fadbd8';
+                    
+                    console.log('❌ Erro no áudio:', error);
+                    
+                    // Volta ao normal após 3 segundos
+                    setTimeout(() => {
+                        this.innerHTML = textoOriginal;
+                        this.style.color = '';
+                        this.style.backgroundColor = '#fff8e1';
+                    }, 3000);
+                });
         }
         
+        // ✅ CORREÇÃO: MOVER AQUI DENTRO
         function tentarFallbackAudio() {
             console.log('🔄 Tentando fallback de áudio para Safari...');
             // 🆕 Fallback: Toca um bip via Web Audio API
@@ -868,7 +925,7 @@ document.getElementById('logo-traduz').addEventListener('click', function() {
             oscillator.stop(window.audioContext.currentTime + 0.1);
             console.log('🔊 Fallback de áudio executado');
         }
-    }
+    } // ✅ FIM DO if (isSafari) - ESTA CHAVE ESTAVA FALTANDO!
     
     // ⬇️⬇️⬇️ SEU CÓDIGO ORIGINAL CONTINUA DAQUI ⬇️⬇️⬇️
     
