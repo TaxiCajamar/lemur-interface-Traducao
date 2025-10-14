@@ -2,6 +2,10 @@
 import { WebRTCCore } from '../../core/webrtc-core.js';
 import { CameraVigilante } from '../../core/camera-vigilante.js';
 
+// ✅ INICIALIZAÇÃO DO VIGILANTE  
+window.cameraVigilante = new CameraVigilante();
+console.log('✅ Vigilante mobile pronto para caller');
+
 // 🎵 VARIÁVEIS DE ÁUDIO
 let audioContext = null;
 let somDigitacao = null;
