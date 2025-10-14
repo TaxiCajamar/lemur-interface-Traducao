@@ -5,8 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lemur EchoMe P2P Receiver</title>
 
-  <!-- ✅ CSS CORRETO - mesmo do original -->
-  <link rel="stylesheet" href="../mobile-style.css" />
+  <link rel="stylesheet" href="mobile-style.css" />
   <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
 
   <style>
@@ -15,6 +14,7 @@
       pointer-events: none !important;
     }
     
+    /* 🆕 ESTILOS PARA BOTÕES DE COMPARTILHAMENTO NO QR CODE */
     .social-buttons {
       display: flex;
       gap: 8px;
@@ -48,9 +48,10 @@
     .whatsapp { background: #25d366; }
     .telegram { background: #0088cc; }
 
+    /* 🆕 ESTILOS PARA LINKS FIXOS DE REDES SOCIAIS */
     .social-links-fixed {
       position: absolute;
-      top: 22%;
+      top: 22%; /* Logo abaixo do subtítulo de 15% */
       left: 50%;
       transform: translateX(-50%);
       display: flex;
@@ -81,99 +82,6 @@
     .social-btn-fixed:hover {
       transform: scale(1.1);
     }
-
-    /* 🆕 🆕 🆕 ESTILOS PARA CHAT SAFARI */
-    #safariChatContainer {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 90%;
-      max-width: 400px;
-      background: rgba(255, 255, 255, 0.95);
-      border-radius: 20px;
-      padding: 10px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-      z-index: 1000;
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      backdrop-filter: blur(10px);
-      border: 2px solid #007AFF;
-    }
-
-    #inputTextoSafari {
-      flex: 1;
-      border: none;
-      background: transparent;
-      padding: 12px;
-      font-size: 16px;
-      outline: none;
-      border-radius: 10px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    }
-
-    #inputTextoSafari::placeholder {
-      color: #888;
-    }
-
-    #btnEnviarSafari, #btnDitadoSafari {
-      border: none;
-      border-radius: 50%;
-      width: 44px;
-      height: 44px;
-      font-size: 18px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: transform 0.2s, background-color 0.2s;
-    }
-
-    #btnEnviarSafari { 
-      background: #4CAF50; 
-      color: white;
-    }
-
-    #btnEnviarSafari:active {
-      background: #45a049;
-      transform: scale(0.95);
-    }
-
-    #btnDitadoSafari { 
-      background: #2196F3; 
-      color: white;
-    }
-
-    #btnDitadoSafari:active {
-      background: #1e88e5;
-      transform: scale(0.95);
-    }
-
-    /* 🆕 Estilo para quando o chat está focado */
-    #safariChatContainer:focus-within {
-      border-color: #4CAF50;
-      box-shadow: 0 4px 20px rgba(76, 175, 80, 0.3);
-    }
-
-    /* 🆕 Responsividade para telas menores */
-    @media (max-width: 480px) {
-      #safariChatContainer {
-        width: 95%;
-        bottom: 10px;
-      }
-      
-      #inputTextoSafari {
-        font-size: 14px;
-        padding: 10px;
-      }
-      
-      #btnEnviarSafari, #btnDitadoSafari {
-        width: 40px;
-        height: 40px;
-        font-size: 16px;
-      }
-    }
   </style>
 </head>
 
@@ -185,10 +93,9 @@
     <!-- ELEMENTOS DE MARCA E IDENTIDADE VISUAL -->
     <!-- ============================================= -->
 
-    <!-- ✅ IMAGENS COM CAMINHOS CORRETOS -->
-    <img src="../assets/images/lemurBlu.png" alt="Lemur Logo" class="logo" />
-    <img src="../assets/images/Bridg.png" alt="ponte" class="ponte" />
-    <img id="click" src="../assets/images/click.png" alt="Click" />
+    <img src="assets/images/lemurBlu.png" alt="Lemur Logo" class="logo" />
+    <img src="assets/images/Bridg.png" alt="ponte" class="ponte" />
+    <img id="click" src="assets/images/click.png" alt="Click" />
     
     <!-- ============================================= -->
     <!-- SISTEMA DE LOADING E INDICADORES -->
@@ -206,39 +113,39 @@
       <button class="instruction-toggle" id="instructionToggle"></button>
       <div class="instruction-content">
         <div class="instruction-item">
-          <img src="../assets/images/hello.png" alt="Hello icon" />
+          <img src="assets/images/hello.png" alt="Hello icon" />
           <span id="welcome-text">Welcome! Let's begin.</span>
         </div>
         <div class="instruction-item">
-          <img src="../assets/images/realtime.png" alt="Realtime icon" />
+          <img src="assets/images/realtime.png" alt="Realtime icon" />
           <span id="translator-label-2">Real-time translation.</span>
         </div>
         <div class="instruction-item">
-          <img src="../assets/images/QRcode.png" alt="QR icon" />
+          <img src="assets/images/QRcode.png" alt="QR icon" />
           <span id="tap-qr">Tap the QR code to start.</span>
         </div>
         <div class="instruction-item">
-          <img src="../assets/images/mobil.png" alt="Mobile icon" />
+          <img src="assets/images/mobil.png" alt="Mobile icon" />
           <span id="quick-scan">Ask to scan the QR.</span>
         </div>
         <div class="instruction-item">
-          <img src="../assets/images/Ancioso.png" alt="Loading icon" />
+          <img src="assets/images/Ancioso.png" alt="Loading icon" />
           <span id="wait-connection">Waiting for connection.</span>
         </div>
         <div class="instruction-item">
-          <img src="../assets/images/juntos.png" alt="Connected icon" />
+          <img src="assets/images/juntos.png" alt="Connected icon" />
           <span id="both-connected">Both online.</span>
         </div>
         <div class="instruction-item">
-          <img src="../assets/images/trduz.png" alt="Message icon" />
+          <img src="assets/images/trduz.png" alt="Message icon" />
           <span id="check-replies">Read the message.</span>
         </div>
         <div class="instruction-item">
-          <img src="../assets/images/mic.png" alt="Mic icon" />
+          <img src="assets/images/mic.png" alt="Mic icon" />
           <span id="drop-voice">Speak clearly.</span>
         </div>
         <div class="instruction-item">
-          <img src="../assets/images/cam.png" alt="Camera icon" />
+          <img src="assets/images/cam.png" alt="Camera icon" />
           <span id="flip-cam">Flip the camera. Share!</span>
         </div>
       </div>
@@ -249,22 +156,23 @@
     <!-- ============================================= -->
 
     <button id="logo-traduz" class="botao-key">
-      <img src="../assets/images/key.png" alt="Gerar QR Code" />
+      <img src="assets/images/key.png" alt="Gerar QR Code" />
     </button>
 
     <button id="toggleCamera" class="camera-toggle-btn">
-      <img src="../assets/images/girar-camera.png" alt="Alternar Câmera" />
+      <img src="assets/images/girar-camera.png" alt="Alternar Câmera" />
     </button>
 
     <!-- ============================================= -->
     <!-- ELEMENTOS DE TEXTO, LABELS E REDES SOCIAIS FIXAS -->
     <!-- ============================================= -->
 
+    <!-- 🏷️ Subtítulo de tradução -->
     <div class="translator-label" id="translator-label">
       Real-time translation.
     </div>
 
-    <!-- 🆕 LINKS DE REDES SOCIAIS FIXOS -->
+    <!-- 🆕 LINKS DE REDES SOCIAIS FIXOS - SEMPRE VISÍVEIS -->
     <div class="social-links-fixed">
       <a href="https://www.linkedin.com/company/lemurinnovation" target="_blank" class="social-btn-fixed linkedin">in</a>
       <a href="https://www.instagram.com/lemurinnovation" target="_blank" class="social-btn-fixed instagram">ig</a>
@@ -341,17 +249,6 @@
   </div> <!-- Fim do .box-principal -->
 
   <!-- ============================================= -->
-  <!-- 🆕 🆕 🆕 CONTAINER DE CHAT SAFARI (ADICIONADO AQUI) -->
-  <!-- ============================================= -->
-  
-  <!-- 🆕 CHAT SAFARI - POSICIONADO FORA DO BOX PRINCIPAL -->
-  <div id="safariChatContainer" style="display: none;">
-    <input type="text" id="inputTextoSafari" placeholder="Digite sua mensagem..." />
-    <button id="btnDitadoSafari">🎤</button>
-    <button id="btnEnviarSafari">📤</button>
-  </div>
-
-  <!-- ============================================= -->
   <!-- MODAL DE GRAVAÇÃO (FORA DO CONTAINER PRINCIPAL) -->
   <!-- ============================================= -->
 
@@ -414,26 +311,13 @@
       
       window.open(urls[rede], '_blank', 'width=600,height=400');
     }
-
-    // 🆕 🆕 🆕 DETECÇÃO AUTOMÁTICA DE SAFARI
-    function isSafari() {
-      return /^((?!chrome|android).)*safari/i.test(navigator.userAgent) || 
-             /iPad|iPhone|iPod/.test(navigator.userAgent);
-    }
-
-    // 🆕 INICIALIZAÇÃO CONDICIONAL DO CHAT SAFARI
-    if (isSafari()) {
-      console.log('📱 Safari detectado - preparando interface de chat...');
-      // O JavaScript vai mostrar o chat quando estiver pronto
-    }
   </script>
 
   <!-- ============================================= -->
-  <!-- 🎯 IMPORTAÇÃO DOS SCRIPTS SAFARI (CAMINHOS CORRETOS) -->
+  <!-- IMPORTAÇÃO DOS SCRIPTS DA APLICAÇÃO -->
   <!-- ============================================= -->
 
-  <script type="module" src="./js/receiver/receiver-ui.js"></script>
-  <script src="./js/receiver/receiver-trz.js"></script>
-
+  <script type="module" src="./safari/js/receiver/receiver-ui.js"></script>
+  <script src="./safari/js/receiver/receiver-trz.js"></script>
 </body>
 </html>
