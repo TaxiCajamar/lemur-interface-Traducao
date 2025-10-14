@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lemur EchoMe P2P Receiver</title>
+  <title>Lemur EchoMe P2P Receiver - Safari</title>
 
   <link rel="stylesheet" href="../mobile-style.css" />
   <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
@@ -14,7 +14,6 @@
       pointer-events: none !important;
     }
     
-    /* 🆕 ESTILOS PARA BOTÕES DE COMPARTILHAMENTO NO QR CODE */
     .social-buttons {
       display: flex;
       gap: 8px;
@@ -48,10 +47,9 @@
     .whatsapp { background: #25d366; }
     .telegram { background: #0088cc; }
 
-    /* 🆕 ESTILOS PARA LINKS FIXOS DE REDES SOCIAIS */
     .social-links-fixed {
       position: absolute;
-      top: 22%; /* Logo abaixo do subtítulo de 15% */
+      top: 22%;
       left: 50%;
       transform: translateX(-50%);
       display: flex;
@@ -82,42 +80,65 @@
     .social-btn-fixed:hover {
       transform: scale(1.1);
     }
+
+    /* 🆕 ESTILO PARA BOTÃO DE LIBERAÇÃO SAFARI */
+    #safari-audio-permission {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.95);
+      z-index: 10000;
+      color: white;
+      text-align: center;
+      padding: 50px 20px;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    #safari-audio-permission button {
+      background: #007AFF;
+      color: white;
+      padding: 20px 30px;
+      border: none;
+      border-radius: 12px;
+      font-size: 18px;
+      margin: 20px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    #safari-audio-permission button:active {
+      background: #0056CC;
+      transform: scale(0.98);
+    }
   </style>
 </head>
 
 <body>
-<!-- BLOCO DE LIBERAÇÃO DE ÁUDIO PARA SAFARI -->
-<!-- BLOCO DE LIBERAÇÃO DE ÁUDIO PARA SAFARI -->
-<div id="safari-audio-permission" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; color: white; text-align: center; padding: 50px 20px;">
-    <h2>🔊 Permissão de Áudio Necessária</h2>
-    <p>Para o sistema de tradução funcionar no iPhone, clique no botão abaixo:</p>
-    <button onclick="liberarAudioSafari()" style="background: #007AFF; color: white; padding: 20px; border: none; border-radius: 10px; font-size: 18px; margin: 20px;">
-        🎤 ATIVAR MICROFONE E ALTO-FALANTES
+<!-- 🆕 BLOCO DE LIBERAÇÃO DE ÁUDIO - APARECE QUANDO WEBRTC CONECTAR -->
+<div id="safari-audio-permission">
+    <h2>🔊 Liberação de Áudio Necessária</h2>
+    <p>Para o sistema de tradução funcionar, clique no botão abaixo para ativar os sons:</p>
+    <button onclick="liberarAudioSafari()">
+        🎤 ATIVAR SONS E MICROFONE
     </button>
-    <p style="font-size: 14px; color: #ccc;">Esta ação é necessária apenas uma vez por sessão</p>
+    <p style="font-size: 14px; color: #ccc;">Esta ação é necessária para ouvir as traduções</p>
 </div>
 
   <div class="box-principal">
-    <!-- ============================================= -->
     <!-- ELEMENTOS DE MARCA E IDENTIDADE VISUAL -->
-    <!-- ============================================= -->
-
     <img src="../assets/images/lemurBlu.png" alt="Lemur Logo" class="logo" />
-<img src="../assets/images/Bridg.png" alt="ponte" class="ponte" />
-<img id="click" src="../assets/images/click.png" alt="Click" />
+    <img src="../assets/images/Bridg.png" alt="ponte" class="ponte" />
+    <img id="click" src="../assets/images/click.png" alt="Click" />
     
-    <!-- ============================================= -->
-    <!-- SISTEMA DE LOADING E INDICADORES -->
-    <!-- ============================================= -->
-
+    <!-- SISTEMA DE LOADING -->
     <div id="mobileLoading" class="mobile-loader">
       <div class="loader-circle"></div>
     </div>
 
-    <!-- ============================================= -->
-    <!-- COMPONENTE DE INSTRUÇÕES INTERATIVAS -->
-    <!-- ============================================= -->
-
+    <!-- COMPONENTE DE INSTRUÇÕES -->
     <div class="instruction-box expandido" id="instructionBox">
       <button class="instruction-toggle" id="instructionToggle"></button>
       <div class="instruction-content">
@@ -160,10 +181,7 @@
       </div>
     </div>
 
-    <!-- ============================================= -->
-    <!-- BOTÕES DE CONTROLE PRINCIPAIS -->
-    <!-- ============================================= -->
-
+    <!-- BOTÕES DE CONTROLE -->
     <button id="logo-traduz" class="botao-key">
      <img src="../assets/images/key.png" alt="Gerar QR Code" />
     </button>
@@ -172,16 +190,11 @@
       <img src="../assets/images/girar-camera.png" alt="Alternar Câmera" />
     </button>
 
-    <!-- ============================================= -->
-    <!-- ELEMENTOS DE TEXTO, LABELS E REDES SOCIAIS FIXAS -->
-    <!-- ============================================= -->
-
-    <!-- 🏷️ Subtítulo de tradução -->
+    <!-- ELEMENTOS DE TEXTO E REDES SOCIAIS -->
     <div class="translator-label" id="translator-label">
       Real-time translation.
     </div>
 
-    <!-- 🆕 LINKS DE REDES SOCIAIS FIXOS - SEMPRE VISÍVEIS -->
     <div class="social-links-fixed">
       <a href="https://www.linkedin.com/company/lemurinnovation" target="_blank" class="social-btn-fixed linkedin">in</a>
       <a href="https://www.instagram.com/lemurinnovation" target="_blank" class="social-btn-fixed instagram">ig</a>
@@ -190,18 +203,12 @@
       <a href="https://wa.me/5511999999999" target="_blank" class="social-btn-fixed whatsapp">w</a>
     </div>
 
-    <!-- ============================================= -->
-    <!-- INDICADORES DE IDIOMA E BANDEIRAS -->
-    <!-- ============================================= -->
-
+    <!-- INDICADORES DE IDIOMA -->
     <div class="remoter-Lang">🏳️</div>
     <div class="local-Lang">🏳️</div>
     <div class="local-mic-Lang">🏳️</div>
 
-    <!-- ============================================= -->
-    <!-- SISTEMA DE VÍDEO E STREAMING -->
-    <!-- ============================================= -->
-
+    <!-- SISTEMA DE VÍDEO -->
     <div class="video-wrapper">
       <video id="remoteVideo" autoplay playsinline></video>
       <div class="pip-local-wrapper">
@@ -209,22 +216,15 @@
       </div>
     </div>
    
-    <!-- ============================================= -->
-    <!-- OVERLAY DE QR CODE (INICIALMENTE OCULTO) -->
-    <!-- ============================================= -->
-
+    <!-- OVERLAY DE QR CODE -->
     <div class="info-overlay hidden">
       <h2 id="qr-modal-title">This is your online key</h2>
-
       <div class="qrcode-container">
         <div id="qrcode"></div>
       </div>
-
       <p class="qr-modal-description" id="qr-modal-description">
         You can ask to scan, share or print on your business card.
       </p>
-
-      <!-- 🆕 BOTÕES DE COMPARTILHAMENTO NO QR CODE -->
       <div class="social-buttons">
         <button class="social-btn facebook" onclick="compartilharSocial('facebook')">f</button>
         <button class="social-btn twitter" onclick="compartilharSocial('twitter')">t</button>
@@ -232,35 +232,20 @@
         <button class="social-btn whatsapp" onclick="compartilharSocial('whatsapp')">w</button>
         <button class="social-btn telegram" onclick="compartilharSocial('telegram')">tg</button>
       </div>
-
-      <!-- 🆕 BOTÃO COPIAR SIMPLES E UNIVERSAL -->
       <button id="copiarLink" class="btn-copiar-simples">🔗</button>
     </div>
 
-    <!-- ============================================= -->
-    <!-- ÁREA DE EXIBIÇÃO DE TEXTO TRADUZIDO -->
-    <!-- ============================================= -->
-
+    <!-- ÁREA DE TEXTO TRADUZIDO -->
     <div id="texto-recebido"></div>
 
-    <!-- ============================================= -->
-    <!-- INDICADORES DE IDIOMA ATUAL -->
-    <!-- ============================================= -->
-
+    <!-- INDICADOR DE IDIOMA -->
     <div class="language-flag" id="currentLanguageFlag">🇧🇷</div>
 
-    <!-- ============================================= -->
-    <!-- BOTÕES DE CONTROLE DE ÁUDIO -->
-    <!-- ============================================= -->
+    <!-- ❌ SEM BOTÃO MICROFONE - USA TECLADO NATIVO -->
+   
+  </div>
 
-    <button class="record-btn" id="recordButton" disabled>🎤</button>
-
-  </div> <!-- Fim do .box-principal -->
-
-  <!-- ============================================= -->
-  <!-- MODAL DE GRAVAÇÃO (FORA DO CONTAINER PRINCIPAL) -->
-  <!-- ============================================= -->
-
+  <!-- MODAL DE GRAVAÇÃO (MANTIDO PARA COMPATIBILIDADE) -->
   <div class="recording-modal hidden-until-ready" id="recordingModal">
     <div class="recording-indicator">
       <div class="recording-dot"></div>
@@ -270,21 +255,14 @@
     <button class="send-button" id="sendButton">📤</button>
   </div>
 
-  <!-- ============================================= -->
-  <!-- IMPORTAÇÃO DE BIBLIOTECAS EXTERNAS -->
-  <!-- ============================================= -->
-
+  <!-- BIBLIOTECAS EXTERNAS -->
   <script src="https://lemur-signal-ings.onrender.com/socket.io/socket.io.js"></script>
 
-  <!-- ============================================= -->
-  <!-- SCRIPTS DE INICIALIZAÇÃO E CONFIGURAÇÃO -->
-  <!-- ============================================= -->
-
+  <!-- SCRIPTS PRINCIPAIS -->
   <script>
-    // ===== FUNÇÕES GLOBAIS DE CONTROLE DE INTERFACE =====
-    
+    // FUNÇÕES GLOBAIS
     window.liberarInterface = function () {
-      console.log('✅ Interface já está visível');
+      console.log('✅ Interface liberada');
     };
 
     window.mostrarErroCarregamento = function (mensagem) {
@@ -293,19 +271,15 @@
 
     document.addEventListener('DOMContentLoaded', function () {
       const overlay = document.querySelector('.info-overlay');
-      if (overlay) {
-        overlay.classList.add('hidden');
-      }
+      if (overlay) overlay.classList.add('hidden');
     });
 
-    // 🆕 FUNÇÃO PARA COMPARTILHAR NAS REDES SOCIAIS (QR CODE)
     function compartilharSocial(rede) {
       const myId = window.qrCodeData?.myId || '';
       const token = window.qrCodeData?.token || '';
       const lang = window.qrCodeData?.lang || 'pt-BR';
       
       const callerUrl = `${window.location.origin}/caller.html?targetId=${myId}&token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
-      
       const texto = "Conecte-se comigo via tradução em tempo real!";
       const urlEncoded = encodeURIComponent(callerUrl);
       const textoEncoded = encodeURIComponent(texto);
@@ -320,56 +294,36 @@
       
       window.open(urls[rede], '_blank', 'width=600,height=400');
     }
- </script>
 
-  <!-- ============================================= -->
-  <!-- SCRIPTS -->
-  <!-- ============================================= -->
-
-  <script>
-  // Mostra o bloco de permissão quando a página carrega
-  document.addEventListener('DOMContentLoaded', function() {
-      // Verifica se é Safari no iPhone
-      if (navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad')) {
-          document.getElementById('safari-audio-permission').style.display = 'block';
-      }
-  });
-
-  function liberarAudioSafari() {
-      // 1. Toca áudio silencioso para desbloquear autoplay
+    // 🆕 FUNÇÃO DE LIBERAÇÃO DE ÁUDIO SAFARI
+    function liberarAudioSafari() {
+      console.log('🎯 Safari: Iniciando liberação de áudio...');
+      
       const audio = new Audio();
       audio.src = 'data:audio/wav;base64,UklGRnoAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoAAAA=';
       
       audio.play().then(() => {
-          // 2. Solicita permissão do microfone
           return navigator.mediaDevices.getUserMedia({ audio: true });
       }).then(stream => {
-          // 3. Para os tracks (só precisávamos da permissão)
           stream.getTracks().forEach(track => track.stop());
           
-          // 4. Esconde o bloco de permissão
+          // ✅ ESCONDE O BOTÃO DE LIBERAÇÃO
           document.getElementById('safari-audio-permission').style.display = 'none';
           
-          // 5. Marca que o áudio está liberado
+          // ✅ MARCA ÁUDIO COMO LIBERADO
           window.audioLiberado = true;
           
-          // 6. Inicia o sistema normal (sua função existente)
-          if (typeof iniciarSistema === 'function') {
-              iniciarSistema();
-          }
+          console.log('✅ Safari: Áudio liberado com sucesso!');
           
       }).catch(err => {
-          console.error('Falha na liberação de áudio:', err);
-          alert('Permissão de áudio negada. Algumas funcionalidades não funcionarão.');
+          console.error('❌ Safari: Falha na liberação de áudio:', err);
+          alert('Permissão de áudio negada. Os sons não funcionarão.');
       });
-  }
-  </script>
+    }
+ </script>
 
-  <!-- ============================================= -->
-  <!-- IMPORTAÇÃO DOS SCRIPTS DA APLICAÇÃO -->
-  <!-- ============================================= -->
-
+  <!-- SCRIPTS DA APLICAÇÃO -->
   <script type="module" src="js/receiver/receiver-ui.js"></script>
-<script src="js/receiver/receiver-trz.js"></script>
+  <script src="js/receiver/receiver-trz.js"></script>
 </body>
 </html>
