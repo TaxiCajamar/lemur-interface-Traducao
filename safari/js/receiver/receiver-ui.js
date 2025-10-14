@@ -1171,7 +1171,7 @@ document.getElementById('logo-traduz').addEventListener('click', function() {
 }
 
 // 🚀 INICIALIZAÇÃO AUTOMÁTICA (SEM BOTÃO DE PERMISSÕES)
-window.onload = async () => {
+document.addEventListener('DOMContentLoaded', async () => {
     try {
         console.log('🚀 Iniciando aplicação receiver automaticamente...');
         
