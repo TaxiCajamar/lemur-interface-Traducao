@@ -1,6 +1,10 @@
 import { WebRTCCore } from '../../core/webrtc-core.js';
 import { CameraVigilante } from '../../core/camera-vigilante.js';
 
+// ✅ INICIALIZAÇÃO DO VIGILANTE PARA NOTIFICADOR
+window.cameraVigilante = new CameraVigilante();
+console.log('✅ Vigilante mobile pronto para notificador');
+
 // 🎵 VARIÁVEIS DE ÁUDIO
 let audioContext = null;
 let somDigitacao = null;
@@ -255,11 +259,16 @@ function setupCameraToggle() {
     let currentCamera = 'user';
     let isSwitching = false;
 
-    toggleButton.addEventListener('click', async () => {
-        if (isSwitching) return;
-        isSwitching = true;
-        toggleButton.style.opacity = '0.5';
-        toggleButton.style.cursor = 'wait';
+   toggleButton.addEventListener('click', async () => {
+    // ✅ PARAR VIGILANTE DURANTE TROCA
+    if (window.cameraVigilante) {
+        window.cameraVigilante.pararMonitoramento();
+    }
+
+    if (isSwitching) return;
+    isSwitching = true;
+    toggleButton.style.opacity = '0.5';
+    toggleButton.style.cursor = 'wait';
 
         try {
             if (window.localStream) {
@@ -289,12 +298,20 @@ function setupCameraToggle() {
 
             console.log(`✅ Câmera alterada para: ${currentCamera === 'user' ? 'Frontal' : 'Traseira'}`);
 
-        } catch (error) {
+               } catch (error) {
             console.error('❌ Erro ao alternar câmera:', error);
         } finally {
             isSwitching = false;
             toggleButton.style.opacity = '1';
             toggleButton.style.cursor = 'pointer';
+            
+            // ✅ REINICIAR VIGILANTE APÓS TROCA
+            setTimeout(() => {
+                if (window.cameraVigilante && window.localStream) {
+                    window.cameraVigilante.reiniciarMonitoramento();
+                    console.log('✅ Vigilante reiniciado com nova câmera no notificador');
+                }
+            }, 1500);
         }
     });
 
@@ -500,21 +517,24 @@ async function iniciarCameraAposPermissoes() {
         });
 
         // ✅ SE CÂMERA FUNCIONOU: Configura normalmente
-        if (stream) {
-            window.localStream = stream;
+if (stream) {
+    window.localStream = stream;
 
-            const localVideo = document.getElementById('localVideo');
-            if (localVideo) {
-                localVideo.srcObject = stream;
-            }
+    const localVideo = document.getElementById('localVideo');
+    if (localVideo) {
+        localVideo.srcObject = stream;
+    }
 
-            setupCameraToggle();
-            console.log('✅ Câmera NOTIFICADOR iniciada com sucesso');
+    setupCameraToggle();
+    console.log('✅ Câmera NOTIFICADOR iniciada com sucesso');
 
-// 🆕 🆕 🆕 ADICIONAR ESTAS 2 LINHAS AQUI 🆕 🆕 🆕
-    window.cameraVigilante = new CameraVigilante();
-    window.cameraVigilante.iniciarMonitoramento();
-    // 🆕 🆕 🆕 FIM DAS 2 LINHAS 🆕 🆕 🆕
+    // ✅ INICIAR VIGILANTE QUANDO CÂMERA ESTIVER PRONTA
+    setTimeout(() => {
+        if (window.cameraVigilante) {
+            window.cameraVigilante.iniciarMonitoramento();
+            console.log('👁️ Vigilante ativado para câmera do notificador');
+        }
+    }, 1000);
             
         } else {
             // ✅ SE CÂMERA FALHOU: Apenas avisa, mas continua
