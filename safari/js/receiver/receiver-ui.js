@@ -40,6 +40,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupInstructionToggle();
 });
 
+// ✅✅✅ IMPORTS CORRETOS PARA SAFARI
 import { WebRTCCore } from '../../../core/webrtc-core.js';
 import { QRCodeGenerator } from '../../../js/qrcode/qr-code-utils.js';
 import { CameraVigilante } from '../../../core/camera-vigilante.js';
