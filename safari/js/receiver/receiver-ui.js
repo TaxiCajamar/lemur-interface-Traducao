@@ -1218,4 +1218,4 @@ document.addEventListener('DOMContentLoaded', async () => {
             alert('Erro ao inicializar: ' + error.message);
         }
     }
-};
+});
