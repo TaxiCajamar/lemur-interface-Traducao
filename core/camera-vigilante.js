@@ -1,141 +1,176 @@
-// core/camera-vigilante.js - VERSÃO OTIMIZADA
+// core/camera-vigilante.js - VERSÃO PARA INTEGRAÇÃO NOS UI.js
 class CameraVigilante {
-    constructor() {
+    constructor(elementId = 'cameraPreview') {
+        this.elementId = elementId;
         this.estaMonitorando = false;
         this.intervaloMonitoramento = null;
         this.ultimoFrameTime = null;
         this.tentativasRecuperacao = 0;
-        this.maxTentativas = 2; // ✅ REDUZIDO para menos agressivo
+        this.maxTentativas = 3;
+        this.cameraAtual = 'user'; // Respeita a câmera que já está ativa
         
-        console.log('👁️ Vigia Mobile inicializado (Android/iOS)');
+        console.log(`👁️ Vigia Mobile para ${elementId}`);
     }
 
-    // ✅ MÉTODO SIMPLIFICADO - apenas monitora, não interfere
+    // ✅ INTEGRAÇÃO COM SEUS UI.js EXISTENTES
+    async iniciarVigilancia() {
+        console.log(`📹 Vigilante: Iniciando em ${this.elementId} (${this.cameraAtual})`);
+        
+        try {
+            // VERIFICA SE JÁ EXISTE CÂMERA ATIVA
+            const videoElement = document.getElementById(this.elementId);
+            if (videoElement && videoElement.srcObject) {
+                console.log('✅ Vigilante: Usando câmera já existente');
+            }
+            
+            // INICIA MONITORAMENTO
+            this.iniciarMonitoramento();
+            
+            // CONFIGURA BOTÃO SE EXISTIR
+            this.configurarBotaoAlternar();
+            
+            console.log(`✅ Vigilante integrado em ${this.elementId}`);
+            
+        } catch (error) {
+            console.error('❌ Vigilante: Falha na integração:', error);
+        }
+    }
+
+    // ✅ CONFIGURA BOTÃO EXISTENTE NOS SEUS UI.js
+    configurarBotaoAlternar() {
+        const toggleBtn = document.getElementById('toggleCamera');
+        if (toggleBtn && !toggleBtn._vigilanteConfigurado) {
+            toggleBtn.addEventListener('click', () => {
+                this.alternarCamera();
+            });
+            toggleBtn._vigilanteConfigurado = true;
+            console.log('🔄 Botão integrado pelo vigilante');
+        }
+    }
+
+    // ✅ ALTERNAR CÂMERAS - INTEGRADO
+    async alternarCamera() {
+        console.log('🔄 Vigilante: Alternando câmera...');
+        
+        this.pararMonitoramento();
+        
+        const novaCamera = this.cameraAtual === 'user' ? 'environment' : 'user';
+        
+        try {
+            await this.iniciarCamera(novaCamera);
+            
+            setTimeout(() => {
+                this.iniciarMonitoramento();
+                console.log(`✅ Vigilante: Alternado para ${novaCamera}`);
+            }, 500);
+            
+        } catch (error) {
+            console.error('❌ Vigilante: Falha ao alternar:', error);
+        }
+    }
+
+    // ✅ INICIAR CÂMERA - PARA ALTERNÂNCIA
+    async iniciarCamera(tipoCamera) {
+        const videoElement = document.getElementById(this.elementId);
+        if (!videoElement) return;
+
+        if (videoElement.srcObject) {
+            videoElement.srcObject.getTracks().forEach(track => track.stop());
+        }
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { 
+                facingMode: tipoCamera,
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            },
+            audio: false
+        });
+
+        videoElement.srcObject = stream;
+        this.cameraAtual = tipoCamera;
+        
+        return stream;
+    }
+
+    // ✅ MONITORAMENTO PROATIVO
     iniciarMonitoramento() {
         if (this.estaMonitorando) return;
         
-        console.log('👁️ Iniciando monitoramento mobile...');
         this.estaMonitorando = true;
         this.ultimoFrameTime = Date.now();
+        this.tentativasRecuperacao = 0;
 
-        // 👁️ OBSERVAÇÃO LEVE - não modifica eventos existentes
-        this.observarVideoLeve();
+        const videoElement = document.getElementById(this.elementId);
+        if (videoElement && !videoElement._vigilanteObserver) {
+            const observer = () => {
+                this.ultimoFrameTime = Date.now();
+            };
+            videoElement.addEventListener('timeupdate', observer);
+            videoElement._vigilanteObserver = observer;
+        }
         
-        // ⚡ VERIFICAÇÃO SUAVE (a cada 8s em vez de 5s)
         this.intervaloMonitoramento = setInterval(() => {
-            this.verificarSaudeCameraMobile();
+            this.verificarSaudeCamera();
         }, 8000);
-
-        console.log('✅ Vigia mobile ativado');
     }
 
-    // ✅ OBSERVAÇÃO LEVE - não substitui eventos existentes
-    observarVideoLeve() {
-        const localVideo = document.getElementById('localVideo');
-        if (!localVideo) {
-            console.log('⚠️ Video local não encontrado - vigilância leve');
-            return;
-        }
-
-        // 🎥 APENAS DETECTA frames, não substitui eventos
-        const observer = () => {
-            this.ultimoFrameTime = Date.now();
-        };
-        
-        // ✅ USA eventListener existente se possível
-        if (!localVideo._vigilanteObserver) {
-            localVideo.addEventListener('timeupdate', observer);
-            localVideo._vigilanteObserver = observer;
-        }
-    }
-
-    // ✅ VERIFICAÇÃO MOBILE OTIMIZADA
-    verificarSaudeCameraMobile() {
+    // ✅ AÇÃO PROATIVA
+    verificarSaudeCamera() {
         if (!this.estaMonitorando) return;
 
-        const agora = Date.now();
-        const tempoSemFrames = agora - this.ultimoFrameTime;
+        const tempoSemFrames = Date.now() - this.ultimoFrameTime;
         
-        // 🚨 DETECTA CONGELAMENTO (15s em vez de 10s - mais tolerante)
         if (tempoSemFrames > 15000) {
-            console.log('🚨 Câmera mobile possivelmente congelada');
-            this.tentarRecuperacaoMobile('congelada');
-            return;
+            console.log('🚨 Vigilante: Câmera congelada - CONSERTANDO!');
+            this.tentarRecuperacaoProativa();
         }
-
-        console.log('✅ Câmera mobile saudável');
     }
 
-    // ✅ RECUPERAÇÃO MOBILE - MENOS AGRESSIVA
-    async tentarRecuperacaoMobile(motivo) {
+    async tentarRecuperacaoProativa() {
         if (this.tentativasRecuperacao >= this.maxTentativas) {
-            console.log('❌ Máximo de tentativas mobile atingido');
-            return; // ✅ NÃO TRAVA - apenas para tentativas
+            console.log('❌ Máximo de tentativas - alternando...');
+            await this.alternarCamera();
+            return;
         }
 
         this.tentativasRecuperacao++;
-        console.log(`🔄 Tentativa ${this.tentativasRecuperacao}/${this.maxTentativas}`);
 
         try {
-            // 🛑 PARA MONITORAMENTO TEMPORARIAMENTE
             this.pararMonitoramento();
+            await this.recuperacaoProativa();
 
-            // 🔧 RECUPERAÇÃO SIMPLES
-            await this.recuperacaoMobileSimples();
-
-            // ✅ REINICIA MONITORAMENTO
             setTimeout(() => {
                 this.iniciarMonitoramento();
-                this.tentativasRecuperacao = 0;
-                console.log('✅ Câmera mobile recuperada');
             }, 1000);
 
         } catch (error) {
-            console.log('❌ Falha na recuperação mobile:', error);
+            console.log('❌ Vigilante: Falha na recuperação:', error);
         }
     }
 
-    // ✅ RECUPERAÇÃO SIMPLES - não mexe no WebRTC
-    async recuperacaoMobileSimples() {
-        console.log('🔧 Executando recuperação mobile...');
-
-        // 1. 🛑 PARA STREAM ATUAL (apenas se existir)
-        if (window.localStream) {
-            window.localStream.getTracks().forEach(track => track.stop());
+    async recuperacaoProativa() {
+        const videoElement = document.getElementById(this.elementId);
+        if (videoElement?.srcObject) {
+            videoElement.srcObject.getTracks().forEach(track => track.stop());
         }
 
-        // 2. ⏳ AGUARDA BREVEMENTE
         await new Promise(resolve => setTimeout(resolve, 800));
 
-        // 3. 📹 TENTA NOVA CÂMERA (usa facingMode atual)
-        try {
-            const novaStream = await navigator.mediaDevices.getUserMedia({
-                video: { 
-                    facingMode: 'user', // ✅ Sempre frontal na recuperação
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
-                },
-                audio: false
-            });
+        const novaStream = await navigator.mediaDevices.getUserMedia({
+            video: { 
+                facingMode: this.cameraAtual,
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            },
+            audio: false
+        });
 
-            // 4. 🎥 ATUALIZA APENAS VÍDEO LOCAL
-            const localVideo = document.getElementById('localVideo');
-            if (localVideo) {
-                localVideo.srcObject = novaStream;
-            }
-
-            // 5. 🔄 ATUALIZA STREAM GLOBAL
-            window.localStream = novaStream;
-
-            console.log('✅ Recuperação mobile concluída');
-
-        } catch (error) {
-            console.log('❌ Não foi possível recuperar câmera mobile:', error);
-            throw error;
+        if (videoElement) {
+            videoElement.srcObject = novaStream;
         }
     }
 
-    // 🛑 PARAR MONITORAMENTO
     pararMonitoramento() {
         if (this.intervaloMonitoramento) {
             clearInterval(this.intervaloMonitoramento);
@@ -144,18 +179,15 @@ class CameraVigilante {
         this.estaMonitorando = false;
     }
 
-    // 🔄 REINICIAR (para trocas de câmera)
-    reiniciarMonitoramento() {
-        this.pararMonitoramento();
-        this.tentativasRecuperacao = 0;
-        this.ultimoFrameTime = Date.now();
-        setTimeout(() => this.iniciarMonitoramento(), 500);
-    }
-
-    // 🧹 LIMPAR
+    // ✅ PARA INTEGRAÇÃO TOTAL
     destruir() {
         this.pararMonitoramento();
+        const videoElement = document.getElementById(this.elementId);
+        if (videoElement && videoElement._vigilanteObserver) {
+            videoElement.removeEventListener('timeupdate', videoElement._vigilanteObserver);
+            delete videoElement._vigilanteObserver;
+        }
     }
 }
 
-export { CameraVigilante };
+export default CameraVigilante;
