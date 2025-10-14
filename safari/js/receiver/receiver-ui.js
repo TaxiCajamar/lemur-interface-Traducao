@@ -87,6 +87,14 @@ function carregarSomDigitacao() {
 
 // 🎵 INICIAR LOOP DE DIGITAÇÃO
 function iniciarSomDigitacao() {
+    // ✅ VERIFICA SE É SAFARI E SE ÁUDIO FOI LIBERADO
+    if (navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad')) {
+        if (!window.audioLiberado) {
+            console.log('🔇 Safari: Áudio não liberado ainda - som bloqueado');
+            return;
+        }
+    }
+    
     if (!audioCarregado || !somDigitacao) return;
     
     pararSomDigitacao();
@@ -517,7 +525,17 @@ function esconderClickQuandoConectar() {
 // 🎤 FUNÇÃO TTS DO NAVEGADOR (GRÁTIS) - OTIMIZADA
 function falarComNavegadorTTS(mensagem, elemento, imagemImpaciente, idioma) {
     return new Promise((resolve) => {
+        // ✅ VERIFICA SE É SAFARI E SE ÁUDIO FOI LIBERADO
+        if (navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad')) {
+            if (!window.audioLiberado) {
+                console.log('🔇 Safari: Áudio não liberado - TTS navegador bloqueado');
+                resolve(false);
+                return;
+            }
+        }
+        
         try {
+            
             // Para qualquer fala anterior
             window.speechSynthesis.cancel();
             
@@ -598,6 +616,14 @@ function prepararNavegadorTTS(idioma) {
 
 // 🎤 FUNÇÃO GOOGLE TTS (PAGO) - ATUALIZADA
 async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente, idioma) {
+    // ✅ VERIFICA SE É SAFARI E SE ÁUDIO FOI LIBERADO
+    if (navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad')) {
+        if (!window.audioLiberado) {
+            console.log('🔇 Safari: Áudio não liberado - Google TTS bloqueado');
+            throw new Error('Áudio não liberado no Safari');
+        }
+    }
+    
     try {
         console.log(`🎤 Iniciando Google TTS para ${idioma}:`, mensagem.substring(0, 50) + '...');
         
@@ -1010,7 +1036,21 @@ document.getElementById('logo-traduz').addEventListener('click', function() {
 
         // 🎤 SISTEMA HÍBRIDO TTS - CALLBACK ATUALIZADO
         window.rtcCore.setDataChannelCallback(async (mensagem) => {
-            iniciarSomDigitacao();
+    // ✅ VERIFICA SE É SAFARI ANTES DE TOCAR SONS
+    if (navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad')) {
+        if (!window.audioLiberado) {
+            console.log('🔇 Safari: Mensagem recebida mas áudio não liberado');
+            // Ainda exibe a mensagem, mas sem sons
+            const elemento = document.getElementById('texto-recebido');
+            if (elemento) {
+                elemento.textContent = mensagem;
+                elemento.style.opacity = '1';
+            }
+            return;
+        }
+    }
+    
+    iniciarSomDigitacao();
 
             console.log('📩 Mensagem recebida:', mensagem);
 
