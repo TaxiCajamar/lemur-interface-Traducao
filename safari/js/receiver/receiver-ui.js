@@ -506,6 +506,16 @@ function esconderClickQuandoConectar() {
                     elementoClick.style.display = 'none';
                     elementoClick.classList.remove('piscar-suave');
                     console.log('🔗 WebRTC conectado - botão Click removido');
+                    
+                    // 🆕 🆕 🆕 MOSTRA BOTÃO DE LIBERAÇÃO DE ÁUDIO QUANDO WEBRTC CONECTAR
+                    setTimeout(() => {
+                        const audioPermission = document.getElementById('safari-audio-permission');
+                        if (audioPermission) {
+                            audioPermission.style.display = 'block';
+                            console.log('🔊 Safari: Mostrando botão de liberação de áudio (WebRTC conectado)');
+                        }
+                    }, 1000);
+                    
                     observer.disconnect(); // Para de observar
                 }
             }
