@@ -1,4 +1,4 @@
-// ===== TRADUTOR SAFARI COMPATIBLE - SEM RECONHECIMENTO DE VOZ =====
+// ===== TRADUTOR SAFARI COMPATIBLE - INTEGRADO COM RECEIVER-UI.JS =====
 
 // ===== FUNÇÃO DE TRADUÇÃO ATUALIZADA =====
 async function translateText(text) {
@@ -8,7 +8,7 @@ async function translateText(text) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 text: text,
-                targetLang: window.meuIdiomaRemoto || 'en' // ✅ USA IDIOMA GUARDADO
+                targetLang: window.meuIdiomaRemoto || 'en'
             })
         });
 
@@ -27,32 +27,23 @@ function initializeTranslator() {
     console.log('🎯 Iniciando tradutor receiver (Safari Mode)...');
 
     // ===== VERIFICAÇÃO DE DEPENDÊNCIAS CRÍTICAS =====
-    console.log('🔍 Verificando dependências do receiver-ui.js...');
-    
-    // ✅ VERIFICA SE RECEIVER-UI.JS JÁ CONFIGUROU TUDO
     if (!window.meuIdiomaLocal || !window.meuIdiomaRemoto) {
-        console.log('⏳ Aguardando receiver-ui.js configurar idiomas...', {
-            meuIdiomaLocal: window.meuIdiomaLocal,
-            meuIdiomaRemoto: window.meuIdiomaRemoto
-        });
+        console.log('⏳ Aguardando receiver-ui.js configurar idiomas...');
         setTimeout(initializeTranslator, 500);
         return;
     }
     
-    // ✅ VERIFICA SE WEBRTC ESTÁ PRONTO
     if (!window.rtcCore) {
         console.log('⏳ Aguardando WebRTC inicializar...');
         setTimeout(initializeTranslator, 500);
         return;
     }
 
-    // 🎯 CONFIGURAÇÃO DE IDIOMAS SINCRONIZADA
-    const IDIOMA_ORIGEM = window.meuIdiomaLocal || 'pt-BR';
+    // 🎯 CONFIGURAÇÃO DE IDIOMAS
     const IDIOMA_DESTINO = window.meuIdiomaRemoto || 'en';
     const IDIOMA_FALA = window.meuIdiomaRemoto || 'en-US';
     
-    console.log('🔤 Idiomas sincronizados:', { 
-        origem: IDIOMA_ORIGEM, 
+    console.log('🔤 Idiomas Safari:', { 
         destino: IDIOMA_DESTINO,
         fala: IDIOMA_FALA 
     });
@@ -62,14 +53,11 @@ function initializeTranslator() {
     const textoRecebido = document.getElementById('texto-recebido');
     const speakerButton = document.getElementById('speakerButton');
     
-    if (!recordButton || !textoRecebido) {
-        console.log('⏳ Aguardando elementos do tradutor...');
+    if (!textoRecebido) {
+        console.log('⏳ Aguardando elemento texto-recebido...');
         setTimeout(initializeTranslator, 300);
         return;
     }
-
-    // 🆕 🆕 🆕 SAFARI: REMOVE RECONHECIMENTO DE VOZ, MANTÉM APENAS TTS
-    console.log('📱 Safari Mode: Desativando reconhecimento de voz');
 
     // 🎙️ CONFIGURAÇÃO DE VOZ - APENAS TTS (FUNCIONA NO SAFARI)
     const SpeechSynthesis = window.speechSynthesis;
@@ -79,119 +67,96 @@ function initializeTranslator() {
         speakerButton.style.display = 'none';
     }
 
-    // ⏱️ VARIÁVEIS DE ESTADO (SIMPLIFICADAS)
+    // ⏱️ VARIÁVEIS DE ESTADO
     let isSpeechPlaying = false;
-    let lastTranslationTime = 0;
 
-    // 🆕 🆕 🆕 SAFARI: SISTEMA DE ENVIO VIA TEXTO
-    function setupSafariTextInput() {
-        console.log('⌨️ Configurando sistema de texto Safari...');
+    // 🆕 SAFARI: USA A INTERFACE JÁ CRIADA PELO RECEIVER-UI.JS
+    function integrarComSafariUI() {
+        console.log('🔗 Integrando com interface Safari existente...');
         
-        // 🆕 Cria elementos de input se não existirem
-        let inputContainer = document.getElementById('safariInputContainer');
-        if (!inputContainer) {
-            inputContainer = document.createElement('div');
-            inputContainer.id = 'safariInputContainer';
-            inputContainer.style.cssText = `
-                position: fixed;
-                bottom: 80px;
-                left: 10px;
-                right: 10px;
-                background: rgba(255,255,255,0.95);
-                border-radius: 20px;
-                padding: 10px;
-                display: flex;
-                gap: 10px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-                z-index: 1000;
-            `;
-            
-            const inputTexto = document.createElement('input');
-            inputTexto.id = 'safariTextInput';
-            inputTexto.type = 'text';
-            inputTexto.placeholder = 'Digite sua mensagem...';
-            inputTexto.style.cssText = `
-                flex: 1;
-                border: none;
-                background: transparent;
-                padding: 8px 12px;
-                font-size: 16px;
-                outline: none;
-            `;
-            
-            const btnEnviar = document.createElement('button');
-            btnEnviar.id = 'safariSendButton';
-            btnEnviar.textContent = '📤';
-            btnEnviar.style.cssText = `
-                background: #007AFF;
-                border: none;
-                border-radius: 50%;
-                width: 40px;
-                height: 40px;
-                color: white;
-                font-size: 18px;
-                cursor: pointer;
-            `;
-            
-            inputContainer.appendChild(inputTexto);
-            inputContainer.appendChild(btnEnviar);
-            document.body.appendChild(inputContainer);
-            
-            console.log('✅ Elementos de texto Safari criados');
-            
-            // 🆕 Configura eventos
-            inputTexto.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    enviarMensagemSafari();
-                }
-            });
-            
-            btnEnviar.addEventListener('click', enviarMensagemSafari);
+        // 🆕 VERIFICA SE O CHAT JÁ FOI CRIADO PELO RECEIVER-UI.JS
+        const safariChat = document.getElementById('safariChatContainer');
+        const inputTexto = document.getElementById('inputTextoSafari');
+        const btnEnviar = document.getElementById('btnEnviarSafari');
+        const btnDitado = document.getElementById('btnDitadoSafari');
+        
+        if (!safariChat || !inputTexto || !btnEnviar) {
+            console.log('⏳ Aguardando interface Safari ser criada...');
+            setTimeout(integrarComSafariUI, 500);
+            return;
         }
         
-        // 🆕 Esconde botão de gravação (não funciona no Safari)
-        if (recordButton) {
-            recordButton.style.display = 'none';
-        }
-    }
-
-    // 🆕 🆕 🆕 FUNÇÃO PARA ENVIAR MENSAGEM VIA TEXTO (SAFARI)
-    function enviarMensagemSafari() {
-        const inputTexto = document.getElementById('safariTextInput');
-        const mensagem = inputTexto.value.trim();
+        console.log('✅ Interface Safari encontrada, configurando eventos...');
         
-        if (!mensagem) return;
-        
-        console.log('📤 Enviando mensagem via texto Safari:', mensagem);
-        
-        // ✅ TRADUZ PRIMEIRO
-        translateText(mensagem).then(translatedText => {
-            if (translatedText && translatedText.trim() !== "") {
-                console.log(`🌐 Traduzido Safari: "${mensagem}" → "${translatedText}"`);
-                
-                // ✅ ENVIA VIA WEBRTC
-                if (window.rtcCore && window.rtcCore.dataChannel && 
-                    window.rtcCore.dataChannel.readyState === 'open') {
-                    window.rtcCore.dataChannel.send(translatedText);
-                    console.log('✅ Texto traduzido enviado via WebRTC');
+        // 🆕 CONFIGURA ENVIO DE MENSAGENS
+        function enviarMensagemSafari() {
+            const inputTexto = document.getElementById('inputTextoSafari');
+            const mensagem = inputTexto.value.trim();
+            
+            if (!mensagem) return;
+            
+            console.log('📤 Enviando mensagem via texto Safari:', mensagem);
+            
+            // ✅ TRADUZ PRIMEIRO
+            translateText(mensagem).then(translatedText => {
+                if (translatedText && translatedText.trim() !== "") {
+                    console.log(`🌐 Traduzido Safari: "${mensagem}" → "${translatedText}"`);
                     
-                    // ✅ FEEDBACK VISUAL
-                    inputTexto.value = '';
-                    inputTexto.placeholder = '✓ Mensagem enviada!';
+                    // ✅ ENVIA VIA WEBRTC
+                    if (window.rtcCore && window.rtcCore.dataChannel && 
+                        window.rtcCore.dataChannel.readyState === 'open') {
+                        window.rtcCore.dataChannel.send(translatedText);
+                        console.log('✅ Texto traduzido enviado via WebRTC');
+                        
+                        // ✅ FEEDBACK VISUAL
+                        inputTexto.value = '';
+                        inputTexto.placeholder = '✓ Mensagem enviada!';
+                        setTimeout(() => {
+                            inputTexto.placeholder = 'Digite sua mensagem...';
+                        }, 2000);
+                        
+                    } else {
+                        console.log('❌ Canal WebRTC não disponível');
+                        inputTexto.placeholder = '❌ Sem conexão...';
+                        setTimeout(() => {
+                            inputTexto.placeholder = 'Digite sua mensagem...';
+                        }, 2000);
+                    }
+                } else {
+                    console.log('❌ Tradução falhou');
+                    inputTexto.placeholder = '❌ Erro tradução...';
                     setTimeout(() => {
                         inputTexto.placeholder = 'Digite sua mensagem...';
                     }, 2000);
-                    
-                } else {
-                    console.log('❌ Canal WebRTC não disponível');
-                    alert('Conexão não estabelecida. Aguarde o parceiro conectar.');
                 }
-            } else {
-                console.log('❌ Tradução falhou');
+            }).catch(error => {
+                console.error('❌ Erro na tradução Safari:', error);
+                inputTexto.placeholder = '❌ Erro...';
+                setTimeout(() => {
+                    inputTexto.placeholder = 'Digite sua mensagem...';
+                }, 2000);
+            });
+        }
+        
+        // 🆕 CONFIGURA EVENTOS NA INTERFACE EXISTENTE
+        btnEnviar.addEventListener('click', enviarMensagemSafari);
+        
+        inputTexto.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                enviarMensagemSafari();
             }
-        }).catch(error => {
-            console.error('❌ Erro na tradução Safari:', error);
         });
+        
+        // 🆕 BOTÃO DE DITADO - FOCA NO INPUT
+        if (btnDitado) {
+            btnDitado.addEventListener('click', function() {
+                inputTexto.focus();
+                inputTexto.select();
+                console.log('⌨️ Ativando teclado Safari');
+            });
+        }
+        
+        console.log('✅ Eventos Safari configurados com sucesso');
     }
 
     // 🔊 SISTEMA DE VOZ - TTS (FUNCIONA NO SAFARI)
@@ -204,7 +169,6 @@ function initializeTranslator() {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
         
-        // ✅ USA O IDIOMA REMOTO CORRETO (GUARDADO)
         utterance.lang = window.meuIdiomaRemoto || 'en-US';
         utterance.rate = 0.9;
         utterance.volume = 0.8;
@@ -256,22 +220,6 @@ function initializeTranslator() {
         }
     }
 
-    // ===== FUNÇÃO MELHORADA PARA ENVIAR TEXTO =====
-    function enviarParaOutroCelular(texto) {
-        // ✅ USA O CANAL DO WEBRTCCORE CORRETAMENTE
-        if (window.rtcCore && window.rtcCore.dataChannel && 
-            window.rtcCore.dataChannel.readyState === 'open') {
-            window.rtcCore.dataChannel.send(texto);
-            console.log('✅ Texto enviado via WebRTC Core:', texto);
-            return true;
-        } else {
-            console.log('⏳ Canal WebRTC não disponível. Estado:', 
-                window.rtcCore ? window.rtcCore.dataChannel?.readyState : 'rtcCore não existe');
-            setTimeout(() => enviarParaOutroCelular(texto), 1000);
-            return false;
-        }
-    }
-
     // 🎮 EVENTOS DE BOTÃO (SAFARI MODE)
     if (speakerButton) {
         speakerButton.addEventListener('click', function() {
@@ -280,60 +228,52 @@ function initializeTranslator() {
         });
     }
 
-    // 🆕 🆕 🆕 INICIALIZA SISTEMA DE TEXTO SAFARI
-    setupSafariTextInput();
+    // 🆕 ESCONDE BOTÃO DE GRAVAÇÃO (NÃO FUNCIONA NO SAFARI)
+    if (recordButton) {
+        recordButton.style.display = 'none';
+        console.log('🎤 Botão de gravação desativado (Safari)');
+    }
+
+    // 🆕 INTEGRA COM A INTERFACE JÁ CRIADA
+    setTimeout(integrarComSafariUI, 1000);
 
     // ✅ CONFIGURAÇÃO FINAL SAFARI
-    console.log(`🎯 Tradutor receiver Safari completamente configurado: ${window.meuIdiomaLocal} → ${window.meuIdiomaRemoto}`);
-    console.log('🔍 Estado final Safari:', {
-        recordButton: 'DESATIVADO (Safari)',
+    console.log(`🎯 Tradutor receiver Safari configurado: ${window.meuIdiomaLocal} → ${window.meuIdiomaRemoto}`);
+    console.log('🔍 Estado Safari:', {
+        recordButton: 'DESATIVADO',
         speakerButton: !!speakerButton,
         textoRecebido: !!textoRecebido,
         rtcCore: !!window.rtcCore,
-        dataChannel: window.rtcCore ? window.rtcCore.dataChannel?.readyState : 'não disponível',
-        safariInput: '✅ ATIVO'
+        dataChannel: window.rtcCore ? window.rtcCore.dataChannel?.readyState : 'não disponível'
     });
 }
 
-// ✅ INICIALIZAÇÃO ROBUSTA COM VERIFICAÇÃO
+// ✅ INICIALIZAÇÃO ROBUSTA
 function startTranslatorSafely() {
-    console.log('🚀 Iniciando tradutor receiver Safari com verificação de segurança...');
+    console.log('🚀 Iniciando tradutor receiver Safari...');
     
-    // Verifica se o DOM está pronto
     if (document.readyState === 'loading') {
-        console.log('⏳ DOM ainda carregando...');
         document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(initializeTranslator, 1000);
+            setTimeout(initializeTranslator, 1500);
         });
     } else {
-        console.log('✅ DOM já carregado, iniciando tradutor Safari...');
-        setTimeout(initializeTranslator, 1000);
+        setTimeout(initializeTranslator, 1500);
     }
 }
 
-// Inicia o tradutor de forma segura
-startTranslatorSafely();
+// 🆕 DETECÇÃO AUTOMÁTICA DE SAFARI
+function isSafari() {
+    return /^((?!chrome|android).)*safari/i.test(navigator.userAgent) || 
+           /iPad|iPhone|iPod/.test(navigator.userAgent);
+}
 
-// 🆕 🆕 🆕 FUNÇÃO GLOBAL PARA RECEBER MENSAGENS (COMPATIBILIDADE)
-window.receberMensagemTraduzida = function(mensagem) {
-    console.log('📩 Mensagem recebida no tradutor Safari:', mensagem);
-    
-    const textoRecebido = document.getElementById('texto-recebido');
-    if (textoRecebido) {
-        textoRecebido.textContent = mensagem;
-        textoRecebido.style.opacity = '1';
-        
-        // Efeito visual de nova mensagem
-        textoRecebido.style.animation = 'pulsar-flutuar-intenso 0.8s infinite ease-in-out';
-        textoRecebido.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
-        textoRecebido.style.border = '2px solid #ff0000';
-        
-        setTimeout(() => {
-            textoRecebido.style.animation = 'none';
-            textoRecebido.style.backgroundColor = '';
-            textoRecebido.style.border = '';
-        }, 3000);
-    }
-};
+// 🆕 INICIALIZAÇÃO CONDICIONAL
+if (isSafari()) {
+    console.log('📱 Safari detectado - inicializando modo compatível');
+    startTranslatorSafely();
+} else {
+    console.log('🤖 Navegador não-Safari detectado - tradutor normal será carregado');
+    // Não faz nada - o tradutor normal do Android/Chrome será usado
+}
 
-console.log('✅ receiver-trz.js Safari carregado - Modo Texto Ativado');
+console.log('✅ receiver-trz.js Safari carregado - Modo Integrado');
