@@ -87,8 +87,14 @@
 
 <body>
 <!-- BLOCO DE LIBERAÇÃO DE ÁUDIO PARA SAFARI -->
+<!-- BLOCO DE LIBERAÇÃO DE ÁUDIO PARA SAFARI -->
 <div id="safari-audio-permission" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; color: white; text-align: center; padding: 50px 20px;">
-    [conteúdo do bloco de permissão]
+    <h2>🔊 Permissão de Áudio Necessária</h2>
+    <p>Para o sistema de tradução funcionar no iPhone, clique no botão abaixo:</p>
+    <button onclick="liberarAudioSafari()" style="background: #007AFF; color: white; padding: 20px; border: none; border-radius: 10px; font-size: 18px; margin: 20px;">
+        🎤 ATIVAR MICROFONE E ALTO-FALANTES
+    </button>
+    <p style="font-size: 14px; color: #ccc;">Esta ação é necessária apenas uma vez por sessão</p>
 </div>
 
   <div class="box-principal">
@@ -314,6 +320,49 @@
       
       window.open(urls[rede], '_blank', 'width=600,height=400');
     }
+ </script>
+
+  <!-- ============================================= -->
+  <!-- SCRIPTS -->
+  <!-- ============================================= -->
+
+  <script>
+  // Mostra o bloco de permissão quando a página carrega
+  document.addEventListener('DOMContentLoaded', function() {
+      // Verifica se é Safari no iPhone
+      if (navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad')) {
+          document.getElementById('safari-audio-permission').style.display = 'block';
+      }
+  });
+
+  function liberarAudioSafari() {
+      // 1. Toca áudio silencioso para desbloquear autoplay
+      const audio = new Audio();
+      audio.src = 'data:audio/wav;base64,UklGRnoAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoAAAA=';
+      
+      audio.play().then(() => {
+          // 2. Solicita permissão do microfone
+          return navigator.mediaDevices.getUserMedia({ audio: true });
+      }).then(stream => {
+          // 3. Para os tracks (só precisávamos da permissão)
+          stream.getTracks().forEach(track => track.stop());
+          
+          // 4. Esconde o bloco de permissão
+          document.getElementById('safari-audio-permission').style.display = 'none';
+          
+          // 5. Marca que o áudio está liberado
+          window.audioLiberado = true;
+          
+          // 6. Inicia o sistema normal (sua função existente)
+          if (typeof iniciarSistema === 'function') {
+              iniciarSistema();
+          }
+          
+      }).catch(err => {
+          console.error('Falha na liberação de áudio:', err);
+          alert('Permissão de áudio negada. Algumas funcionalidades não funcionarão.');
+      });
+  }
   </script>
 
   <!-- ============================================= -->
