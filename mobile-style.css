@@ -84,6 +84,9 @@ body {
   text-decoration: none;
 }
 
+.social-btn-fixed.website { background: #4CAF50; }  /* 🆕 ADICIONE ESTA LINHA */
+.social-btn-fixed.instagram { background: #E4405F; }  /* 🆕 ADICIONE ESTA LINHA */
+
 .social-btn-fixed:hover {
   transform: scale(1.1);
 }
