@@ -725,6 +725,15 @@ async function falarTextoSistemaHibrido(mensagem, elemento, imagemImpaciente, id
     }
 }
 
+// ✅ FUNÇÃO AUXILIAR PARA UUID (CORRIGIDA - FORA DA iniciarCameraAposPermissoes)
+function fakeRandomUUID(fixedValue) {
+    return {
+        substr: function(start, length) {
+            return fixedValue.substr(start, length);
+        }
+    };
+}
+
 // ✅ NOVO BLOCO - CÂMERA RESILIENTE
 async function iniciarCameraAposPermissoes() {
     try {
@@ -786,21 +795,10 @@ async function iniciarCameraAposPermissoes() {
             }
         }, 500);
         
-        // ... continua o código ORIGINAL daqui para baixo ...
-        // (MANTÉM todo o resto do código que estava aqui)
-        
         window.rtcCore = new WebRTCCore();
 
         const url = window.location.href;
         const fixedId = url.split('?')[1] || crypto.randomUUID().substr(0, 8);
-
-        function fakeRandomUUID(fixedValue) {
-            return {
-                substr: function(start, length) {
-                    return fixedValue.substr(start, length);
-                }
-            };
-        }
 
         const myId = fakeRandomUUID(fixedId).substr(0, 8);
 
@@ -818,202 +816,80 @@ async function iniciarCameraAposPermissoes() {
         };
 
     // ✅ CONFIGURA o botão para gerar QR Code quando clicado (VERSÃO COM LINK)
-document.getElementById('logo-traduz').addEventListener('click', function() {
-    // ✅ 1. DETECTA SAFARI
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    
-    if (isSafari) {
-        // ✅ 1. MUDA COR PARA BEGE (já funciona)
-        this.style.backgroundColor = '#fff8e1';
-        this.style.border = '2px solid #ffd54f';
+    document.getElementById('logo-traduz').addEventListener('click', function() {
+       
+        // ⬇️⬇️⬇️ SEU CÓDIGO ORIGINAL CONTINUA DAQUI ⬇️⬇️⬇️
         
-        // ✅ 2. 🆕 FEEDBACK VISUAL IMEDIATO
-        const textoOriginal = this.innerHTML;
-        this.innerHTML = '🔓 Liberando áudio Safari...';
-        this.style.color = '#d35400';
+        // 🔄 VERIFICA SE JÁ EXISTE UM QR CODE ATIVO
+        const overlay = document.querySelector('.info-overlay');
+        const qrcodeContainer = document.getElementById('qrcode');
         
-        console.log('🎯 Safari detectado - tentando liberar áudio...');
-        
-        // ✅ 3. ESTRATÉGIA WEB AUDIO API
-        if (!window.audioContext) {
-            window.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        // Se o overlay já está visível, apenas oculta (toggle)
+        if (overlay && !overlay.classList.contains('hidden')) {
+            overlay.classList.add('hidden');
+            console.log('📱 QR Code fechado pelo usuário');
+            return;
         }
         
-        // ✅ 4. 🆕 FEEDBACK DURANTE O PROCESSO
-        setTimeout(() => {
-            this.innerHTML = '⬇️ Baixando MP3...';
-        }, 500);
+        // 🔄 VERIFICA CONEXÃO WEBRTC DE FORMA MAIS INTELIGENTE
+        const remoteVideo = document.getElementById('remoteVideo');
+        const isConnected = remoteVideo && remoteVideo.srcObject;
         
-        if (window.audioContext.state === 'suspended') {
-            window.audioContext.resume().then(() => {
-                this.innerHTML = '✅ Áudio ativado!';
-                setTimeout(() => {
-                    carregarETocarMP3();
-                }, 800);
-            });
-        } else {
-            carregarETocarMP3();
+        if (isConnected) {
+            console.log('❌ WebRTC já conectado - QR Code não pode ser reaberto');
+            return; // ⬅️ Apenas retorna silenciosamente
         }
         
-       function carregarETocarMP3() {
-    // 🆕 CORREÇÃO: Usa o áudio JÁ CARREGADO em vez de fetch!
-    if (window.audioCarregado && window.somDigitacao) {
-        console.log('🎵 Safari: Usando áudio pré-carregado...');
-        
-        // 🆕 FEEDBACK: Preparando
-        this.innerHTML = '🔊 Preparando áudio...';
-        
-        try {
-            // Para qualquer áudio anterior
-            pararSomDigitacao();
-            
-            // Configura para tocar uma vez
-            somDigitacao.loop = false;
-            somDigitacao.currentTime = 0;
-            somDigitacao.volume = 0.3;
-            
-            // 🆕 FEEDBACK: Tocando!
-            this.innerHTML = '🎵 TOCANDO AGORA!';
-            this.style.color = '#27ae60';
-            this.style.backgroundColor = '#d5f4e6';
-            
-            // Tenta tocar o áudio JÁ CARREGADO
-            somDigitacao.play().then(() => {
-                console.log('✅ Áudio tocando via elemento Audio!');
-                
-                // 🆕 FEEDBACK: Contagem regressiva
-                let segundos = 5;
-                const intervalo = setInterval(() => {
-                    this.innerHTML = `🎵 Tocando... ${segundos}s`;
-                    segundos--;
-                    
-                    if (segundos < 0) {
-                        clearInterval(intervalo);
-                        pararSomDigitacao();
-                        this.innerHTML = '✅ Teste concluído!';
-                        setTimeout(() => {
-                            this.innerHTML = textoOriginal;
-                            this.style.color = '';
-                            this.style.backgroundColor = '#fff8e1';
-                        }, 2000);
-                    }
-                }, 1000);
-                
-            }).catch(error => {
-                console.log('❌ Safari bloqueou áudio:', error);
-                this.innerHTML = '❌ Safari bloqueou';
-                this.style.color = '#c0392b';
-                this.style.backgroundColor = '#fadbd8';
-                
-                // Tenta fallback após 2 segundos
-                setTimeout(() => {
-                    tentarFallbackAudio();
-                }, 2000);
-            });
-            
-        } catch (error) {
-            console.log('❌ Erro no áudio:', error);
-            this.innerHTML = '❌ Erro no áudio';
-            this.style.color = '#c0392b';
-            this.style.backgroundColor = '#fadbd8';
+        console.log('🗝️ Gerando/Reabrindo QR Code e Link...');
+               
+        // 🔄 LIMPA QR CODE ANTERIOR SE EXISTIR
+        if (qrcodeContainer) {
+            qrcodeContainer.innerHTML = '';
         }
         
-    } else {
-        this.innerHTML = '❌ Áudio não carregado';
-        this.style.color = '#c0392b';
-        this.style.backgroundColor = '#fadbd8';
-        console.log('❌ Áudio ainda não foi carregado');
-    }
-}
+        const callerUrl = `${window.location.origin}/caller.html?targetId=${window.qrCodeData.myId}&token=${encodeURIComponent(window.qrCodeData.token)}&lang=${encodeURIComponent(window.qrCodeData.lang)}`;
         
-        // ✅ CORREÇÃO: MOVER AQUI DENTRO
-        function tentarFallbackAudio() {
-            console.log('🔄 Tentando fallback de áudio para Safari...');
-            // 🆕 Fallback: Toca um bip via Web Audio API
-            const oscillator = window.audioContext.createOscillator();
-            const gainNode = window.audioContext.createGain();
-            oscillator.connect(gainNode);
-            gainNode.connect(window.audioContext.destination);
-            gainNode.gain.value = 0.001; // Quase mudo
-            oscillator.start();
-            oscillator.stop(window.audioContext.currentTime + 0.1);
-            console.log('🔊 Fallback de áudio executado');
-        }
-    } // ✅ FIM DO if (isSafari) - ESTA CHAVE ESTAVA FALTANDO!
-    
-    // ⬇️⬇️⬇️ SEU CÓDIGO ORIGINAL CONTINUA DAQUI ⬇️⬇️⬇️
-    
-    // 🔄 VERIFICA SE JÁ EXISTE UM QR CODE ATIVO
-    const overlay = document.querySelector('.info-overlay');
-    const qrcodeContainer = document.getElementById('qrcode');
-    
-    // Se o overlay já está visível, apenas oculta (toggle)
-    if (overlay && !overlay.classList.contains('hidden')) {
-        overlay.classList.add('hidden');
-        console.log('📱 QR Code fechado pelo usuário');
-        return;
-    }
-    
-    // 🔄 VERIFICA CONEXÃO WEBRTC DE FORMA MAIS INTELIGENTE
-    const remoteVideo = document.getElementById('remoteVideo');
-    const isConnected = remoteVideo && remoteVideo.srcObject;
-    
-    if (isConnected) {
-        console.log('❌ WebRTC já conectado - QR Code não pode ser reaberto');
-        return; // ⬅️ Apenas retorna silenciosamente
-    }
-    
-    console.log('🗝️ Gerando/Reabrindo QR Code e Link...');
-           
-    // 🔄 LIMPA QR CODE ANTERIOR SE EXISTIR
-    if (qrcodeContainer) {
-        qrcodeContainer.innerHTML = '';
-    }
-    
-    const callerUrl = `${window.location.origin}/caller.html?targetId=${window.qrCodeData.myId}&token=${encodeURIComponent(window.qrCodeData.token)}&lang=${encodeURIComponent(window.qrCodeData.lang)}`;
-    
-    // Gera o QR Code
-    QRCodeGenerator.generate("qrcode", callerUrl);
-    
+        // Gera o QR Code
+        QRCodeGenerator.generate("qrcode", callerUrl);
+        
         // 🆕 🆕 🆕 CONFIGURA BOTÃO COPIAR SIMPLES
-    const btnCopiar = document.getElementById('copiarLink');
-    if (btnCopiar) {
-        btnCopiar.onclick = function() {
-            navigator.clipboard.writeText(callerUrl).then(() => {
-                btnCopiar.textContent = '✅';
-                btnCopiar.classList.add('copiado');
-                console.log('🔗 Link copiado para área de transferência');
-                
-                setTimeout(() => {
-                    btnCopiar.textContent = '🔗';
-                    btnCopiar.classList.remove('copiado');
-                }, 2000);
-            }).catch(err => {
-                console.log('❌ Erro ao copiar link:', err);
-                // Fallback para dispositivos sem clipboard API
-                const textArea = document.createElement('textarea');
-                textArea.value = callerUrl;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-                
-                btnCopiar.textContent = '✅';
-                setTimeout(() => {
-                    btnCopiar.textContent = '🔗';
-                }, 2000);
-            });
-        };
-    }
-    
-    // Mostra o overlay do QR Code
-    if (overlay) {
-        overlay.classList.remove('hidden');
-    }
-    
-    console.log('✅ QR Code e Link gerados/reativados!');
-});
-        // [Event listener do lêmure removido]
+        const btnCopiar = document.getElementById('copiarLink');
+        if (btnCopiar) {
+            btnCopiar.onclick = function() {
+                navigator.clipboard.writeText(callerUrl).then(() => {
+                    btnCopiar.textContent = '✅';
+                    btnCopiar.classList.add('copiado');
+                    console.log('🔗 Link copiado para área de transferência');
+                    
+                    setTimeout(() => {
+                        btnCopiar.textContent = '🔗';
+                        btnCopiar.classList.remove('copiado');
+                    }, 2000);
+                }).catch(err => {
+                    console.log('❌ Erro ao copiar link:', err);
+                    // Fallback para dispositivos sem clipboard API
+                    const textArea = document.createElement('textarea');
+                    textArea.value = callerUrl;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    
+                    btnCopiar.textContent = '✅';
+                    setTimeout(() => {
+                        btnCopiar.textContent = '🔗';
+                    }, 2000);
+                });
+            };
+        }
+        
+        // Mostra o overlay do QR Code
+        if (overlay) {
+            overlay.classList.remove('hidden');
+        }
+        
+        console.log('✅ QR Code e Link gerados/reativados!');
+    });
 
         // Fechar QR Code ao clicar fora
         document.querySelector('.info-overlay').addEventListener('click', function(e) {
