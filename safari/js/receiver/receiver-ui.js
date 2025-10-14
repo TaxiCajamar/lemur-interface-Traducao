@@ -40,9 +40,9 @@ document.addEventListener('DOMContentLoaded', function() {
     setupInstructionToggle();
 });
 
-import { WebRTCCore } from '../../core/webrtc-core.js';
-import { QRCodeGenerator } from '../qrcode/qr-code-utils.js';
-import { CameraVigilante } from '../../core/camera-vigilante.js';
+import { WebRTCCore } from '../../../core/webrtc-core.js';
+import { QRCodeGenerator } from '../../../js/qrcode/qr-code-utils.js';
+import { CameraVigilante } from '../../../core/camera-vigilante.js';
 
 // 🎵 VARIÁVEIS DE ÁUDIO
 let audioContext = null;
