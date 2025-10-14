@@ -61,7 +61,7 @@ let ultimoIdiomaTTS = 'pt-BR';
 function carregarSomDigitacao() {
     return new Promise((resolve) => {
         try {
-            somDigitacao = new Audio('assets/audio/keyboard.mp3');
+            somDigitacao = new Audio('../../assets/audio/keyboard.mp3');
             somDigitacao.volume = 0.3;
             somDigitacao.preload = 'auto';
             
@@ -179,7 +179,7 @@ async function obterIdiomaCompleto(lang) {
     if (lang.includes('-')) return lang;
 
     try {
-        const response = await fetch('assets/bandeiras/language-flags.json');
+        const response = await fetch('../../assets/bandeiras/language-flags.json');
         const flags = await response.json();
         const codigoCompleto = Object.keys(flags).find(key => key.startsWith(lang + '-'));
         return codigoCompleto || `${lang}-${lang.toUpperCase()}`;
@@ -214,7 +214,7 @@ async function translateText(text, targetLang) {
 // 🏳️ Aplica bandeira do idioma local
 async function aplicarBandeiraLocal(langCode) {
     try {
-        const response = await fetch('assets/bandeiras/language-flags.json');
+        const response = await fetch('../../assets/bandeiras/language-flags.json');
         const flags = await response.json();
 
         const bandeira = flags[langCode] || flags[langCode.split('-')[0]] || '🔴';
@@ -240,7 +240,7 @@ async function aplicarBandeiraLocal(langCode) {
 // 🏳️ Aplica bandeira do idioma remota
 async function aplicarBandeiraRemota(langCode) {
     try {
-        const response = await fetch('assets/bandeiras/language-flags.json');
+        const response = await fetch('../../assets/bandeiras/language-flags.json');
         const flags = await response.json();
 
         const bandeira = flags[langCode] || flags[langCode.split('-')[0]] || '🔴';
