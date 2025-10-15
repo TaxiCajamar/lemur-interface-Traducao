@@ -1,9 +1,6 @@
 import { WebRTCCore } from '../../core/webrtc-core.js';
 import { CameraVigilante } from '../../core/camera-vigilante.js';
 
-// ✅ INICIALIZAÇÃO DO VIGILANTE PARA NOTIFICADOR
-window.cameraVigilante = new CameraVigilante();
-console.log('✅ Vigilante mobile pronto para notificador');
 
 // 🎵 VARIÁVEIS DE ÁUDIO
 let audioContext = null;
