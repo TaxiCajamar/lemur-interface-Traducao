@@ -747,6 +747,192 @@ async function falarTextoSistemaHibrido(mensagem, elemento, imagemImpaciente, id
     }
 }
 
+// 🎵 BOTÃO MP3 CENTRALIZADO PARA SAFARI
+function criarBotaoMP3() {
+    // Só cria se for Safari/iOS
+    if (!navigator.userAgent.includes('iPhone') && !navigator.userAgent.includes('iPad')) {
+        return;
+    }
+    
+    // Cria o container do botão MP3
+    const containerMP3 = document.createElement('div');
+    containerMP3.id = 'container-mp3-safari';
+    
+    // Cria o botão MP3
+    const botaoMP3 = document.createElement('button');
+    botaoMP3.id = 'botao-mp3-safari';
+    botaoMP3.innerHTML = '🎵';
+    
+    // Estilo do container (centralizado)
+    containerMP3.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 10000;
+        display: none;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(10px);
+    `;
+    
+    // Estilo do botão (grande, centralizado e animado)
+    botaoMP3.style.cssText = `
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #007AFF, #5856D6);
+        color: white;
+        border: none;
+        font-size: 50px;
+        cursor: pointer;
+        box-shadow: 0 10px 30px rgba(0, 122, 255, 0.5);
+        animation: pulsar-mp3 2s infinite ease-in-out;
+        transition: all 0.3s ease;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    `;
+    
+    // Adiciona a animação CSS
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes pulsar-mp3 {
+            0% { transform: scale(1); box-shadow: 0 10px 30px rgba(0, 122, 255, 0.5); }
+            50% { transform: scale(1.1); box-shadow: 0 15px 40px rgba(0, 122, 255, 0.8); }
+            100% { transform: scale(1); box-shadow: 0 10px 30px rgba(0, 122, 255, 0.5); }
+        }
+        
+        #botao-mp3-safari:active {
+            transform: scale(0.95) !important;
+            background: linear-gradient(135deg, #0056CC, #4A47B4) !important;
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Evento de clique
+    botaoMP3.addEventListener('click', function() {
+        // Feedback visual do clique
+        this.style.animation = 'none';
+        this.style.transform = 'scale(0.95)';
+        this.style.background = 'linear-gradient(135deg, #0056CC, #4A47B4)';
+        
+        setTimeout(() => {
+            liberarAudioETecladoSafari();
+        }, 200);
+    });
+    
+    // Fecha ao clicar fora do botão (opcional)
+    containerMP3.addEventListener('click', function(e) {
+        if (e.target === containerMP3) {
+            // Não fecha ao clicar fora - força o usuário a clicar no botão
+            console.log('👆 Clique fora ignorado - usuário deve clicar no botão MP3');
+        }
+    });
+    
+    containerMP3.appendChild(botaoMP3);
+    document.body.appendChild(containerMP3);
+    console.log('✅ Botão MP3 centralizado criado para Safari');
+}
+
+// 🎵 FUNÇÃO PARA LIBERAR ÁUDIO E TECLADO
+function liberarAudioETecladoSafari() {
+    console.log('🎯 Safari: Liberando áudio MP3 e teclado...');
+    
+    const containerMP3 = document.getElementById('container-mp3-safari');
+    const botaoMP3 = document.getElementById('botao-mp3-safari');
+    
+    // Animação de saída
+    if (botaoMP3) {
+        botaoMP3.style.animation = 'none';
+        botaoMP3.style.transform = 'scale(0.8)';
+        botaoMP3.style.opacity = '0.7';
+        botaoMP3.innerHTML = '✓';
+    }
+    
+    // 1. Toca áudio silencioso para desbloquear
+    const audio = new Audio();
+    audio.src = 'data:audio/wav;base64,UklGRnoAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoAAAA=';
+    
+    audio.play().then(() => {
+        // 2. Solicita permissão de microfone (para teclado funcionar)
+        return navigator.mediaDevices.getUserMedia({ audio: true });
+    }).then(stream => {
+        // Para a gravação imediatamente
+        stream.getTracks().forEach(track => track.stop());
+        
+        // 3. MARCA ÁUDIO COMO LIBERADO (importante!)
+        window.audioLiberado = true;
+        
+        // 4. Animação de confirmação
+        if (botaoMP3) {
+            botaoMP3.innerHTML = '🎶';
+            botaoMP3.style.background = 'linear-gradient(135deg, #4CD964, #34C759)';
+            botaoMP3.style.transform = 'scale(1.1)';
+        }
+        
+        setTimeout(() => {
+            // 5. Esconde o container completamente
+            if (containerMP3) {
+                containerMP3.style.display = 'none';
+            }
+            
+            // 6. Inicia o contexto de áudio
+            iniciarAudio();
+            
+            console.log('✅ Safari: Áudio MP3 e teclado liberados!');
+            
+        }, 800);
+        
+    }).catch(err => {
+        console.error('❌ Safari: Falha na liberação:', err);
+        
+        // Feedback de erro
+        if (botaoMP3) {
+            botaoMP3.innerHTML = '❌';
+            botaoMP3.style.background = 'linear-gradient(135deg, #FF3B30, #FF2D55)';
+        }
+        
+        setTimeout(() => {
+            if (containerMP3) {
+                containerMP3.style.display = 'none';
+            }
+            alert('Permissão de áudio necessária para o sistema funcionar.');
+        }, 1500);
+    });
+}
+
+// 🎵 MOSTRAR BOTÃO MP3 QUANDO WEBRTC CONECTAR
+function mostrarBotaoMP3QuandoConectar() {
+    const remoteVideo = document.getElementById('remoteVideo');
+    const containerMP3 = document.getElementById('container-mp3-safari');
+    
+    if (!remoteVideo || !containerMP3) return;
+    
+    // Observa quando WebRTC conectar
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'srcObject') {
+                if (remoteVideo.srcObject && !window.audioLiberado) {
+                    // Mostra o botão MP3 1 segundo após conexão
+                    setTimeout(() => {
+                        containerMP3.style.display = 'flex';
+                        console.log('🔊 Mostrando botão MP3 centralizado (WebRTC conectado)');
+                    }, 1000);
+                    observer.disconnect();
+                }
+            }
+        });
+    });
+    
+    observer.observe(remoteVideo, {
+        attributes: true,
+        attributeFilter: ['srcObject']
+    });
+}
+
 // ✅ NOVO BLOCO - CÂMERA RESILIENTE
 async function iniciarCameraAposPermissoes() {
     try {
@@ -1025,6 +1211,10 @@ document.getElementById('logo-traduz').addEventListener('click', function() {
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         console.log('🚀 Iniciando aplicação receiver automaticamente...');
+        
+        // 🆕 ADICIONE ESTAS 2 LINHAS AQUI:
+        criarBotaoMP3();
+        mostrarBotaoMP3QuandoConectar();
         
         // 1. Obtém o idioma para tradução
         const params = new URLSearchParams(window.location.search);
