@@ -1,144 +1,247 @@
-// core/camera-vigilante.js - VERSÃO MÍNIMA INTERVENÇÃO
+
+// 🎯 VIGIA DE CÂMERA UNIVERSAL - PARA RECEIVER, CALLER E NOTIFICADOR
+// 📍 Localização: core/camera-vigilante.js (NA SUA ESTRUTURA ATUAL)
+
 class CameraVigilante {
     constructor() {
         this.estaMonitorando = false;
         this.intervaloMonitoramento = null;
         this.ultimoFrameTime = null;
         this.tentativasRecuperacao = 0;
-        this.maxTentativas = 2;
+        this.maxTentativas = 3;
         
-        console.log('👁️ Vigia MÍNIMO - Só observa, não interfere');
+        console.log('👁️ Vigia de Câmera inicializado');
     }
 
-    // ✅ INICIA APENAS OBSERVAÇÃO
+    // 🎯 INICIAR MONITORAMENTO DA CÂMERA
     iniciarMonitoramento() {
-        if (this.estaMonitorando) return;
+        if (this.estaMonitorando) {
+            console.log('👁️ Vigia já está monitorando');
+            return;
+        }
 
-        console.log('👁️ Vigia MÍNIMO: Apenas observando...');
+        console.log('👁️ Iniciando monitoramento da câmera...');
         this.estaMonitorando = true;
         this.ultimoFrameTime = Date.now();
 
-        // 🎥 OBSERVA SILENCIOSAMENTE
-        this.observarVideoSilencioso();
+        // 👁️ OBSERVA MUDANÇAS NO VÍDEO
+        this.observarVideo();
         
-        // ⏰ VERIFICAÇÃO MENOS FREQUENTE
+        // ⚡ VERIFICAÇÃO PERIÓDICA
         this.intervaloMonitoramento = setInterval(() => {
             this.verificarSaudeCamera();
-        }, 12000); // 12 segundos - menos intrusivo
+        }, 5000); // A cada 5 segundos
+
+        console.log('✅ Vigia de câmera ativado');
     }
 
-    // ✅ OBSERVAÇÃO DISCRETA
-    observarVideoSilencioso() {
-        const videoElement = this.encontrarVideoAtivo();
-        if (!videoElement) return;
-
-        if (!videoElement._vigilanteObserver) {
-            const observer = () => {
-                this.ultimoFrameTime = Date.now();
-            };
-            videoElement.addEventListener('timeupdate', observer);
-            videoElement._vigilanteObserver = observer;
+    // 👁️ OBSERVAR MUDANÇAS NO ELEMENTO DE VÍDEO
+    observarVideo() {
+        const localVideo = document.getElementById('localVideo');
+        if (!localVideo) {
+            console.log('⚠️ Elemento localVideo não encontrado');
+            return;
         }
+
+        // 🎥 DETECTA QUANDO FRAMES ESTÃO SENDO ATUALIZADOS
+        localVideo.addEventListener('timeupdate', () => {
+            this.ultimoFrameTime = Date.now();
+        });
+
+        // 🔍 DETECTA ERROS NO VÍDEO
+        localVideo.addEventListener('error', (error) => {
+            console.log('❌ Erro detectado no elemento de vídeo:', error);
+            this.tentarRecuperarCamera('erro_no_video');
+        });
+
+        console.log('👀 Vigia observando elemento de vídeo');
     }
 
-    // ✅ ENCONTRA VÍDEO ATIVO
-    encontrarVideoAtivo() {
-        let videoElement = document.getElementById('cameraPreview');
-        if (videoElement && videoElement.srcObject) return videoElement;
-        
-        videoElement = document.getElementById('localVideo');
-        if (videoElement && videoElement.srcObject) return videoElement;
-        
-        const videos = document.getElementsByTagName('video');
-        for (let video of videos) {
-            if (video.srcObject) return video;
-        }
-        
-        return null;
-    }
-
-    // ✅ VERIFICAÇÃO COM TOLERÂNCIA
+    // ⚡ VERIFICAR SAÚDE DA CÂMERA
     verificarSaudeCamera() {
         if (!this.estaMonitorando) return;
 
-        const tempoSemFrames = Date.now() - this.ultimoFrameTime;
+        const agora = Date.now();
+        const tempoSemFrames = agora - this.ultimoFrameTime;
         
-        // 🚨 SÓ AGE SE REALMENTE CONGELOU (>20s)
-        if (tempoSemFrames > 20000) {
-            console.log('🚨 Vigia: Câmera realmente congelada - agindo...');
-            this.tentarRecuperacaoDiscreta();
+        // 🚨 DETECTA CÂMERA CONGELADA (mais de 10 segundos sem frames)
+        if (tempoSemFrames > 10000) {
+            console.log('🚨 Câmera possivelmente congelada - sem frames há', tempoSemFrames + 'ms');
+            this.tentarRecuperarCamera('congelada');
+            return;
         }
+
+        // ✅ VERIFICA SE A STREAM AINDA EXISTE E ESTÁ ATIVA
+        if (window.localStream) {
+            const videoTrack = window.localStream.getVideoTracks()[0];
+            if (videoTrack) {
+                if (videoTrack.readyState === 'ended') {
+                    console.log('🚨 Track de vídeo terminou');
+                    this.tentarRecuperarCamera('track_terminada');
+                }
+            } else {
+                console.log('🚨 Nenhuma track de vídeo encontrada');
+                this.tentarRecuperarCamera('sem_track');
+            }
+        } else {
+            console.log('ℹ️ Nenhuma stream local ativa');
+        }
+
+        console.log('✅ Câmera saudável - frames atualizando normalmente');
     }
 
-    // ✅ RECUPERAÇÃO DISCRETA
-    async tentarRecuperacaoDiscreta() {
+    // 🔄 TENTAR RECUPERAR CÂMERA AUTOMATICAMENTE
+    async tentarRecuperarCamera(motivo) {
         if (this.tentativasRecuperacao >= this.maxTentativas) {
-            console.log('❌ Vigia: Desistindo - não atrapalhando mais');
+            console.log('❌ Máximo de tentativas de recuperação atingido');
+            this.mostrarAvisoFinal();
             return;
         }
 
         this.tentativasRecuperacao++;
+        console.log(`🔄 Tentativa ${this.tentativasRecuperacao}/${this.maxTentativas} - Motivo: ${motivo}`);
+
+        // 📢 AVISA O USUÁRIO
+        this.mostrarAvisoRecuperacao();
 
         try {
+            // 🛑 PARA MONITORAMENTO DURANTE A RECUPERAÇÃO
             this.pararMonitoramento();
-            await this.recuperacaoMinima();
 
-            // ⏳ ESPERA MAIS TEMPO ANTES DE REINICIAR
-            setTimeout(() => {
-                this.iniciarMonitoramento();
-                this.tentativasRecuperacao = 0;
-            }, 2000);
+            // 🔧 TENTA RECUPERAR
+            await this.executarRecuperacao();
+
+            // ✅ REINICIA MONITORAMENTO SE RECUPEROU
+            this.iniciarMonitoramento();
+            this.tentativasRecuperacao = 0; // Reseta contador
+            this.mostrarSucessoRecuperacao();
 
         } catch (error) {
-            console.log('❌ Vigia: Falha discreta');
+            console.log('❌ Falha na recuperação:', error);
+            // ⏳ AGUARDA E TENTA NOVAMENTE (SE AINDA TIVER TENTATIVAS)
+            if (this.tentativasRecuperacao < this.maxTentativas) {
+                setTimeout(() => {
+                    this.tentarRecuperarCamera(motivo);
+                }, 2000);
+            }
         }
     }
 
-    // ✅ RECUPERAÇÃO MÍNIMA
-    async recuperacaoMinima() {
-        const videoElement = this.encontrarVideoAtivo();
-        if (!videoElement?.srcObject) return;
+    // 🔧 EXECUTAR PROCESSO DE RECUPERAÇÃO
+    async executarRecuperacao() {
+        console.log('🔧 Executando recuperação de câmera...');
 
-        // 1. 🛑 PARA STREAM
-        videoElement.srcObject.getTracks().forEach(track => track.stop());
+        // 1. 🛑 PARA STREAM ATUAL
+        if (window.localStream) {
+            window.localStream.getTracks().forEach(track => track.stop());
+            window.localStream = null;
+        }
 
-        // 2. ⏳ AGUARDA MAIS TEMPO
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // 2. ⏳ AGUARDA LIBERAÇÃO
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
-        // 3. 📹 TENTA NOVA CÂMERA (SEM facingMode)
+        // 3. 📹 TENTA NOVA CÂMERA (FRONTAL - MAIS CONFIÁVEL)
         try {
             const novaStream = await navigator.mediaDevices.getUserMedia({
                 video: { 
+                    facingMode: 'user', // ✅ Sempre frontal na recuperação
                     width: { ideal: 1280 },
                     height: { ideal: 720 }
-                    // ✅ SEM facingMode - sistema decide
                 },
                 audio: false
             });
 
-            videoElement.srcObject = novaStream;
+            // 4. 🎥 ATUALIZA VÍDEO LOCAL
+            const localVideo = document.getElementById('localVideo');
+            if (localVideo) {
+                localVideo.srcObject = novaStream;
+            }
+
+            // 5. 🔄 ATUALIZA STREAM GLOBAL
+            window.localStream = novaStream;
+
+            // 6. 📡 ATUALIZA WEBRTC (SE CONECTADO)
+            this.atualizarWebRTC(novaStream);
+
+            console.log('✅ Câmera recuperada com sucesso!');
+            return true;
 
         } catch (error) {
+            console.log('❌ Não foi possível recuperar câmera:', error);
             throw error;
         }
     }
 
-    // 🛑 PARAR
+    // 📡 ATUALIZAR WEBRTC COM NOVA STREAM
+    atualizarWebRTC(novaStream) {
+        if (window.rtcCore && window.rtcCore.peer) {
+            const connectionState = window.rtcCore.peer.connectionState;
+            
+            if (connectionState === 'connected') {
+                console.log('🔄 Atualizando WebRTC com câmera recuperada...');
+                
+                try {
+                    window.rtcCore.localStream = novaStream;
+                    
+                    const newVideoTrack = novaStream.getVideoTracks()[0];
+                    const senders = window.rtcCore.peer.getSenders();
+                    
+                    let videoUpdated = false;
+                    for (const sender of senders) {
+                        if (sender.track && sender.track.kind === 'video') {
+                            sender.replaceTrack(newVideoTrack);
+                            videoUpdated = true;
+                        }
+                    }
+                    
+                    if (videoUpdated) {
+                        console.log('✅ WebRTC atualizado com nova câmera');
+                    }
+                } catch (webrtcError) {
+                    console.error('❌ Erro ao atualizar WebRTC:', webrtcError);
+                }
+            }
+        }
+    }
+
+    // 📢 MOSTRAR AVISOS PARA O USUÁRIO
+    mostrarAvisoRecuperacao() {
+        // ✅ MENSAGEM NO CONSOLE - SEM MODIFICAR SUA ESTRUTURA
+        console.log('🔄 Recuperando câmera...');
+    }
+
+    mostrarSucessoRecuperacao() {
+        console.log('✅ Câmera recuperada!');
+    }
+
+    mostrarAvisoFinal() {
+        console.log('❌ Câmera indisponível. Continuando sem vídeo.');
+    }
+
+    // 🛑 PARAR MONITORAMENTO
     pararMonitoramento() {
         if (this.intervaloMonitoramento) {
             clearInterval(this.intervaloMonitoramento);
             this.intervaloMonitoramento = null;
         }
         this.estaMonitorando = false;
+        console.log('🛑 Vigia de câmera pausado');
     }
 
-    // 🔄 REINICIAR (chame quando trocar câmera manualmente)
+    // 🔄 REINICIAR MONITORAMENTO (APÓS TROCA DE CÂMERA)
     reiniciarMonitoramento() {
         this.pararMonitoramento();
-        setTimeout(() => {
-            this.iniciarMonitoramento();
-        }, 3000); // ⏳ ESPERA 3s APÓS TROCA MANUAL
+        this.tentativasRecuperacao = 0;
+        this.ultimoFrameTime = Date.now();
+        this.iniciarMonitoramento();
+    }
+
+    // 🧹 LIMPAR RECURSOS
+    destruir() {
+        this.pararMonitoramento();
+        console.log('🧹 Vigia de câmera finalizado');
     }
 }
 
+// 🌐 EXPORTAR PARA OS TRÊS ARQUIVOS USAREM
 export { CameraVigilante };
