@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupInstructionToggle();
 });
 
-mport { WebRTCCore } from '../../core/webrtc-core.js';
+import { WebRTCCore } from '../../core/webrtc-core.js';
 import { QRCodeGenerator } from '../qrcode/qr-code-utils.js';
 import { CameraVigilante } from '../../core/camera-vigilante.js';
 
