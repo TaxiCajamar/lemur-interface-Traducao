@@ -40,13 +40,9 @@ document.addEventListener('DOMContentLoaded', function() {
     setupInstructionToggle();
 });
 
-import { WebRTCCore } from '../../core/webrtc-core.js';
+mport { WebRTCCore } from '../../core/webrtc-core.js';
 import { QRCodeGenerator } from '../qrcode/qr-code-utils.js';
 import { CameraVigilante } from '../../core/camera-vigilante.js';
-
-// ✅ INICIALIZAÇÃO DO VIGILANTE PARA RECEIVER
-window.cameraVigilante = new CameraVigilante();
-console.log('✅ Vigilante mobile pronto para receiver');
 
 // 🎵 VARIÁVEIS DE ÁUDIO
 let audioContext = null;
