@@ -1,165 +1,129 @@
-// core/camera-vigilante.js - VIGILANTE HÍBRIDO
+// core/camera-vigilante.js - VERSÃO MÍNIMA INTERVENÇÃO
 class CameraVigilante {
     constructor() {
         this.estaMonitorando = false;
         this.intervaloMonitoramento = null;
         this.ultimoFrameTime = null;
         this.tentativasRecuperacao = 0;
-        this.maxTentativas = 3;
+        this.maxTentativas = 2;
         
-        // ✅ NÃO controla câmera - apenas monitora
-        this.cameraAtual = null; 
-        
-        console.log('👁️ Vigia HÍBRIDO - Amiguinho do botão');
+        console.log('👁️ Vigia MÍNIMO - Só observa, não interfere');
     }
 
-    // ✅ INICIA APENAS MONITORAMENTO - NÃO MEXE NO BOTÃO
+    // ✅ INICIA APENAS OBSERVAÇÃO
     iniciarMonitoramento() {
-        if (this.estaMonitorando) {
-            console.log('👁️ Vigia já está monitorando');
-            return;
-        }
+        if (this.estaMonitorando) return;
 
-        console.log('👁️ Vigia HÍBRIDO: Monitorando ambas câmeras...');
+        console.log('👁️ Vigia MÍNIMO: Apenas observando...');
         this.estaMonitorando = true;
         this.ultimoFrameTime = Date.now();
 
-        // 👁️ OBSERVA QUALQUER CÂMERA QUE ESTEJA ATIVA
-        this.observarVideo();
+        // 🎥 OBSERVA SILENCIOSAMENTE
+        this.observarVideoSilencioso();
         
-        // ⚡ VERIFICAÇÃO PROATIVA
+        // ⏰ VERIFICAÇÃO MENOS FREQUENTE
         this.intervaloMonitoramento = setInterval(() => {
             this.verificarSaudeCamera();
-        }, 8000);
-
-        console.log('✅ Vigia HÍBRIDO ativo - respeitando seu botão');
+        }, 12000); // 12 segundos - menos intrusivo
     }
 
-    // 👁️ OBSERVA A CÂMERA ATUAL (SEJA QUAL FOR)
-    observarVideo() {
+    // ✅ OBSERVAÇÃO DISCRETA
+    observarVideoSilencioso() {
         const videoElement = this.encontrarVideoAtivo();
-        if (!videoElement) {
-            console.log('⚠️ Aguardando câmera ficar ativa...');
-            return;
+        if (!videoElement) return;
+
+        if (!videoElement._vigilanteObserver) {
+            const observer = () => {
+                this.ultimoFrameTime = Date.now();
+            };
+            videoElement.addEventListener('timeupdate', observer);
+            videoElement._vigilanteObserver = observer;
         }
-
-        // 🎥 DETECTA FRAMES (qualquer câmera)
-        videoElement.addEventListener('timeupdate', () => {
-            this.ultimoFrameTime = Date.now();
-        });
-
-        console.log('👀 Vigia observando câmera ativa');
     }
 
-    // ✅ ENCONTRA QUALQUER VÍDEO ATIVO (frontal OU traseira)
+    // ✅ ENCONTRA VÍDEO ATIVO
     encontrarVideoAtivo() {
-        // Tenta primeiro o vídeo principal
         let videoElement = document.getElementById('cameraPreview');
-        if (videoElement && videoElement.srcObject) {
-            return videoElement;
-        }
+        if (videoElement && videoElement.srcObject) return videoElement;
         
-        // Tenta o vídeo PIP
         videoElement = document.getElementById('localVideo');
-        if (videoElement && videoElement.srcObject) {
-            return videoElement;
-        }
+        if (videoElement && videoElement.srcObject) return videoElement;
         
-        // Tenta qualquer vídeo na página
         const videos = document.getElementsByTagName('video');
         for (let video of videos) {
-            if (video.srcObject) {
-                return video;
-            }
+            if (video.srcObject) return video;
         }
         
         return null;
     }
 
-    // ⚡ VERIFICA SAÚDE (qualquer câmera ativa)
+    // ✅ VERIFICAÇÃO COM TOLERÂNCIA
     verificarSaudeCamera() {
         if (!this.estaMonitorando) return;
 
-        const agora = Date.now();
-        const tempoSemFrames = agora - this.ultimoFrameTime;
+        const tempoSemFrames = Date.now() - this.ultimoFrameTime;
         
-        // 🚨 DETECTA CÂMERA CONGELADA (>15s)
-        if (tempoSemFrames > 15000) {
-            console.log('🚨 Vigia HÍBRIDO: Câmera congelada - CONSERTANDO!');
-            this.tentarRecuperacaoProativa();
-            return;
+        // 🚨 SÓ AGE SE REALMENTE CONGELOU (>20s)
+        if (tempoSemFrames > 20000) {
+            console.log('🚨 Vigia: Câmera realmente congelada - agindo...');
+            this.tentarRecuperacaoDiscreta();
         }
-
-        console.log('✅ Vigia: Câmera saudável');
     }
 
-    // 🔄 TENTA RECUPERAR (qualquer câmera)
-    async tentarRecuperacaoProativa() {
+    // ✅ RECUPERAÇÃO DISCRETA
+    async tentarRecuperacaoDiscreta() {
         if (this.tentativasRecuperacao >= this.maxTentativas) {
-            console.log('❌ Máximo de tentativas do vigia');
+            console.log('❌ Vigia: Desistindo - não atrapalhando mais');
             return;
         }
 
         this.tentativasRecuperacao++;
-        console.log(`🔄 Vigia HÍBRIDO: Tentativa ${this.tentativasRecuperacao}/${this.maxTentativas}`);
 
         try {
             this.pararMonitoramento();
-            await this.recuperacaoInteligente();
+            await this.recuperacaoMinima();
 
-            // ✅ REINICIA MONITORAMENTO
+            // ⏳ ESPERA MAIS TEMPO ANTES DE REINICIAR
             setTimeout(() => {
                 this.iniciarMonitoramento();
                 this.tentativasRecuperacao = 0;
-                console.log('✅ Vigia: Recuperação concluída');
-            }, 1000);
+            }, 2000);
 
         } catch (error) {
-            console.log('❌ Vigia: Falha na recuperação');
+            console.log('❌ Vigia: Falha discreta');
         }
     }
 
-    // 🔧 RECUPERAÇÃO INTELIGENTE - NÃO ALTERA CÂMERA ATUAL
-    async recuperacaoInteligente() {
-        console.log('🔧 Vigia HÍBRIDO: Recuperação inteligente...');
-
+    // ✅ RECUPERAÇÃO MÍNIMA
+    async recuperacaoMinima() {
         const videoElement = this.encontrarVideoAtivo();
-        if (!videoElement || !videoElement.srcObject) {
-            console.log('ℹ️ Nenhuma câmera ativa para recuperar');
-            return;
-        }
+        if (!videoElement?.srcObject) return;
 
-        // 1. 🛑 PARA STREAM ATUAL
-        const streamOriginal = videoElement.srcObject;
-        streamOriginal.getTracks().forEach(track => track.stop());
+        // 1. 🛑 PARA STREAM
+        videoElement.srcObject.getTracks().forEach(track => track.stop());
 
-        // 2. ⏳ AGUARDA
-        await new Promise(resolve => setTimeout(resolve, 800));
+        // 2. ⏳ AGUARDA MAIS TEMPO
+        await new Promise(resolve => setTimeout(resolve, 1500));
 
-        // 3. 📹 TENTA MESMA CÂMERA (não altera facingMode)
+        // 3. 📹 TENTA NOVA CÂMERA (SEM facingMode)
         try {
-            // ⚠️ NÃO especifica facingMode - deixa o sistema decidir
             const novaStream = await navigator.mediaDevices.getUserMedia({
                 video: { 
                     width: { ideal: 1280 },
                     height: { ideal: 720 }
-                    // ✅ SEM facingMode - respeita câmera atual
+                    // ✅ SEM facingMode - sistema decide
                 },
                 audio: false
             });
 
-            // 4. 🎥 RESTAURA VÍDEO
             videoElement.srcObject = novaStream;
-            
-            console.log('✅ Vigia: Câmera recuperada (mesma câmera)');
 
         } catch (error) {
-            console.log('❌ Vigia: Não foi possível recuperar');
             throw error;
         }
     }
 
-    // 🛑 PARAR MONITORAMENTO
+    // 🛑 PARAR
     pararMonitoramento() {
         if (this.intervaloMonitoramento) {
             clearInterval(this.intervaloMonitoramento);
@@ -168,21 +132,12 @@ class CameraVigilante {
         this.estaMonitorando = false;
     }
 
-    // 🔄 REINICIAR (chame isso quando seu botão alternar câmera)
+    // 🔄 REINICIAR (chame quando trocar câmera manualmente)
     reiniciarMonitoramento() {
-        console.log('🔄 Vigia: Reiniciando após troca de câmera...');
         this.pararMonitoramento();
-        this.tentativasRecuperacao = 0;
-        this.ultimoFrameTime = Date.now();
-        
         setTimeout(() => {
             this.iniciarMonitoramento();
-        }, 1000);
-    }
-
-    // 🧹 LIMPAR
-    destruir() {
-        this.pararMonitoramento();
+        }, 3000); // ⏳ ESPERA 3s APÓS TROCA MANUAL
     }
 }
 
