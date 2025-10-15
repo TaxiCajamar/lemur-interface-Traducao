@@ -1,4 +1,3 @@
-
 // 🎯 VIGIA DE CÂMERA UNIVERSAL - PARA RECEIVER, CALLER E NOTIFICADOR
 // 📍 Localização: core/camera-vigilante.js (NA SUA ESTRUTURA ATUAL)
 
