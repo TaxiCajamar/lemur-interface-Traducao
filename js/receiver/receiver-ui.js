@@ -799,20 +799,6 @@ async function iniciarCameraAposPermissoes() {
             lang: lang
         };
 
-        // ✅ NO FINAL da função iniciarCameraAposPermissoes(), depois de window.qrCodeData
-// Adicione estas linhas:
-
-// GERA QR CODE AUTOMATICAMENTE NA INICIALIZAÇÃO
-const callerUrl = `${window.location.origin}/caller.html?targetId=${window.qrCodeData.myId}&token=${encodeURIComponent(window.qrCodeData.token)}&lang=${encodeURIComponent(window.qrCodeData.lang)}`;
-QRCodeGenerator.generate("qrcode", callerUrl);
-
-// MOSTRA OVERLAY AUTOMATICAMENTE
-const overlay = document.querySelector('.info-overlay');
-if (overlay) {
-    overlay.classList.remove('hidden');
-    console.log('✅ QR Code aberto automaticamente na inicialização');
-}
-
        // ✅ CONFIGURA o botão para gerar QR Code quando clicado (VERSÃO COM LINK)
 document.getElementById('logo-traduz').addEventListener('click', function() {
     // 🔄 VERIFICA SE JÁ EXISTE UM QR CODE ATIVO
