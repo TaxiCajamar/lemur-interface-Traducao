@@ -1,3 +1,4 @@
+
 /* =============================================
    CONFIGURAÇÕES GERAIS E LAYOUT PRINCIPAL
    ============================================= */
@@ -30,116 +31,14 @@ body {
   overflow-y: auto;
 }
 
+/* =============================================
+   ANIMAÇÕES E EFEITOS VISUAIS
+   ============================================= */
+
 /* ===== CLASSE HIDDEN ===== */
 .hidden {
     display: none !important;
 }
-
-/* =============================================
-   COMPONENTES DE TEXTO E REDES SOCIAIS FIXAS
-   ============================================= */
-
-/* ===== SUBTÍTULO DE TRADUÇÃO ===== */
-.translator-label {
-  position: absolute;
-  top: 13%;
-  left: 50%;
-  transform: translateX(-50%);
-  color: #333;
-  font-size: 5vw;
-  text-align: center;
-  width: 80%;
-  max-width: 90%;
-  margin: 0;
-}
-
-/* ===== REDES SOCIAIS FIXAS (NOVO - MENORES E MAIS PARA CIMA) ===== */
-.social-links-fixed {
-  position: absolute;
-  top: 10%; /* ⬅️ MAIS PARA CIMA - logo abaixo do subtítulo */
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 5px; /* ⬅️ ESPAÇO MENOR ENTRE BOTÕES */
-  justify-content: center;
-  margin: 5px 0;
-  flex-wrap: wrap;
-  width: 80%;
-  z-index: 10;
-}
-
-.social-btn-fixed {
-  width: 25px;    /* ⬅️ MENOR (era 35px) */
-  height: 25px;   /* ⬅️ MENOR (era 35px) */
-  border: none;
-  border-radius: 5px;
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
-  font-size: 11px; /* ⬅️ TEXTO MENOR */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.2s;
-  text-decoration: none;
-}
-
-.social-btn-fixed.website { background: #4CAF50; }  /* 🆕 ADICIONE ESTA LINHA */
-.social-btn-fixed.instagram { background: #E4405F; }  /* 🆕 ADICIONE ESTA LINHA */
-
-.social-btn-fixed:hover {
-  transform: scale(1.1);
-}
-
-/* ===== CORES DAS REDES SOCIAIS ===== */
-.instagram { 
-  background: linear-gradient(45deg, #405DE6, #5851DB, #833AB4, #C13584, #E1306C, #FD1D1D, #F56040, #F77737, #FCAF45, #FFDC80); 
-}
-
-.website { 
-  background: #6c5ce7; 
-}
-
-.facebook { background: #3b5998; }
-.twitter { background: #1da1f2; }
-.linkedin { background: #0077b5; }
-.whatsapp { background: #25d366; }
-.telegram { background: #0088cc; }
-
-/* =============================================
-   BOTÕES DE COMPARTILHAMENTO NO QR CODE (MANTÉM ORIGINAL)
-   ============================================= */
-
-.social-buttons {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-  margin: 15px 0;
-  flex-wrap: wrap;
-}
-
-.social-btn {
-  width: 35px;
-  height: 35px;
-  border: none;
-  border-radius: 5px;
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.2s;
-}
-
-.social-btn:hover {
-  transform: scale(1.1);
-}
-
-/* =============================================
-   ANIMAÇÕES E EFEITOS VISUAIS
-   ============================================= */
 
 /* ===== IMAGEM DE LÊMURE ANCIOSO (ESPERA) ===== */
 #lemurAnciosoWaiting {
@@ -149,19 +48,21 @@ body {
     transform: translate(-50%, -50%);
     width: 180px;
     height: auto;
-    opacity: 0;
+    opacity: 0; /* ⬅️ MANTÉM isso - começa invisível */
     z-index: 9999;
-    pointer-events: none;
+    pointer-events: none; /* ⬅️ MANTÉM isso - não clicável inicialmente */
     cursor: pointer;
-    transition: opacity 0.5s ease-in-out;
+    transition: opacity 0.5s ease-in-out; /* ⬅️ MANTÉM isso */
     animation: pulsar-suave-ancioso 2.5s infinite ease-in-out;
 }
 
+/* ⬅️ MANTÉM ESTA CLASSE - controla quando aparece */
 #lemurAnciosoWaiting.visible {
     opacity: 0.8;
     pointer-events: auto;
 }
 
+/* Animação específica para o lêmure ancioso */
 @keyframes pulsar-suave-ancioso {
     0% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
     50% { opacity: 0.9; transform: translate(-50%, -50%) scale(1.08); }
@@ -176,12 +77,13 @@ body {
     transform: translate(-50%, -50%);
     width: 200px;
     height: auto;
-    opacity: 0.7;
+    opacity: 0.7; /* 30% de transparência como você pediu */
     z-index: 9998;
     pointer-events: none;
     animation: pulsar-suave 2s infinite ease-in-out;
 }
 
+/* Animação suave para a imagem */
 @keyframes pulsar-suave {
     0% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
     50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.05); }
@@ -203,41 +105,44 @@ body {
    COMPONENTES DE INTERFACE - INSTRUÇÕES
    ============================================= */
 
+/* ===== INSTRUÇÕES COMPACTAS NO RODAPÉ - RESPONSIVO ===== */
 .instruction-box {
   position: absolute;
-  bottom: 1%;
+  bottom: 1%; /* porcentagem em relação à altura da tela */
   left: 50%;
   transform: translateX(-50%);
-  width: 85%;
-  max-width: 300px;
-  min-width: 200px;
-  padding: 1% 2%;
+  width: 85%; /* largura responsiva */
+  max-width: 300px; /* largura máxima para telas grandes */
+  min-width: 200px; /* largura mínima */
+  padding: 1% 2%; /* padding em porcentagem */
   background: #ffffff;
   border: 2px solid #4CAF50;
   border-radius: 12px;
   box-shadow: inset 0 0 10px rgba(0, 128, 0, 0.2);
-  font-size: 16px !important;
+   font-size: 16px !important;  /* ← ADICIONE !important AQUI */
   z-index: 100;
   text-align: left;
-  transition: all 0.3s ease;
-  overflow: hidden;
+  transition: all 0.3s ease; /* transição suave */
+  overflow: hidden; /* esconde conteúdo quando recolhido */
 }
 
+/* Estado recolhido */
 .instruction-box.recolhido {
-  height: 40px;
-  width: 50px;
+  height: 40px; /* altura do botão quando recolhido */
+  width: 50px; /* largura menor quando recolhido */
   cursor: pointer;
 }
 
+/* Estado expandido */
 .instruction-box.expandido {
   height: 300px !important; 
-  max-height: 1000px;
+  max-height: 1000px; /* altura máxima */
 }
 
 .instruction-item {
   display: flex;
   align-items: center;
-  gap: 3%;
+  gap: 3%; /* gap em porcentagem */
   margin-bottom: 1%;
   line-height: 1.2;
   font-family: 'Segoe UI', sans-serif;
@@ -245,11 +150,13 @@ body {
   transition: opacity 0.3s ease;
 }
 
+/* Esconde os itens quando recolhido */
 .instruction-box.recolhido .instruction-item {
   opacity: 0;
   display: none;
 }
 
+/* Mostra os itens quando expandido */
 .instruction-box.expandido .instruction-item {
   opacity: 1;
   display: flex;
@@ -259,9 +166,10 @@ body {
    width: 30px !important;
   height: 30px !important;
   object-fit: contain;
-  flex-shrink: 0;
+  flex-shrink: 0; /* não deixa encolher */
 }
 
+/* Botão de fechar/expandir */
 .instruction-toggle {
   position: absolute;
   top: 4px;
@@ -286,16 +194,19 @@ body {
   background-color: rgba(76, 175, 80, 0.1);
 }
 
+/* Ícone do botão quando recolhido */
 .instruction-box.recolhido .instruction-toggle::after {
   content: "?";
   font-size: 14px;
 }
 
+/* Ícone do botão quando expandido */
 .instruction-box.expandido .instruction-toggle::after {
   content: "×";
   font-size: 18px;
 }
 
+/* Efeito de hover para indicar que é clicável */
 .instruction-box.recolhido:hover {
   background: #f8fff8;
   border-color: #45a049;
@@ -305,6 +216,7 @@ body {
    COMPONENTES DE INTERFACE - BOTÕES E CONTROLES
    ============================================= */
 
+/* ===== BOTÃO ALTERNAR CÂMERA ===== */
 .camera-toggle-btn {
     position: absolute;
     bottom: 45%;
@@ -340,6 +252,7 @@ body {
     filter: brightness(0.8);
 }
 
+/* ===== BOTÃO KEY (GERAR QR CODE) ===== */
 #logo-traduz.botao-key {
      position: absolute;
     top: 45.5%;
@@ -370,6 +283,7 @@ body {
     display: block;
 }
 
+/* ===== BOTÃO DE GRAVAÇÃO ===== */
 .record-btn {
     position: absolute;
     top: 46%;
@@ -389,6 +303,7 @@ body {
     z-index: 30;
 }
 
+/* Botão GRAVANDO - Verde vibrante */
 .record-btn.recording {
     background: #2ed573;
     animation: pulse 1.5s infinite;
@@ -398,6 +313,7 @@ body {
   transform: scale(0.95);
 }
 
+/* ===== BOTÃO DE ÁUDIO ===== */
 .speaker-btn {
   position: absolute;
   top: 60%;
@@ -430,6 +346,7 @@ body {
    COMPONENTES DE INTERFACE - VÍDEO E MÍDIA
    ============================================= */
 
+/* ===== VÍDEO REMOTO ===== */
 .video-wrapper {
   position: absolute;
   bottom: 45%;
@@ -442,6 +359,7 @@ body {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
   border: 0.3vw solid #4CAF50;
   z-index: 5;
+  /* NOVA LINHA - imagem de placeholder */
   background: url('assets/images/telalemur.png') center/cover no-repeat;
 }
 
@@ -451,6 +369,7 @@ body {
   object-fit: cover;
 }
 
+/* ===== PiP LOCAL ===== */
 .pip-local-wrapper {
   position: absolute;
   bottom: 5%;
@@ -476,7 +395,8 @@ body {
 
 #texto-recebido {
   position: absolute;
-  bottom: 20%;
+  /* ⬇️ ÂNCORA NA BASE - fixa o bottom e deixa o top flexível */
+  bottom: 20%; /* Ajuste conforme sua necessidade */
   left: 50%;
   transform: translateX(-50%);
   font-size: 1.2em;
@@ -486,15 +406,22 @@ body {
   border-radius: 1vh;
   background-color: #f8f9fa;
   width: 90%;
-  min-height: 60px;
-  max-height: 200px;
-  overflow-y: auto;
-  white-space: pre-wrap;
-  word-wrap: break-word;
+  
+  /* ⬇️ CRESCIMENTO VERTICAL FLEXÍVEL */
+  min-height: 60px; /* Altura mínima */
+  max-height: 200px; /* Altura máxima */
+  overflow-y: auto; /* Scroll quando necessário */
+  
+  /* ⬇️ COMPORTAMENTO DO TEXTO */
+  white-space: pre-wrap; /* Preserva quebras de linha */
+  word-wrap: break-word; /* Quebra palavras longas */
   text-align: center;
+  
+  /* ⬇️ ALINHAMENTO DO TEXTO DENTRO DO BOX */
   display: flex;
-  align-items: flex-end;
+  align-items: flex-end; /* ⬅️ CRÍTICO: texto começa embaixo */
   justify-content: center;
+  
   color: #333;
   font-weight: bold;
   opacity: 1;
@@ -523,8 +450,10 @@ body {
   max-width: 120px;
   height: auto;
   z-index: 50;
-  display: none;
 }
+
+/* efeito clik */
+#click { display: none; } /* Começa escondido */
 
 .logo {
   position: absolute;
@@ -550,10 +479,24 @@ body {
   z-index: 5;
 }
 
+.translator-label {
+  position: absolute;
+  top: 15%;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #333;
+  font-size: 5vw;
+  text-align: center;
+  width: 80%;
+  max-width: 90%;
+  margin: 0;
+}
+
 /* =============================================
    COMPONENTES DE INTERFACE - BANDEIRAS DE IDIOMA
    ============================================= */
 
+/* 🏳️ Bandeira do idioma local */
 .language-flag {
   position: absolute;
   top: 53%;
@@ -562,6 +505,7 @@ body {
   z-index: 40;
 }
 
+/* ===== CIRCULO DA BANDEIRA ===== */
 .remoter-Lang {
   position: absolute;
   top: 31%;
@@ -584,6 +528,7 @@ body {
    COMPONENTES DE INTERFACE - OVERLAYS E MODAIS
    ============================================= */
 
+/* ===== OVERLAY DO QR CODE ===== */
 .info-overlay {
   position: absolute;
   top: 23%;
@@ -598,12 +543,14 @@ body {
   text-align: center;
 }
 
+/* ✅ Overlay do QR Code começa OCULTO */
 .info-overlay.hidden {
   opacity: 0 !important;
   pointer-events: none !important;
-  display: block !important;
+  display: block !important; /* Mantém no layout mas invisível */
 }
 
+/* ✅ Overlay VISÍVEL quando não tem classe hidden */
 .info-overlay:not(.hidden) {
   opacity: 1;
   pointer-events: auto;
@@ -644,6 +591,7 @@ body {
   width: 100%;
 }
 
+/* 🆕 ESTILOS PARA BOTÃO COPIAR SIMPLES */
 .btn-copiar-simples {
   background: #667eea;
   color: white;
@@ -669,6 +617,8 @@ body {
   transform: scale(1.1);
 }
 
+
+/* ===== MODAL DE GRAVAÇÃO ===== */
 .recording-modal {
   position: fixed;
   bottom: -100%;
@@ -745,6 +695,7 @@ body {
    LOADERS E ANIMAÇÕES
    ============================================= */
 
+/* efeito carrega pagina */
 .mobile-loader {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
     background: rgba(0,0,0,0.8); display: flex; justify-content: center; 
@@ -802,6 +753,7 @@ body {
    CONTROLES E BOTÕES DE AÇÃO
    ============================================= */
 
+/* ===== CONTROLES ===== */
 .callActionBtn {
   position: absolute;
   top: 70%;
@@ -823,6 +775,7 @@ body {
    ESTILOS ESPECÍFICOS POR PÁGINA
    ============================================= */
 
+/* Para diferenciar caller vs receiver */
 caller.html #texto-recebido {
   border-color: #2196F3;
   background-color: #e3f2fd;
@@ -837,6 +790,7 @@ receiver.html #texto-recebido {
    MEDIA QUERIES - RESPONSIVIDADE
    ============================================= */
 
+/* Media queries para ajustes em telas específicas */
 @media (max-width: 480px) {
   .instruction-box {
     width: 90%;
@@ -856,56 +810,3 @@ receiver.html #texto-recebido {
     font-size: 1em;
   }
 }
-/* ... todo o seu CSS anterior ... */
-
-/* ============================================= */
-/* 🎯 SOLUÇÃO DEFINITIVA - REDES SOCIAIS FIXAS  */
-/* ============================================= */
-
-.social-links-fixed {
-  position: absolute !important;
-  top: 17% !important; /* ⬅️ TESTE: 15%, 18%, 20%, 22% */
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  display: flex !important;
-  gap: 6px !important;
-  justify-content: center !important;
-  margin: 0 !important;
-  flex-wrap: wrap !important;
-  width: 80% !important;
-  z-index: 100 !important;
-}
-
-.social-btn-fixed {
-  width: 26px !important;
-  height: 26px !important;
-  border: none !important;
-  border-radius: 4px !important;
-  color: white !important;
-  font-weight: bold !important;
-  cursor: pointer !important;
-  font-size: 10px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  transition: transform 0.2s !important;
-  text-decoration: none !important;
-}
-
-.social-btn-fixed:hover {
-  transform: scale(1.1) !important;
-}
-
-.social-btn-fixed.instagram { 
-  background: linear-gradient(45deg, #405DE6, #5851DB, #833AB4, #C13584, #E1306C, #FD1D1D, #F56040, #F77737, #FCAF45, #FFDC80) !important; 
-}
-
-.social-btn-fixed.website { 
-  background: #6c5ce7 !important; 
-}
-
-.social-btn-fixed.facebook { background: #3b5998 !important; }
-.social-btn-fixed.twitter { background: #1da1f2 !important; }
-.social-btn-fixed.linkedin { background: #0077b5 !important; }
-.social-btn-fixed.whatsapp { background: #25d366 !important; }
-.social-btn-fixed.telegram { background: #0088cc !important; }
