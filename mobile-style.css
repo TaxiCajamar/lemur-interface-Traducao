@@ -541,21 +541,21 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   z-index: 100;
   text-align: center;
-  display: block; /* ← ADICIONADO */
-  transition: opacity 0.5s ease;
 }
 
+/* ✅ Overlay do QR Code começa OCULTO */
 .info-overlay.hidden {
   opacity: 0 !important;
   pointer-events: none !important;
-  /* ← REMOVIDO: display: block !important; */
+  display: block !important; /* Mantém no layout mas invisível */
 }
 
+/* ✅ Overlay VISÍVEL quando não tem classe hidden */
 .info-overlay:not(.hidden) {
   opacity: 1;
   pointer-events: auto;
-  /* display: block já está no seletor geral acima */
 }
+
 .info-overlay {
   transition: opacity 0.5s ease;
   opacity: 1;
