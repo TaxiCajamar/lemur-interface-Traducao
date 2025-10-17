@@ -55,6 +55,8 @@ let primeiraFraseTTS = true;
 let navegadorTTSPreparado = false;
 let ultimoIdiomaTTS = 'pt-BR';
 
+// [Sistema de espera do lêmure removido]
+
 // 🎵 CARREGAR SOM DE DIGITAÇÃO
 function carregarSomDigitacao() {
     return new Promise((resolve) => {
@@ -308,6 +310,177 @@ async function traduzirFrasesFixas() {
   }
 }
 
+// 🎥 FUNÇÃO PARA ALTERNAR ENTRE CÂMERAS (CORRIGIDA - ROBUSTA)
+function setupCameraToggle() {
+    const toggleButton = document.getElementById('toggleCamera');
+    let currentCamera = 'user'; // 'user' = frontal, 'environment' = traseira
+    let isSwitching = false; // Evita múltiplos cliques
+
+    if (!toggleButton) {
+        console.log('❌ Botão de alternar câmera não encontrado');
+        return;
+    }
+
+    toggleButton.addEventListener('click', async () => {
+        // Evita múltiplos cliques durante a troca
+        if (isSwitching) {
+            console.log('⏳ Troca de câmera já em andamento...');
+            return;
+        }
+
+        isSwitching = true;
+        toggleButton.style.opacity = '0.5'; // Feedback visual
+        toggleButton.style.cursor = 'wait';
+
+        try {
+            console.log('🔄 Iniciando troca de câmera...');
+            
+            // ✅ 1. PARA COMPLETAMENTE a stream atual
+            if (window.localStream) {
+                console.log('⏹️ Parando stream atual...');
+                window.localStream.getTracks().forEach(track => {
+                    track.stop(); // Para completamente cada track
+                });
+                window.localStream = null;
+            }
+
+            // ✅ 2. PEQUENA PAUSA para o navegador liberar a câmera
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // ✅ 3. Alterna entre frontal e traseira
+            currentCamera = currentCamera === 'user' ? 'environment' : 'user';
+            console.log(`🎯 Solicitando câmera: ${currentCamera === 'user' ? 'Frontal' : 'Traseira'}`);
+            
+            // ✅ 4. TENTATIVA PRINCIPAL com facingMode
+            try {
+                const newStream = await navigator.mediaDevices.getUserMedia({
+                    video: { 
+                        facingMode: currentCamera,
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    },
+                    audio: false
+                });
+
+                await handleNewStream(newStream, currentCamera);
+                
+            } catch (facingModeError) {
+                console.log('❌ facingMode falhou, tentando fallback...');
+                await tryFallbackCameras(currentCamera);
+            }
+
+        } catch (error) {
+            console.error('❌ Erro crítico ao alternar câmera:', error);
+            alert('Não foi possível alternar a câmera. Tente novamente.');
+        } finally {
+            // ✅ SEMPRE restaura o botão
+            isSwitching = false;
+            toggleButton.style.opacity = '1';
+            toggleButton.style.cursor = 'pointer';
+        }
+    });
+
+    // ✅ FUNÇÃO PARA LIDAR COM NOVA STREAM
+    async function handleNewStream(newStream, cameraType) {
+        // Atualiza o vídeo local
+        const localVideo = document.getElementById('localVideo');
+        if (localVideo) {
+            localVideo.srcObject = newStream;
+        }
+
+        // ✅ ATUALIZAÇÃO CRÍTICA: Atualiza stream global
+        window.localStream = newStream;
+
+        // ✅ ATUALIZAÇÃO CRÍTICA: WebRTC
+        if (window.rtcCore && window.rtcCore.peer) {
+            const connectionState = window.rtcCore.peer.connectionState;
+            console.log(`📡 Estado da conexão WebRTC: ${connectionState}`);
+            
+            if (connectionState === 'connected') {
+                console.log('🔄 Atualizando WebRTC com nova câmera...');
+                
+                try {
+                    // Atualiza o stream local no core
+                    window.rtcCore.localStream = newStream;
+                    
+                    // Usa replaceTrack para atualizar a transmissão
+                    const newVideoTrack = newStream.getVideoTracks()[0];
+                    const senders = window.rtcCore.peer.getSenders();
+                    
+                    let videoUpdated = false;
+                    for (const sender of senders) {
+                        if (sender.track && sender.track.kind === 'video') {
+                            await sender.replaceTrack(newVideoTrack);
+                            videoUpdated = true;
+                            console.log('✅ Sender de vídeo atualizado no WebRTC');
+                        }
+                    }
+                    
+                    if (!videoUpdated) {
+                        console.log('⚠️ Nenhum sender de vídeo encontrado');
+                    }
+                } catch (webrtcError) {
+                    console.error('❌ Erro ao atualizar WebRTC:', webrtcError);
+                }
+            } else {
+                console.log(`ℹ️ WebRTC não conectado (${connectionState}), apenas atualização local`);
+            }
+        }
+
+        console.log(`✅ Câmera alterada para: ${cameraType === 'user' ? 'Frontal' : 'Traseira'}`);
+    }
+
+    // ✅ FALLBACK PARA DISPOSITIVOS MÚLTIPLOS
+    async function tryFallbackCameras(requestedCamera) {
+        try {
+            console.log('🔄 Buscando dispositivos de câmera...');
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const videoDevices = devices.filter(device => device.kind === 'videoinput');
+            
+            console.log(`📷 Câmeras encontradas: ${videoDevices.length}`);
+            
+            if (videoDevices.length > 1) {
+                // ✅ Estratégia: Pega a próxima câmera disponível
+                const currentDeviceId = window.localStream ? 
+                    window.localStream.getVideoTracks()[0]?.getSettings()?.deviceId : null;
+                
+                let newDeviceId;
+                if (currentDeviceId && videoDevices.length > 1) {
+                    // Encontra a próxima câmera na lista
+                    const currentIndex = videoDevices.findIndex(device => device.deviceId === currentDeviceId);
+                    newDeviceId = videoDevices[(currentIndex + 1) % videoDevices.length].deviceId;
+                } else {
+                    // Primeira vez ou não conseguiu identificar, pega a primeira disponível
+                    newDeviceId = videoDevices[0].deviceId;
+                }
+                
+                console.log(`🎯 Tentando câmera com deviceId: ${newDeviceId.substring(0, 10)}...`);
+                
+                const newStream = await navigator.mediaDevices.getUserMedia({
+                    video: { 
+                        deviceId: { exact: newDeviceId },
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    },
+                    audio: false
+                });
+
+                await handleNewStream(newStream, 'fallback');
+                console.log('✅ Câmera alternada via fallback de dispositivos');
+                
+            } else {
+                console.warn('⚠️ Apenas uma câmera disponível');
+                alert('Apenas uma câmera foi detectada neste dispositivo.');
+            }
+        } catch (fallbackError) {
+            console.error('❌ Fallback também falhou:', fallbackError);
+            alert('Não foi possível acessar outra câmera. Verifique as permissões.');
+        }
+    }
+
+    console.log('✅ Botão de alternar câmera configurado com tratamento robusto');
+}
+
 // ✅ FUNÇÃO PARA ESCONDER O BOTÃO CLICK QUANDO WEBRTC CONECTAR
 function esconderClickQuandoConectar() {
     const elementoClick = document.getElementById('click');
@@ -537,15 +710,6 @@ async function falarTextoSistemaHibrido(mensagem, elemento, imagemImpaciente, id
     }
 }
 
-// ✅ FUNÇÃO AUXILIAR PARA UUID (CORRIGIDA - FORA DA iniciarCameraAposPermissoes)
-function fakeRandomUUID(fixedValue) {
-    return {
-        substr: function(start, length) {
-            return fixedValue.substr(start, length);
-        }
-    };
-}
-
 // ✅ NOVO BLOCO - CÂMERA RESILIENTE
 async function iniciarCameraAposPermissoes() {
     try {
@@ -572,12 +736,15 @@ async function iniciarCameraAposPermissoes() {
                 localVideo.srcObject = stream;
             }
 
-            // 🆕 VIGILANTE UNIVERSAL SIMPLES (SUBSTITUI TODO O SISTEMA ANTIGO)
-            window.cameraVigilante = new CameraVigilante();
-            window.cameraVigilante.configurarBotaoToggle('toggleCamera');
-            window.cameraVigilante.iniciarMonitoramento();
+            // 🎥 CONFIGURA BOTÃO DE ALTERNAR CÂMERA (só se câmera funcionou)
+            setupCameraToggle();
             
-            console.log('✅ Câmera iniciada + Vigilante Universal ativado');
+            console.log('✅ Câmera iniciada com sucesso');
+            
+// 🆕 🆕 🆕 ADICIONAR ESTAS 2 LINHAS AQUI 🆕 🆕 🆕
+    window.cameraVigilante = new CameraVigilante();
+    window.cameraVigilante.iniciarMonitoramento();
+    // 🆕 🆕 🆕 FIM DAS 2 LINHAS 🆕 🆕 🆕
             
         } else {
             // ✅ SE CÂMERA FALHOU: Apenas avisa, mas continua
@@ -601,10 +768,21 @@ async function iniciarCameraAposPermissoes() {
             }
         }, 500);
         
+        // ... continua o código ORIGINAL daqui para baixo ...
+        // (MANTÉM todo o resto do código que estava aqui)
+        
         window.rtcCore = new WebRTCCore();
 
         const url = window.location.href;
         const fixedId = url.split('?')[1] || crypto.randomUUID().substr(0, 8);
+
+        function fakeRandomUUID(fixedValue) {
+            return {
+                substr: function(start, length) {
+                    return fixedValue.substr(start, length);
+                }
+            };
+        }
 
         const myId = fakeRandomUUID(fixedId).substr(0, 8);
 
@@ -615,89 +793,85 @@ async function iniciarCameraAposPermissoes() {
         window.targetTranslationLang = lang;
 
         // ✅ GUARDA as informações para gerar QR Code depois (QUANDO O USUÁRIO CLICAR)
-        const raw = window.location.search;
-const parts = raw.substring(1).split('&');
-window.qrCodeData = {
-    myId: parts[0],
-    token: new URLSearchParams(raw).get('token'),
-    lang: new URLSearchParams(raw).get('lang')
-};
+        window.qrCodeData = {
+            myId: myId,
+            token: token,
+            lang: lang
+        };
 
-    // ✅ CONFIGURA o botão para gerar QR Code quando clicado (VERSÃO COM LINK)
-    document.getElementById('logo-traduz').addEventListener('click', function() {
-       
-        // ⬇️⬇️⬇️ SEU CÓDIGO ORIGINAL CONTINUA DAQUI ⬇️⬇️⬇️
-        
-        // 🔄 VERIFICA SE JÁ EXISTE UM QR CODE ATIVO
-        const overlay = document.querySelector('.info-overlay');
-        const qrcodeContainer = document.getElementById('qrcode');
-        
-        // Se o overlay já está visível, apenas oculta (toggle)
-        if (overlay && !overlay.classList.contains('hidden')) {
-            overlay.classList.add('hidden');
-            console.log('📱 QR Code fechado pelo usuário');
-            return;
-        }
-        
-        // 🔄 VERIFICA CONEXÃO WEBRTC DE FORMA MAIS INTELIGENTE
-        const remoteVideo = document.getElementById('remoteVideo');
-        const isConnected = remoteVideo && remoteVideo.srcObject;
-        
-        if (isConnected) {
-            console.log('❌ WebRTC já conectado - QR Code não pode ser reaberto');
-            return; // ⬅️ Apenas retorna silenciosamente
-        }
-        
-        console.log('🗝️ Gerando/Reabrindo QR Code e Link...');
-               
-        // 🔄 LIMPA QR CODE ANTERIOR SE EXISTIR
-        if (qrcodeContainer) {
-            qrcodeContainer.innerHTML = '';
-        }
-        
-        const callerUrl = `${window.location.origin}/receiver.html?${window.qrCodeData.myId}&token=${encodeURIComponent(window.qrCodeData.token)}&lang=${encodeURIComponent(window.qrCodeData.lang)}`;       
-        
-        // Gera o QR Code
-        QRCodeGenerator.generate("qrcode", callerUrl);
-        
+       // ✅ CONFIGURA o botão para gerar QR Code quando clicado (VERSÃO COM LINK)
+document.getElementById('logo-traduz').addEventListener('click', function() {
+    // 🔄 VERIFICA SE JÁ EXISTE UM QR CODE ATIVO
+    const overlay = document.querySelector('.info-overlay');
+    const qrcodeContainer = document.getElementById('qrcode');
+    
+    // Se o overlay já está visível, apenas oculta (toggle)
+    if (overlay && !overlay.classList.contains('hidden')) {
+        overlay.classList.add('hidden');
+        console.log('📱 QR Code fechado pelo usuário');
+        return;
+    }
+    
+    // 🔄 VERIFICA CONEXÃO WEBRTC DE FORMA MAIS INTELIGENTE
+    const remoteVideo = document.getElementById('remoteVideo');
+    const isConnected = remoteVideo && remoteVideo.srcObject;
+    
+    if (isConnected) {
+        console.log('❌ WebRTC já conectado - QR Code não pode ser reaberto');
+        return; // ⬅️ Apenas retorna silenciosamente
+    }
+    
+    console.log('🗝️ Gerando/Reabrindo QR Code e Link...');
+    
+    // 🔄 LIMPA QR CODE ANTERIOR SE EXISTIR
+    if (qrcodeContainer) {
+        qrcodeContainer.innerHTML = '';
+    }
+    
+    const callerUrl = `${window.location.origin}/caller.html?targetId=${window.qrCodeData.myId}&token=${encodeURIComponent(window.qrCodeData.token)}&lang=${encodeURIComponent(window.qrCodeData.lang)}`;
+    
+    // Gera o QR Code
+    QRCodeGenerator.generate("qrcode", callerUrl);
+    
         // 🆕 🆕 🆕 CONFIGURA BOTÃO COPIAR SIMPLES
-        const btnCopiar = document.getElementById('copiarLink');
-        if (btnCopiar) {
-            btnCopiar.onclick = function() {
-                navigator.clipboard.writeText(callerUrl).then(() => {
-                    btnCopiar.textContent = '✅';
-                    btnCopiar.classList.add('copiado');
-                    console.log('🔗 Link copiado para área de transferência');
-                    
-                    setTimeout(() => {
-                        btnCopiar.textContent = '🔗';
-                        btnCopiar.classList.remove('copiado');
-                    }, 2000);
-                }).catch(err => {
-                    console.log('❌ Erro ao copiar link:', err);
-                    // Fallback para dispositivos sem clipboard API
-                    const textArea = document.createElement('textarea');
-                    textArea.value = callerUrl;
-                    document.body.appendChild(textArea);
-                    textArea.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(textArea);
-                    
-                    btnCopiar.textContent = '✅';
-                    setTimeout(() => {
-                        btnCopiar.textContent = '🔗';
-                    }, 2000);
-                });
-            };
-        }
-        
-        // Mostra o overlay do QR Code
-        if (overlay) {
-            overlay.classList.remove('hidden');
-        }
-        
-        console.log('✅ QR Code e Link gerados/reativados!');
-    });
+    const btnCopiar = document.getElementById('copiarLink');
+    if (btnCopiar) {
+        btnCopiar.onclick = function() {
+            navigator.clipboard.writeText(callerUrl).then(() => {
+                btnCopiar.textContent = '✅';
+                btnCopiar.classList.add('copiado');
+                console.log('🔗 Link copiado para área de transferência');
+                
+                setTimeout(() => {
+                    btnCopiar.textContent = '🔗';
+                    btnCopiar.classList.remove('copiado');
+                }, 2000);
+            }).catch(err => {
+                console.log('❌ Erro ao copiar link:', err);
+                // Fallback para dispositivos sem clipboard API
+                const textArea = document.createElement('textarea');
+                textArea.value = callerUrl;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                btnCopiar.textContent = '✅';
+                setTimeout(() => {
+                    btnCopiar.textContent = '🔗';
+                }, 2000);
+            });
+        };
+    }
+    
+    // Mostra o overlay do QR Code
+    if (overlay) {
+        overlay.classList.remove('hidden');
+    }
+    
+    console.log('✅ QR Code e Link gerados/reativados!');
+});
+        // [Event listener do lêmure removido]
 
         // Fechar QR Code ao clicar fora
         document.querySelector('.info-overlay').addEventListener('click', function(e) {
