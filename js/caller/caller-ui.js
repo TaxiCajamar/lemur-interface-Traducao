@@ -247,7 +247,7 @@ async function enviarNotificacaoWakeUp(receiverToken, receiverId, meuId, meuIdio
   try {
     console.log('🔔 Enviando notificação para acordar receiver...');
     
-    const response = await fetch('https://serve-app-e9ia.onrender.com/send-notification', {
+    const response = await fetch('https://serve-app.onrender.com/send-notification', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
