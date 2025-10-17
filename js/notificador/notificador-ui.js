@@ -549,13 +549,14 @@ if (stream) {
         window.rtcCore = new WebRTCCore();
 
         // ✅✅✅ MANTÉM TODO O CÓDIGO ORIGINAL DAQUI PARA BAIXO
-        const params = new URLSearchParams(window.location.search);
-        const myId = window.location.href.split('?')[1]?.split('&')[0] || '';
-        const lang = params.get('lang') || 'pt-BR';
+const raw = window.location.search;
+const parts = raw.substring(1).split('&');
+const myId = parts[0] || '';
+const lang = new URLSearchParams(raw).get('lang') || 'pt-BR';
 
-        window.targetTranslationLang = lang;
+window.targetTranslationLang = lang;
 
-        console.log('🎯 Notificador pronto:', { myId, lang });
+console.log('🎯 Notificador pronto:', { myId, lang });
 
         window.rtcCore.initialize(myId);
         window.rtcCore.setupSocketHandlers();
