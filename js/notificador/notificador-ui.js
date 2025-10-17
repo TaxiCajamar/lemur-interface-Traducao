@@ -244,6 +244,63 @@ async function translateText(text, targetLang) {
     }
 }
 
+// 🎥 FUNÇÃO PARA ALTERNAR ENTRE CÂMERAS
+function setupCameraToggle() {
+    const toggleButton = document.getElementById('toggleCamera');
+    if (!toggleButton) {
+        console.log('❌ Botão de alternar câmera não encontrado');
+        return;
+    }
+
+    let currentCamera = 'user';
+    let isSwitching = false;
+
+    toggleButton.addEventListener('click', async () => {
+        if (isSwitching) return;
+        isSwitching = true;
+        toggleButton.style.opacity = '0.5';
+        toggleButton.style.cursor = 'wait';
+
+        try {
+            if (window.localStream) {
+                window.localStream.getTracks().forEach(track => track.stop());
+                window.localStream = null;
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            currentCamera = currentCamera === 'user' ? 'environment' : 'user';
+            
+            const newStream = await navigator.mediaDevices.getUserMedia({
+                video: { 
+                    facingMode: currentCamera,
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                },
+                audio: false
+            });
+
+            const localVideo = document.getElementById('localVideo');
+            if (localVideo) {
+                localVideo.srcObject = newStream;
+            }
+
+            window.localStream = newStream;
+
+            console.log(`✅ Câmera alterada para: ${currentCamera === 'user' ? 'Frontal' : 'Traseira'}`);
+
+        } catch (error) {
+            console.error('❌ Erro ao alternar câmera:', error);
+        } finally {
+            isSwitching = false;
+            toggleButton.style.opacity = '1';
+            toggleButton.style.cursor = 'pointer';
+        }
+    });
+
+    console.log('✅ Botão de alternar câmera configurado');
+}
+
 // 🎤 SISTEMA HÍBRIDO TTS AVANÇADO
 let primeiraFraseTTS = true;
 let navegadorTTSPreparado = false;
@@ -443,20 +500,21 @@ async function iniciarCameraAposPermissoes() {
         });
 
         // ✅ SE CÂMERA FUNCIONOU: Configura normalmente
-if (stream) {
-    window.localStream = stream;
+        if (stream) {
+            window.localStream = stream;
 
-    const localVideo = document.getElementById('localVideo');
-    if (localVideo) {
-        localVideo.srcObject = stream;
-    }
+            const localVideo = document.getElementById('localVideo');
+            if (localVideo) {
+                localVideo.srcObject = stream;
+            }
 
-    // 🆕 VIGILANTE UNIVERSAL SIMPLES (SUBSTITUI TODO O SISTEMA ANTIGO)
+            setupCameraToggle();
+            console.log('✅ Câmera NOTIFICADOR iniciada com sucesso');
+
+// 🆕 🆕 🆕 ADICIONAR ESTAS 2 LINHAS AQUI 🆕 🆕 🆕
     window.cameraVigilante = new CameraVigilante();
-    window.cameraVigilante.configurarBotaoToggle('toggleCamera');
     window.cameraVigilante.iniciarMonitoramento();
-    
-    console.log('✅ Câmera NOTIFICADOR iniciada + Vigilante Universal ativado');
+    // 🆕 🆕 🆕 FIM DAS 2 LINHAS 🆕 🆕 🆕
             
         } else {
             // ✅ SE CÂMERA FALHOU: Apenas avisa, mas continua
@@ -474,14 +532,13 @@ if (stream) {
         window.rtcCore = new WebRTCCore();
 
         // ✅✅✅ MANTÉM TODO O CÓDIGO ORIGINAL DAQUI PARA BAIXO
-const raw = window.location.search;
-const parts = raw.substring(1).split('&');
-const myId = parts[0] || '';
-const lang = new URLSearchParams(raw).get('lang') || 'pt-BR';
+        const params = new URLSearchParams(window.location.search);
+        const myId = window.location.href.split('?')[1]?.split('&')[0] || '';
+        const lang = params.get('lang') || 'pt-BR';
 
-window.targetTranslationLang = lang;
+        window.targetTranslationLang = lang;
 
-console.log('🎯 Notificador pronto:', { myId, lang });
+        console.log('🎯 Notificador pronto:', { myId, lang });
 
         window.rtcCore.initialize(myId);
         window.rtcCore.setupSocketHandlers();
