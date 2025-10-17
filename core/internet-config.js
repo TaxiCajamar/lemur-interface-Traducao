@@ -1,4 +1,4 @@
-export const SIGNALING_SERVER_URL = 'https://lemur-signal-ings.onrender.com';
+export const SIGNALING_SERVER_URL = 'https://https://lemur-signal.onrender.com.com';
 
 export const getIceServers = () => {
   return [
