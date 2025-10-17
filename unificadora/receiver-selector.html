@@ -96,22 +96,31 @@
         </header>
 
         <div class="container-botoes">
-            <!-- iPhone à esquerda -->
-            <a href="../safari/receiver.html" class="botao-dispositivo">
-                <img src="../assets/images/iphone.png" alt="iPhone" class="imagem-dispositivo" />
-            </a>
+    <!-- iPhone à esquerda -->
+    <a id="iphoneLink" href="../safari/receiver.html" class="botao-dispositivo">
+        <img src="../assets/images/iphone.png" alt="iPhone" class="imagem-dispositivo" />
+    </a>
 
-            <!-- Android à direita -->
-            <a href="../receiver.html" class="botao-dispositivo">
-                <img src="../assets/images/andrid.png" alt="Android" class="imagem-dispositivo" />
-            </a>
-        </div>
-    </div>
+    <!-- Android à direita -->
+    <a id="androidLink" href="../receiver.html" class="botao-dispositivo">
+        <img src="../assets/images/andrid.png" alt="Android" class="imagem-dispositivo" />
+    </a>
+</div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            console.log('📱 Interface mobile carregada');
-        });
-    </script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Obtém os parâmetros da URL atual
+    const queryString = window.location.search;
+    
+    // Atualiza os links com os parâmetros
+    const iphoneLink = document.getElementById('iphoneLink');
+    const androidLink = document.getElementById('androidLink');
+    
+    iphoneLink.href = `../safari/receiver.html${queryString}`;
+    androidLink.href = `../receiver.html${queryString}`;
+    
+    console.log('🔗 Links atualizados com parâmetros:', queryString);
+});
+</script>
 </body>
 </html>
