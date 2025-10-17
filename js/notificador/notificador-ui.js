@@ -1,7 +1,6 @@
 import { WebRTCCore } from '../../core/webrtc-core.js';
 import { CameraVigilante } from '../../core/camera-vigilante.js';
 
-
 // 🎵 VARIÁVEIS DE ÁUDIO
 let audioContext = null;
 let somDigitacao = null;
@@ -245,76 +244,6 @@ async function translateText(text, targetLang) {
     }
 }
 
-// 🎥 FUNÇÃO PARA ALTERNAR ENTRE CÂMERAS
-function setupCameraToggle() {
-    const toggleButton = document.getElementById('toggleCamera');
-    if (!toggleButton) {
-        console.log('❌ Botão de alternar câmera não encontrado');
-        return;
-    }
-
-    let currentCamera = 'user';
-    let isSwitching = false;
-
-   toggleButton.addEventListener('click', async () => {
-    // ✅ PARAR VIGILANTE DURANTE TROCA
-    if (window.cameraVigilante) {
-        window.cameraVigilante.pararMonitoramento();
-    }
-
-    if (isSwitching) return;
-    isSwitching = true;
-    toggleButton.style.opacity = '0.5';
-    toggleButton.style.cursor = 'wait';
-
-        try {
-            if (window.localStream) {
-                window.localStream.getTracks().forEach(track => track.stop());
-                window.localStream = null;
-            }
-
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            currentCamera = currentCamera === 'user' ? 'environment' : 'user';
-            
-            const newStream = await navigator.mediaDevices.getUserMedia({
-                video: { 
-                    facingMode: currentCamera,
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
-                },
-                audio: false
-            });
-
-            const localVideo = document.getElementById('localVideo');
-            if (localVideo) {
-                localVideo.srcObject = newStream;
-            }
-
-            window.localStream = newStream;
-
-            console.log(`✅ Câmera alterada para: ${currentCamera === 'user' ? 'Frontal' : 'Traseira'}`);
-
-               } catch (error) {
-            console.error('❌ Erro ao alternar câmera:', error);
-        } finally {
-            isSwitching = false;
-            toggleButton.style.opacity = '1';
-            toggleButton.style.cursor = 'pointer';
-            
-            // ✅ REINICIAR VIGILANTE APÓS TROCA
-            setTimeout(() => {
-                if (window.cameraVigilante && window.localStream) {
-                    window.cameraVigilante.reiniciarMonitoramento();
-                    console.log('✅ Vigilante reiniciado com nova câmera no notificador');
-                }
-            }, 1500);
-        }
-    });
-
-    console.log('✅ Botão de alternar câmera configurado');
-}
-
 // 🎤 SISTEMA HÍBRIDO TTS AVANÇADO
 let primeiraFraseTTS = true;
 let navegadorTTSPreparado = false;
@@ -522,16 +451,12 @@ if (stream) {
         localVideo.srcObject = stream;
     }
 
-    setupCameraToggle();
-    console.log('✅ Câmera NOTIFICADOR iniciada com sucesso');
-
-    // ✅ INICIAR VIGILANTE QUANDO CÂMERA ESTIVER PRONTA
-    setTimeout(() => {
-        if (window.cameraVigilante) {
-            window.cameraVigilante.iniciarMonitoramento();
-            console.log('👁️ Vigilante ativado para câmera do notificador');
-        }
-    }, 1000);
+    // 🆕 VIGILANTE UNIVERSAL SIMPLES (SUBSTITUI TODO O SISTEMA ANTIGO)
+    window.cameraVigilante = new CameraVigilante();
+    window.cameraVigilante.configurarBotaoToggle('toggleCamera');
+    window.cameraVigilante.iniciarMonitoramento();
+    
+    console.log('✅ Câmera NOTIFICADOR iniciada + Vigilante Universal ativado');
             
         } else {
             // ✅ SE CÂMERA FALHOU: Apenas avisa, mas continua
