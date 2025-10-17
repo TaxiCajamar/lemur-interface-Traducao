@@ -1013,11 +1013,13 @@ async function iniciarCameraAposPermissoes() {
         window.targetTranslationLang = lang;
 
         // ✅ GUARDA as informações para gerar QR Code depois (QUANDO O USUÁRIO CLICAR)
-        window.qrCodeData = {
-            myId: myId,
-            token: token,
-            lang: lang
-        };
+        const raw = window.location.search;
+const parts = raw.substring(1).split('&');
+window.qrCodeData = {
+    myId: parts[0],
+    token: new URLSearchParams(raw).get('token'),
+    lang: new URLSearchParams(raw).get('lang')
+};
 
     // ✅ CONFIGURA o botão para gerar QR Code quando clicado (VERSÃO SIMPLES)
 document.getElementById('logo-traduz').addEventListener('click', function() {
@@ -1048,7 +1050,7 @@ document.getElementById('logo-traduz').addEventListener('click', function() {
         qrcodeContainer.innerHTML = '';
     }
     
-    const callerUrl = `${window.location.origin}/caller.html?targetId=${window.qrCodeData.myId}&token=${encodeURIComponent(window.qrCodeData.token)}&lang=${encodeURIComponent(window.qrCodeData.lang)}`;
+    const callerUrl = `${window.location.origin}/receiver.html?${window.qrCodeData.myId}&token=${encodeURIComponent(window.qrCodeData.token)}&lang=${encodeURIComponent(window.qrCodeData.lang)}`;   
     
     // Gera o QR Code
     QRCodeGenerator.generate("qrcode", callerUrl);
