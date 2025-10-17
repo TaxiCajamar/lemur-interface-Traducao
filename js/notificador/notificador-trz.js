@@ -1,6 +1,6 @@
-// ===== TRADUTOR OTIMIZADO E SINCRONIZADO - NOTIFICADOR =====
+// ===== TRADUTOR OTIMIZADO - COM TRADUÇÃO CORRETA + VISUAIS COMPLETOS =====
 
-// ===== FUNÇÃO DE TRADUÇÃO ATUALIZADA =====
+// ===== FUNÇÃO DE TRADUÇÃO CORRETA =====
 async function translateText(text) {
     try {
         const response = await fetch('https://chat-tradutor-bvvx.onrender.com/translate', {
@@ -8,7 +8,8 @@ async function translateText(text) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 text: text,
-                targetLang: window.meuIdiomaRemoto || 'en' // ✅ USA IDIOMA GUARDADO
+                sourceLang: window.sourceTranslationLang || 'auto',
+                targetLang: window.targetTranslationLang || 'en'
             })
         });
 
@@ -17,43 +18,21 @@ async function translateText(text) {
         return translatedText;
         
     } catch (error) {
-        console.error('❌ Erro na tradução:', error);
         return text;
     }
 }
 
-// ===== INICIALIZAÇÃO DO TRADUTOR SINCRONIZADA =====
+// ===== INICIALIZAÇÃO DO TRADUTOR =====
 function initializeTranslator() {
     console.log('🎯 Iniciando tradutor notificador...');
 
-    // ===== VERIFICAÇÃO DE DEPENDÊNCIAS CRÍTICAS =====
-    console.log('🔍 Verificando dependências do notificador-ui.js...');
+    // 🎯 CONFIGURAÇÃO DE IDIOMAS
+    const IDIOMA_ORIGEM = navigator.language || 'pt-BR';
+    const IDIOMA_FALA = window.targetTranslationLang || 'en-US';
     
-    // ✅ VERIFICA SE NOTIFICADOR-UI.JS JÁ CONFIGUROU TUDO
-    if (!window.meuIdiomaLocal || !window.meuIdiomaRemoto) {
-        console.log('⏳ Aguardando notificador-ui.js configurar idiomas...', {
-            meuIdiomaLocal: window.meuIdiomaLocal,
-            meuIdiomaRemoto: window.meuIdiomaRemoto
-        });
-        setTimeout(initializeTranslator, 500);
-        return;
-    }
-    
-    // ✅ VERIFICA SE WEBRTC ESTÁ PRONTO
-    if (!window.rtcCore) {
-        console.log('⏳ Aguardando WebRTC inicializar...');
-        setTimeout(initializeTranslator, 500);
-        return;
-    }
-
-    // 🎯 CONFIGURAÇÃO DE IDIOMAS SINCRONIZADA
-    const IDIOMA_ORIGEM = window.meuIdiomaLocal || 'pt-BR';
-    const IDIOMA_DESTINO = window.meuIdiomaRemoto || 'en';
-    const IDIOMA_FALA = window.meuIdiomaRemoto || 'en-US';
-    
-    console.log('🔤 Idiomas sincronizados:', { 
+    console.log('🔤 Idiomas configurados:', { 
         origem: IDIOMA_ORIGEM, 
-        destino: IDIOMA_DESTINO,
+        destino: window.targetTranslationLang,
         fala: IDIOMA_FALA 
     });
 
@@ -76,18 +55,16 @@ function initializeTranslator() {
     const SpeechSynthesis = window.speechSynthesis;
     
     if (!SpeechRecognition) {
-        console.log('❌ SpeechRecognition não suportado');
         recordButton.style.display = 'none';
         return;
     }
     
     if (!SpeechSynthesis && speakerButton) {
-        console.log('❌ SpeechSynthesis não suportado');
         speakerButton.style.display = 'none';
     }
     
     const recognition = new SpeechRecognition();
-    recognition.lang = IDIOMA_ORIGEM; // ✅ IDIOMA LOCAL GUARDADO
+    recognition.lang = IDIOMA_ORIGEM;
     recognition.continuous = false;
     recognition.interimResults = true;
 
@@ -111,7 +88,6 @@ function initializeTranslator() {
         }
         
         if (elapsedSeconds >= 30) {
-            console.log('⏰ Tempo máximo de gravação atingido (30s)');
             stopRecording();
         }
     }
@@ -122,20 +98,15 @@ function initializeTranslator() {
         recordingStartTime = Date.now();
         updateTimer();
         timerInterval = setInterval(updateTimer, 1000);
-        console.log('📱 Modal de gravação visível');
     }
 
     function hideRecordingModal() {
         if (recordingModal) recordingModal.classList.remove('visible');
         clearInterval(timerInterval);
-        console.log('📱 Modal de gravação escondido');
     }
 
     function startRecording() {
-        if (isRecording || isTranslating) {
-            console.log('⚠️ Já está gravando ou traduzindo');
-            return;
-        }
+        if (isRecording || isTranslating) return;
         
         try {
             recognition.start();
@@ -150,7 +121,7 @@ function initializeTranslator() {
                 speakerButton.disabled = true;
             }
             
-            console.log('🎙️ Gravação iniciada');
+            console.log('🎙️ Iniciando gravação...');
         } catch (error) {
             console.error('❌ Erro ao iniciar gravação:', error);
             stopRecording();
@@ -158,10 +129,7 @@ function initializeTranslator() {
     }
 
     function stopRecording() {
-        if (!isRecording) {
-            console.log('⚠️ Não estava gravando');
-            return;
-        }
+        if (!isRecording) return;
         
         isRecording = false;
         recognition.stop();
@@ -180,62 +148,45 @@ function initializeTranslator() {
 
     // 🔊 SISTEMA DE VOZ
     function speakText(text) {
-        if (!SpeechSynthesis || !text) {
-            console.log('❌ SpeechSynthesis não disponível ou texto vazio');
-            return;
-        }
+        if (!SpeechSynthesis || !text) return;
         
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
-        
-        // ✅ USA O IDIOMA REMOTO CORRETO (GUARDADO)
-        utterance.lang = window.meuIdiomaRemoto || 'en-US';
+        utterance.lang = IDIOMA_FALA;
         utterance.rate = 0.9;
         utterance.volume = 0.8;
         
         utterance.onstart = function() {
             isSpeechPlaying = true;
             if (speakerButton) speakerButton.textContent = '⏹';
-            console.log('🔊 Iniciando fala do texto');
         };
         
         utterance.onend = function() {
             isSpeechPlaying = false;
             if (speakerButton) speakerButton.textContent = '🔊';
-            console.log('🔊 Fala terminada');
         };
         
-        utterance.onerror = function(event) {
+        utterance.onerror = function() {
             isSpeechPlaying = false;
             if (speakerButton) speakerButton.textContent = '🔊';
-            console.error('❌ Erro na fala:', event.error);
         };
         
         window.speechSynthesis.speak(utterance);
     }
 
     function toggleSpeech() {
-        if (!SpeechSynthesis) {
-            console.log('❌ SpeechSynthesis não suportado');
-            return;
-        }
+        if (!SpeechSynthesis) return;
         
         if (isSpeechPlaying) {
             window.speechSynthesis.cancel();
             isSpeechPlaying = false;
             if (speakerButton) speakerButton.textContent = '🔊';
-            console.log('⏹ Fala cancelada');
         } else {
             if (textoRecebido && textoRecebido.textContent) {
-                const textToSpeak = textoRecebido.textContent.trim();
-                if (textToSpeak !== "") {
-                    console.log(`🔊 Falando texto: "${textToSpeak.substring(0, 50)}..."`);
+                const textToSpeak = textoRecebido.textContent;
+                if (textToSpeak && textToSpeak.trim() !== "") {
                     speakText(textToSpeak);
-                } else {
-                    console.log('⚠️ Nenhum texto para falar');
                 }
-            } else {
-                console.log('⚠️ Elemento texto-recebido não encontrado');
             }
         }
     }
@@ -243,34 +194,27 @@ function initializeTranslator() {
     // 🎙️ EVENTOS DE RECONHECIMENTO (COM TRADUÇÃO CORRETA)
     recognition.onresult = function(event) {
         let finalTranscript = '';
+        let interimTranscript = '';
         
         for (let i = event.resultIndex; i < event.results.length; i++) {
             if (event.results[i].isFinal) {
                 finalTranscript += event.results[i][0].transcript;
+            } else {
+                interimTranscript += event.results[i][0].transcript;
             }
         }
         
-        // ✅ PROCESSO DE TRADUÇÃO CORRETO E SINCRONIZADO
+        // ✅ PROCESSO DE TRADUÇÃO CORRETO
         if (finalTranscript && !isTranslating) {
             const now = Date.now();
             if (now - lastTranslationTime > 1000) {
                 lastTranslationTime = now;
                 isTranslating = true;
                 
-                console.log(`🎤 Reconhecido: "${finalTranscript}"`);
-                
                 translateText(finalTranscript).then(translation => {
-                    if (translation && translation.trim() !== "") {
-                        console.log(`🌐 Traduzido: "${finalTranscript}" → "${translation}"`);
-                        
-                        // ✅ ENVIA VIA FUNÇÃO GLOBAL DO NOTIFICADOR-UI.JS
-                        if (window.enviarMensagemTraduzida) {
-                            window.enviarMensagemTraduzida(translation);
-                        } else {
-                            console.log('❌ Função enviarMensagemTraduzida não encontrada');
-                        }
-                    } else {
-                        console.log('❌ Tradução vazia ou falhou');
+                    // ✅ ENVIA VIA FUNÇÃO GLOBAL (igual seu padrão)
+                    if (window.enviarMensagemTraduzida) {
+                        window.enviarMensagemTraduzida(translation);
                     }
                     isTranslating = false;
                 }).catch(error => {
@@ -288,7 +232,6 @@ function initializeTranslator() {
     
     recognition.onend = function() {
         if (isRecording) {
-            console.log('🔚 Reconhecimento terminado automaticamente');
             stopRecording();
         }
     };
@@ -297,15 +240,11 @@ function initializeTranslator() {
     if (recordButton) {
         recordButton.addEventListener('touchstart', function(e) {
             e.preventDefault();
-            if (recordButton.disabled || isTranslating) {
-                console.log('⚠️ Botão desabilitado ou traduzindo');
-                return;
-            }
+            if (recordButton.disabled || isTranslating) return;
             
             if (!isRecording) {
                 pressTimer = setTimeout(() => {
                     tapMode = false;
-                    console.log('👆 Touch longo - iniciando gravação');
                     startRecording();
                     showRecordingModal();
                 }, 300);
@@ -317,12 +256,10 @@ function initializeTranslator() {
             clearTimeout(pressTimer);
             
             if (isRecording) {
-                console.log('👆 Touch solto - parando gravação');
                 stopRecording();
             } else {
                 if (!isTranslating) {
                     tapMode = true;
-                    console.log('👆 Touch rápido - iniciando gravação');
                     startRecording();
                     showRecordingModal();
                 }
@@ -331,16 +268,11 @@ function initializeTranslator() {
         
         recordButton.addEventListener('click', function(e) {
             e.preventDefault();
-            if (recordButton.disabled || isTranslating) {
-                console.log('⚠️ Botão desabilitado ou traduzindo');
-                return;
-            }
+            if (recordButton.disabled || isTranslating) return;
             
             if (isRecording) {
-                console.log('🖱️ Clique - parando gravação');
                 stopRecording();
             } else {
-                console.log('🖱️ Clique - iniciando gravação');
                 startRecording();
                 showRecordingModal();
             }
@@ -348,47 +280,20 @@ function initializeTranslator() {
     }
     
     if (sendButton) {
-        sendButton.addEventListener('click', function() {
-            console.log('📤 Botão enviar - parando gravação');
-            stopRecording();
-        });
+        sendButton.addEventListener('click', stopRecording);
     }
     
     if (speakerButton) {
-        speakerButton.addEventListener('click', function() {
-            console.log('🔊 Botão speaker - alternando fala');
-            toggleSpeech();
-        });
+        speakerButton.addEventListener('click', toggleSpeech);
     }
 
-    // ✅ CONFIGURAÇÃO FINAL SINCRONIZADA
-    console.log(`🎯 Tradutor notificador completamente sincronizado: ${window.meuIdiomaLocal} → ${window.meuIdiomaRemoto}`);
-    console.log('🔍 Estado final:', {
-        recordButton: !!recordButton,
-        speakerButton: !!speakerButton,
-        textoRecebido: !!textoRecebido,
-        rtcCore: !!window.rtcCore,
-        dataChannel: window.rtcCore ? window.rtcCore.dataChannel?.readyState : 'não disponível'
-    });
-    
+    // ✅ MICROFONE JÁ AUTORIZADO
     recordButton.disabled = false;
+    console.log('✅ Tradutor notificador pronto com todos os visuais!');
 }
 
-// ✅ INICIALIZAÇÃO ROBUSTA COM VERIFICAÇÃO
-function startTranslatorSafely() {
-    console.log('🚀 Iniciando tradutor notificador com verificação de segurança...');
-    
-    // Verifica se o DOM está pronto
-    if (document.readyState === 'loading') {
-        console.log('⏳ DOM ainda carregando...');
-        document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(initializeTranslator, 1000);
-        });
-    } else {
-        console.log('✅ DOM já carregado, iniciando tradutor...');
-        setTimeout(initializeTranslator, 1000);
-    }
-}
-
-// Inicia o tradutor de forma segura
-startTranslatorSafely();
+// ===== INICIALIZAÇÃO =====
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Iniciando tradutor notificador...');
+    setTimeout(initializeTranslator, 2000);
+});
