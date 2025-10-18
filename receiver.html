@@ -16,8 +16,8 @@
   <!-- ===== IMPORTAÇÃO DE BIBLIOTECAS EXTERNAS ===== -->
   <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
   
-  <!-- 🔧 SOCKET.IO DEVE SER CARREGADO PRIMEIRO -->
-  <script src="https://lemur-signal-ings.onrender.com/socket.io/socket.io.js"></script>
+  <!-- 🔧 SOCKET.IO DO CDN OFICIAL -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
   <!-- ===== ESTILOS INLINE ADICIONAIS ===== -->
   <style>
@@ -58,10 +58,31 @@
     .linkedin { background: #0077b5; }
     .whatsapp { background: #25d366; }
     .telegram { background: #0088cc; }
+
+    /* 🔥 ESTILO DE FALLBACK PARA TELA BRANCA */
+    .fallback-message {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+      text-align: center;
+      z-index: 10000;
+    }
   </style>
 </head>
 
 <body>
+
+  <!-- 🔥 MENSAGEM DE FALLBACK -->
+  <div id="fallbackMessage" class="fallback-message">
+    <h3>Carregando Aplicação...</h3>
+    <p>Se esta mensagem persistir, verifique o console (F12)</p>
+  </div>
 
   <!-- ============================================= -->
   <!-- CONTAINER PRINCIPAL DA APLICAÇÃO -->
@@ -257,30 +278,49 @@
   <!-- ============================================= -->
 
   <script>
-    // ===== VERIFICAÇÃO DE DEPENDÊNCIAS =====
-    window.depsReady = new Promise((resolve) => {
+    // ===== VERIFICAÇÃO DE DEPENDÊNCIAS MELHORADA =====
+    window.depsReady = new Promise((resolve, reject) => {
+      let attempts = 0;
+      const maxAttempts = 50; // 5 segundos
+
       function checkDeps() {
+        attempts++;
+        
         // Verificar se Socket.IO está carregado
-        if (typeof io === 'undefined') {
-          console.log('⏳ Aguardando Socket.IO...');
-          setTimeout(checkDeps, 100);
+        if (typeof io !== 'undefined') {
+          console.log('✅ Socket.IO carregado com sucesso');
+          document.getElementById('fallbackMessage')?.style.display = 'none';
+          resolve();
           return;
         }
-        
-        console.log('✅ Todas as dependências carregadas');
-        resolve();
+
+        if (attempts >= maxAttempts) {
+          console.error('❌ Timeout: Socket.IO não carregado');
+          document.getElementById('fallbackMessage')?.style.display = 'block';
+          reject(new Error('Socket.IO não carregado após 5 segundos'));
+          return;
+        }
+
+        console.log(`⏳ Aguardando Socket.IO... (tentativa ${attempts}/${maxAttempts})`);
+        setTimeout(checkDeps, 100);
       }
+      
       checkDeps();
     });
 
     // ===== FUNÇÕES GLOBAIS DE CONTROLE DE INTERFACE =====
     window.liberarInterface = function () {
       console.log('✅ Interface já está visível');
+      document.getElementById('fallbackMessage')?.style.display = 'none';
     };
 
     window.mostrarErroCarregamento = function (mensagem) {
       console.error('Erro de carregamento:', mensagem);
-      alert('Erro: ' + mensagem);
+      const fallback = document.getElementById('fallbackMessage');
+      if (fallback) {
+        fallback.innerHTML = `<h3>Erro de Carregamento</h3><p>${mensagem}</p>`;
+        fallback.style.display = 'block';
+      }
     };
 
     // 🆕 FUNÇÃO PARA COMPARTILHAR NAS REDES SOCIAIS
@@ -363,11 +403,13 @@
         }
         script.onerror = function() {
           console.error('❌ Erro ao carregar script:', src);
+          window.mostrarErroCarregamento(`Falha ao carregar: ${src}`);
         };
         document.body.appendChild(script);
       });
     }).catch(error => {
       console.error('❌ Erro ao carregar dependências:', error);
+      window.mostrarErroCarregamento('Falha ao carregar dependências necessárias');
     });
   </script>
 
