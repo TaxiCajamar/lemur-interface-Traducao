@@ -238,23 +238,56 @@
     <!-- BOTÕES DE CONTROLE DE ÁUDIO -->
     <!-- ============================================= -->
 
+       <!-- ============================================= -->
+    <!-- BOTÃO DE GRAVAÇÃO (DENTRO do box-principal) -->
+    <!-- ============================================= -->
+
     <!-- 🎤 Botão de gravação -->
     <button class="record-btn" id="recordButton" disabled>🎤</button>
 
-  </div> <!-- Fim do .box-principal -->
+  </div> <!-- 🎯 FIM CORRETO do .box-principal -->
 
   <!-- ============================================= -->
   <!-- MODAL DE GRAVAÇÃO (FORA DO CONTAINER PRINCIPAL) -->
   <!-- ============================================= -->
 
   <!-- 🎛️ Modal de gravação -->
- <div class="recording-modal hidden-until-ready" id="recordingModal">
+  <div class="recording-modal hidden-until-ready" id="recordingModal">
     <div class="recording-indicator">
       <div class="recording-dot"></div>
       <div class="recording-text">●</div>
       <div class="recording-timer" id="recordingTimer">0:00</div>
     </div>
     <button class="send-button" id="sendButton">📤</button>
+  </div>
+
+  <!-- ============================================= -->
+  <!-- OVERLAY DO QR CODE (FORA DE TODOS OS CONTAINERS) -->
+  <!-- ============================================= -->
+
+  <!-- 🧾 Overlay com QR Code E BOTÃO COPIAR -->
+  <div class="info-overlay hidden" id="qrOverlay">
+    <h2 id="qr-modal-title">This is your online key</h2>
+
+    <div class="qrcode-container">
+      <div id="qrcode"></div>
+    </div>
+
+    <p class="qr-modal-description" id="qr-modal-description">
+      You can ask to scan, share or print on your business card.
+    </p>
+
+    <!-- 🆕 BOTÕES DE COMPARTILHAMENTO -->
+    <div class="social-buttons">
+      <button class="social-btn facebook" onclick="compartilharSocial('facebook')">f</button>
+      <button class="social-btn twitter" onclick="compartilharSocial('twitter')">t</button>
+      <button class="social-btn linkedin" onclick="compartilharSocial('linkedin')">in</button>
+      <button class="social-btn whatsapp" onclick="compartilharSocial('whatsapp')">w</button>
+      <button class="social-btn telegram" onclick="compartilharSocial('telegram')">tg</button>
+    </div>
+
+    <!-- 🆕 BOTÃO COPIAR SIMPLES E UNIVERSAL -->
+    <button id="copiarLink" class="btn-copiar-simples">🔗</button>
   </div>
 
   <!-- ============================================= -->
@@ -281,17 +314,8 @@
       alert('Erro: ' + mensagem);
     };
 
-    // ✅ Oculta overlay ao carregar
-    document.addEventListener('DOMContentLoaded', function () {
-      const overlay = document.querySelector('.info-overlay');
-      if (overlay) {
-        overlay.classList.add('hidden');
-      }
-    });
-
     // 🆕 FUNÇÃO PARA COMPARTILHAR NAS REDES SOCIAIS
     function compartilharSocial(rede) {
-      // Pega os dados do QR Code que já estão no window.qrCodeData
       const myId = window.qrCodeData?.myId || '';
       const token = window.qrCodeData?.token || '';
       const lang = window.qrCodeData?.lang || 'pt-BR';
@@ -319,7 +343,7 @@
   <!-- ============================================= -->
 
   <!-- 📦 Scripts do receptor -->
-  <script type="module" src="./js/receiver/receiver-ui.js"></script>
+  <script src="./js/receiver/receiver-ui.js"></script>
   <script src="./js/receiver/receiver-trz.js"></script>
 
 </body>
