@@ -6,111 +6,167 @@
   <title>Lemur-EchoMeP2P-Caller</title>
   <link rel="stylesheet" href="mobile-style.css" />
   
-  <!-- 🔒 Estilo para overlay oculto -->
   <style>
     .info-overlay.hidden {
       opacity: 0 !important;
       pointer-events: none !important;
     }
+    
+    /* 🆕 ESTILOS PARA BOTÕES DE REDES SOCIAIS FIXAS (IGUAL AOS OUTROS) */
+    .social-links-fixed {
+      position: absolute;
+      top: 22%;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin: 10px 0;
+      flex-wrap: wrap;
+      width: 80%;
+      z-index: 10;
+    }
+
+    .social-btn-fixed {
+      width: 35px;
+      height: 35px;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s;
+      text-decoration: none;
+    }
+
+    .social-btn-fixed:hover {
+      transform: scale(1.1);
+    }
+
+    .linkedin { background: #0077b5; }
+    .instagram { background: #E4405F; }
+    .facebook { background: #3b5998; }
+    .website { background: #4CAF50; }
+    .whatsapp { background: #25d366; }
+    
+    /* 🆕 Estilo para o botão de ação de chamada */
+    #callActionBtn {
+      position: absolute;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+      color: white;
+      border: none;
+      border-radius: 25px;
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      z-index: 100;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      transition: all 0.3s ease;
+    }
+    
+    #callActionBtn:hover {
+      transform: translateX(-50%) scale(1.05);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    }
   </style>
 </head>
 <body>
 
-  <!-- 🧩 Container principal -->
   <div class="box-principal">
 
-    <!-- 🐵 Logo Lemur -->
     <img src="assets/images/lemurBlu.png" alt="Lemur Logo" class="logo" />
-
-    <!-- 🐵 Imagem do Lemur Impaciente durante conexão -->
-<img id="lemurWaiting" src="assets/images/lemurImpaciente.png" alt="Aguardando conexão" style="display: none;" />
-
-    <!-- 🌉 Imagem ponte -->
+    <img id="lemurWaiting" src="assets/images/lemurImpaciente.png" alt="Aguardando conexão" style="display: none;" />
     <img src="assets/images/Bridg.png" alt="ponte" class="ponte" />
     
-    <!-- ⏳ Loader de carregamento (IGUAL AO RECEIVER) -->
     <div id="mobileLoading" class="mobile-loader">
       <div class="loader-circle"></div>
     </div>
 
-    <!-- 🏷️ Subtítulo de tradução -->
     <div class="translator-label" id="translator-label">
       Real-time translation.
+    </div>
+
+    <!-- 🆕 LINKS DE REDES SOCIAIS FIXOS (IGUAL AOS OUTROS) -->
+    <div class="social-links-fixed">
+      <a href="https://www.linkedin.com/company/lemurinnovation" target="_blank" class="social-btn-fixed linkedin">in</a>
+      <a href="https://www.instagram.com/lemurinnovation" target="_blank" class="social-btn-fixed instagram">ig</a>
+      <a href="https://www.facebook.com/people/Lemur-Innovation/100063853285249/" target="_blank" class="social-btn-fixed facebook">f</a>
+      <a href="https://lemurinnovation.com/" target="_blank" class="social-btn-fixed website">🌐</a>
+      <a href="https://wa.me/5511999999999" target="_blank" class="social-btn-fixed whatsapp">w</a>
     </div>
 
     <div class="remoter-Lang">🏳️</div>
     <div class="local-Lang">🏳️</div>
     <div class="local-mic-Lang">🏳️</div>
 
-    <!-- 🎥 Vídeo remoto -->
     <div class="video-wrapper">
       <video id="remoteVideo" autoplay playsinline></video>
-
-      <!-- 📺 Vídeo local em PiP -->
       <div class="pip-local-wrapper">
         <video id="localVideo" autoplay muted playsinline></video>
       </div>
     </div>
 
-    <!-- 🧾 Overlay com informações (inicialmente oculto) -->
     <div class="info-overlay hidden">
       <span id="myId"></span>
     </div>
 
     <button id="callActionBtn" style="display: none;">SEND 🚀</button>
 
-    <!-- ✅ APENAS A CAIXA PRINCIPAL DE TEXTO -->
     <div id="texto-recebido"></div>
 
-    <!-- 🏳️ Bandeira do idioma atual -->
     <div class="language-flag" id="currentLanguageFlag">🇧🇷</div>
 
-    <!-- 🎤 Microfone -->
     <button class="record-btn" id="recordButton" disabled>🎤</button>
              
   </div>
 
-  <!-- 📋 Instruction box with toggle -->
-<div class="instruction-box expandido" id="instructionBox">
-  <button class="instruction-toggle" id="instructionToggle"></button>
-  <div class="instruction-content">
-    <div class="instruction-item">
-      <img src="assets/images/hello.png" alt="Hello icon" />
-      <span id="welcome-text">Welcome! Let's begin.</span>
-    </div>
-    <div class="instruction-item">
-  <img src="assets/images/realtime.png" alt="Realtime icon" />
-  <span id="translator-label-2">Real-time translation.</span>  <!-- ⬅️ MUDE PARA ID ÚNICO -->
-</div>
-    <div class="instruction-item">
-      <img src="assets/images/Ancioso.png" alt="Loading icon" />
-      <span id="wait-connection">Waiting for connection.</span>
-    </div>
-    <div class="instruction-item">
-      <img src="assets/images/juntos.png" alt="Connected icon" />
-      <span id="both-connected">Both online.</span>
-    </div>
-    <div class="instruction-item">
-      <img src="assets/images/trduz.png" alt="Message icon" />
-      <span id="check-replies">Read the message.</span>
-    </div>
-    <div class="instruction-item">
-      <img src="assets/images/mic.png" alt="Mic icon" />
-      <span id="drop-voice">Speak clearly.</span>
-    </div>
-    <div class="instruction-item">
-      <img src="assets/images/cam.png" alt="Camera icon" />
-      <span id="flip-cam">Flip the camera. Share!</span>
+  <div class="instruction-box expandido" id="instructionBox">
+    <button class="instruction-toggle" id="instructionToggle"></button>
+    <div class="instruction-content">
+      <div class="instruction-item">
+        <img src="assets/images/hello.png" alt="Hello icon" />
+        <span id="welcome-text">Welcome! Let's begin.</span>
+      </div>
+      <div class="instruction-item">
+        <img src="assets/images/realtime.png" alt="Realtime icon" />
+        <span id="translator-label-2">Real-time translation.</span>
+      </div>
+      <div class="instruction-item">
+        <img src="assets/images/Ancioso.png" alt="Loading icon" />
+        <span id="wait-connection">Waiting for connection.</span>
+      </div>
+      <div class="instruction-item">
+        <img src="assets/images/juntos.png" alt="Connected icon" />
+        <span id="both-connected">Both online.</span>
+      </div>
+      <div class="instruction-item">
+        <img src="assets/images/trduz.png" alt="Message icon" />
+        <span id="check-replies">Read the message.</span>
+      </div>
+      <div class="instruction-item">
+        <img src="assets/images/mic.png" alt="Mic icon" />
+        <span id="drop-voice">Speak clearly.</span>
+      </div>
+      <div class="instruction-item">
+        <img src="assets/images/cam.png" alt="Camera icon" />
+        <span id="flip-cam">Flip the camera. Share!</span>
+      </div>
     </div>
   </div>
-</div>
 
-  <!-- 🔄 Botão para alternar câmera (IGUAL AO RECEIVER) -->
   <button id="toggleCamera" class="camera-toggle-btn">
     <img src="assets/images/girar-camera.png" alt="Alternar Câmera" />
   </button>
 
-  <div class="recording-modal" id="recordingModal">
+  <div class="recording-modal hidden-until-ready" id="recordingModal">
     <div class="recording-indicator">
       <div class="recording-dot"></div>
       <div class="recording-text">●</div>
@@ -119,25 +175,53 @@
     <button class="send-button" id="sendButton">📤</button>
   </div>
 
-  <script src="https://lemur-signal-ings.onrender.com/socket.io/socket.io.js"></script>
+  <!-- ✅ CORRIGIDO: Socket.IO DO CDN OFICIAL (IGUAL AOS OUTROS) -->
+  <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
   
   <script>
-    // ✅ FUNÇÃO GLOBAL PARA LIBERAR A INTERFACE (IGUAL AO RECEIVER)
+    // ===== CONFIGURAÇÃO GLOBAL SINCRONIZADA =====
+    window.SIGNALING_SERVER_URL = 'https://lemur-signal.onrender.com';
+    window.APP_CONFIG = {
+      debug: true,
+      autoReconnect: true
+    };
+
+    // ===== VERIFICAÇÃO DE DEPENDÊNCIAS (IGUAL AOS OUTROS) =====
+    function verificarDependencias() {
+      if (typeof io === 'undefined') {
+        console.error('❌ Socket.IO não carregado. Recarregando página...');
+        setTimeout(() => location.reload(), 2000);
+        return false;
+      }
+      console.log('✅ Todas as dependências carregadas (Caller)');
+      return true;
+    }
+
+    // ===== FUNÇÕES GLOBAIS ATUALIZADAS =====
     window.liberarInterface = function () {
-      console.log('✅ Interface já está visível');
+      console.log('✅ Interface do caller liberada');
+      document.getElementById('mobileLoading')?.classList.add('hidden');
     };
 
-    // ✅ EXIBE ERRO DE CARREGAMENTO (IGUAL AO RECEIVER)
     window.mostrarErroCarregamento = function (mensagem) {
-      alert('Erro: ' + mensagem);
+      console.error('❌ Erro no caller:', mensagem);
+      alert('Erro no Caller: ' + mensagem);
     };
 
-    // ✅ OCULTA OVERLAY AO CARREGAR (IGUAL AO RECEIVER)
+    // ===== INICIALIZAÇÃO SEGURA =====
     document.addEventListener('DOMContentLoaded', function () {
+      console.log('🚀 Caller - DOM Carregado');
+      
+      if (!verificarDependencias()) {
+        return;
+      }
+      
       const overlay = document.querySelector('.info-overlay');
       if (overlay) {
         overlay.classList.add('hidden');
       }
+      
+      console.log('✅ Caller pronto para inicialização');
     });
   </script>
   
