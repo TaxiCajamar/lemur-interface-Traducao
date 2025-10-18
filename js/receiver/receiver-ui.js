@@ -720,11 +720,19 @@ async function iniciarCameraAposPermissoes() {
         // ✅ GERA ID ÚNICO PARA ESTA SESSÃO
         const myId = crypto.randomUUID().substr(0, 8);
 
-        const params = new URLSearchParams(window.location.search);
+        // ✅✅✅ CORREÇÃO: RECEIVER USA TOKEN + LAST8 + LANG (3 INFORMAÇÕES)
+const params = new URLSearchParams(window.location.search);
 const token = params.get('token') || '';
+const last8 = params.get('last8') || ''; // ✅ NOVO PARÂMETRO
 const lang = params.get('lang') || navigator.language || 'pt-BR';
 
-const myId = fakeRandomUUID(fixedId).substr(0, 8);
+// ✅ USA O LAST8 COMO ID FIXO (JÁ VEM PRONTO DO DART)
+const myId = last8 || (token.length >= 8 ? token.substring(token.length - 8) : '00000000');
+
+console.log('🆔 ID FIXO do Receiver:', myId);
+console.log('🔢 Last8 recebido:', last8);
+console.log('🔑 Token:', token.substring(0, 20) + '...');
+console.log('🌐 Idioma:', lang);
 
         // ✅ GUARDA INFORMAÇÕES PARA QR CODE
         window.qrCodeData = {
