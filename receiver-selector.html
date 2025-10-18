@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lemur Tradução</title>
+    <style>
+        /* SEUS ESTILOS AQUI */
+    </style>
+</head>
+<body>
+    <div class="box-principal">
+        <header class="cabecalho">
+            <h1 class="titulo-principal">Welcome</h1>
+            <p class="subtitulo">Select to continue</p>
+        </header>
+
+        <div class="container-botoes">
+            <!-- iPhone - COM INFORMAÇÕES -->
+            <a href="../safari/receiver.html${window.location.search}" class="botao-dispositivo">
+                <img src="../assets/images/iphone.png" alt="iPhone" class="imagem-dispositivo" />
+            </a>
+
+            <!-- Android - COM INFORMAÇÕES -->
+            <a href="../receiver.html${window.location.search}" class="botao-dispositivo">
+                <img src="../assets/images/andrid.png" alt="Android" class="imagem-dispositivo" />
+            </a>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('📱 Receiver Selector - Informações:', window.location.search);
+        });
+    </script>
+</body>
+</html>
