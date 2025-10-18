@@ -228,7 +228,7 @@ function enviarParaOutroCelular(texto) {
 // 🌐 Tradução apenas para texto
 async function translateText(text, targetLang) {
   try {
-        const response = await fetch('https://chat-tradutor-bvvx.onrender.com/translate', {
+    const response = await fetch('https://chat-tradutor-bvvx.onrender.com/translate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text, targetLang })
@@ -247,7 +247,7 @@ async function enviarNotificacaoWakeUp(receiverToken, receiverId, meuId, meuIdio
   try {
     console.log('🔔 Enviando notificação para acordar receiver...');
     
- const response = await fetch('https://serve-app-e9ia.onrender.com/send-notification', {
+    const response = await fetch('https://serve-app-e9ia.onrender.com/send-notification', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -765,7 +765,7 @@ async function falarComGoogleTTS(mensagem, elemento, imagemImpaciente, idioma) {
     try {
         console.log(`🎤 Iniciando Google TTS para ${idioma}:`, mensagem.substring(0, 50) + '...');
         
-        const resposta = await fetch('https://chat-tradutor-bvvx.onrender.com/speak', {
+        const resposta = await fetch('https://chat-tradutor.onrender.com/speak', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
