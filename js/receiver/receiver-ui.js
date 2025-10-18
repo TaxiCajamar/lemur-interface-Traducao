@@ -1,4 +1,3 @@
-
 // 🎯 CONTROLE DO TOGGLE DAS INSTRUÇÕES
 function setupInstructionToggle() {
     const instructionBox = document.getElementById('instructionBox');
@@ -190,7 +189,7 @@ async function obterIdiomaCompleto(lang) {
 // 🌐 Tradução apenas para texto
 async function translateText(text, targetLang) {
     try {
-        const response = await fetch('https://chat-tradutor.onrender.com/translate', {
+        const response = await fetch('https://chat-tradutor-bvvx.onrender.com/translate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text, targetLang })
