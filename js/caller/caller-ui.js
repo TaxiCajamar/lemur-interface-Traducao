@@ -911,11 +911,15 @@ async function iniciarCameraAposPermissoes() {
         window.rtcCore.isInitialized = true;
         console.log('✅ WebRTC CALLER inicializado com ID:', myId);
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const receiverId = urlParams.get('targetId') || '';
-        const receiverToken = urlParams.get('token') || '';
-        const receiverLang = urlParams.get('lang') || 'pt-BR';
+        // ✅ JÁ ESTÁ CORRETO - APENAS CONFIRMAR
+const urlParams = new URLSearchParams(window.location.search);
+const receiverId = urlParams.get('targetId') || '';
+const receiverToken = urlParams.get('token') || '';
+const receiverLang = urlParams.get('lang') || 'pt-BR';
 
+const myId = crypto.randomUUID().substr(0, 8); // ✅ ID DINÂMICO
+
+        
         window.receiverInfo = {
           id: receiverId,
           token: receiverToken,
