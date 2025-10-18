@@ -1,25 +1,14 @@
-<!-- ============================================= -->
-<!-- CONFIGURAÇÃO INICIAL DO DOCUMENTO HTML -->
-<!-- ============================================= -->
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <!-- ===== METADADOS E CONFIGURAÇÕES BÁSICAS ===== -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lemur EchoMe P2P Receiver</title>
 
-  <!-- ===== IMPORTAÇÃO DE ESTILOS ===== -->
   <link rel="stylesheet" href="mobile-style.css" />
-
-  <!-- ===== IMPORTAÇÃO DE BIBLIOTECAS EXTERNAS ===== -->
   <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
-  
-  <!-- 🔧 SOCKET.IO DO CDN OFICIAL -->
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
-  <!-- ===== ESTILOS INLINE ADICIONAIS ===== -->
   <style>
     .info-overlay.hidden {
       opacity: 0 !important;
@@ -59,7 +48,6 @@
     .whatsapp { background: #25d366; }
     .telegram { background: #0088cc; }
 
-    /* 🔥 ESTILO DE FALLBACK PARA TELA BRANCA */
     .fallback-message {
       display: none;
       position: fixed;
@@ -78,46 +66,21 @@
 
 <body>
 
-  <!-- 🔥 MENSAGEM DE FALLBACK -->
   <div id="fallbackMessage" class="fallback-message">
     <h3>Carregando Aplicação...</h3>
     <p>Se esta mensagem persistir, verifique o console (F12)</p>
   </div>
 
-  <!-- ============================================= -->
-  <!-- CONTAINER PRINCIPAL DA APLICAÇÃO -->
-  <!-- ============================================= -->
-
-  <!-- 🧩 Container principal -->
   <div class="box-principal">
 
-    <!-- ============================================= -->
-    <!-- ELEMENTOS DE MARCA E IDENTIDADE VISUAL -->
-    <!-- ============================================= -->
-
-    <!-- 🐵 Logo Lemur -->
     <img src="assets/images/lemurBlu.png" alt="Lemur Logo" class="logo" />
-
-    <!-- 🌉 Imagem ponte -->
     <img src="assets/images/Bridg.png" alt="ponte" class="ponte" />
-
-    <!-- 👆 Imagem de clique -->
     <img id="click" src="assets/images/click.png" alt="Click" />
     
-    <!-- ============================================= -->
-    <!-- SISTEMA DE LOADING E INDICADORES -->
-    <!-- ============================================= -->
-
-    <!-- ⏳ Loader de carregamento -->
     <div id="mobileLoading" class="mobile-loader">
       <div class="loader-circle"></div>
     </div>
 
-    <!-- ============================================= -->
-    <!-- COMPONENTE DE INSTRUÇÕES INTERATIVAS -->
-    <!-- ============================================= -->
-
-    <!-- 📋 Instruction box with toggle -->
     <div class="instruction-box expandido" id="instructionBox">
       <button class="instruction-toggle" id="instructionToggle"></button>
       <div class="instruction-content">
@@ -125,10 +88,10 @@
           <img src="assets/images/hello.png" alt="Hello icon" />
           <span id="welcome-text">Welcome! Let's begin.</span>
         </div>
-         <div class="instruction-item">
-      <img src="assets/images/realtime.png" alt="Realtime icon" />
-      <span id="translator-label-2">Real-time translation.</span>
-    </div>
+        <div class="instruction-item">
+          <img src="assets/images/realtime.png" alt="Realtime icon" />
+          <span id="translator-label-2">Real-time translation.</span>
+        </div>
         <div class="instruction-item">
           <img src="assets/images/QRcode.png" alt="QR icon" />
           <span id="tap-qr">Tap the QR code to start.</span>
@@ -145,7 +108,7 @@
           <img src="assets/images/juntos.png" alt="Connected icon" />
           <span id="both-connected">Both online.</span>
         </div>
-         <div class="instruction-item">
+        <div class="instruction-item">
           <img src="assets/images/trduz.png" alt="Message icon" />
           <span id="check-replies">Read the message.</span>
         </div>
@@ -160,70 +123,37 @@
       </div>
     </div>
 
-    <!-- ============================================= -->
-    <!-- BOTÕES DE CONTROLE PRINCIPAIS -->
-    <!-- ============================================= -->
-
-    <!-- 🔑 Botão para gerar QR Code -->
     <button id="logo-traduz" class="botao-key">
       <img src="assets/images/key.png" alt="Gerar QR Code" />
     </button>
 
-    <!-- 🔄 Botão para alternar câmera -->
     <button id="toggleCamera" class="camera-toggle-btn">
       <img src="assets/images/girar-camera.png" alt="Alternar Câmera" />
     </button>
 
-    <!-- ============================================= -->
-    <!-- ELEMENTOS DE TEXTO E LABELS -->
-    <!-- ============================================= -->
-
-    <!-- 🏷️ Subtítulo de tradução -->
     <div class="translator-label" id="translator-label">
       Real-time translation.
     </div>
 
-    <!-- ============================================= -->
-    <!-- INDICADORES DE IDIOMA E BANDEIRAS -->
-    <!-- ============================================= -->
-
-    <!-- 🏳️ Idiomas -->
     <div class="remoter-Lang">🏳️</div>
     <div class="local-Lang">🏳️</div>
     <div class="local-mic-Lang">🏳️</div>
 
-    <!-- ============================================= -->
-    <!-- SISTEMA DE VÍDEO E STREAMING -->
-    <!-- ============================================= -->
-
-    <!-- 🎥 Container de vídeo remoto -->
     <div class="video-wrapper">
-      <!-- Vídeo do usuário remoto -->
       <video id="remoteVideo" autoplay playsinline></video>
-
-      <!-- 📺 Vídeo local em Picture-in-Picture -->
       <div class="pip-local-wrapper">
         <video id="localVideo" autoplay muted playsinline></video>
       </div>
     </div>
    
-    <!-- ============================================= -->
-    <!-- OVERLAY DE QR CODE (INICIALMENTE OCULTO) -->
-    <!-- ============================================= -->
-
-    <!-- 🧾 Overlay com QR Code E BOTÃO COPIAR -->
     <div class="info-overlay hidden" id="qrOverlay">
       <h2 id="qr-modal-title">This is your online key</h2>
-
       <div class="qrcode-container">
         <div id="qrcode"></div>
       </div>
-
       <p class="qr-modal-description" id="qr-modal-description">
         You can ask to scan, share or print on your business card.
       </p>
-
-      <!-- 🆕 BOTÕES DE COMPARTILHAMENTO -->
       <div class="social-buttons">
         <button class="social-btn facebook" onclick="compartilharSocial('facebook')">f</button>
         <button class="social-btn twitter" onclick="compartilharSocial('twitter')">t</button>
@@ -231,39 +161,17 @@
         <button class="social-btn whatsapp" onclick="compartilharSocial('whatsapp')">w</button>
         <button class="social-btn telegram" onclick="compartilharSocial('telegram')">tg</button>
       </div>
-
-      <!-- 🆕 BOTÃO COPIAR SIMPLES E UNIVERSAL -->
       <button id="copiarLink" class="btn-copiar-simples">🔗</button>
     </div>
 
-    <!-- ============================================= -->
-    <!-- ÁREA DE EXIBIÇÃO DE TEXTO TRADUZIDO -->
-    <!-- ============================================= -->
-
-    <!-- 🎙️ Texto traduzido por voz -->
     <div id="texto-recebido"></div>
 
-    <!-- ============================================= -->
-    <!-- INDICADORES DE IDIOMA ATUAL -->
-    <!-- ============================================= -->
-
-    <!-- 🏳️ Bandeira do idioma atual -->
     <div class="language-flag" id="currentLanguageFlag">🇧🇷</div>
 
-    <!-- ============================================= -->
-    <!-- BOTÕES DE CONTROLE DE ÁUDIO -->
-    <!-- ============================================= -->
-
-    <!-- 🎤 Botão de gravação -->
     <button class="record-btn" id="recordButton" disabled>🎤</button>
 
-  </div> <!-- 🎯 FIM do .box-principal -->
+  </div>
 
-  <!-- ============================================= -->
-  <!-- MODAL DE GRAVAÇÃO (FORA DO CONTAINER PRINCIPAL) -->
-  <!-- ============================================= -->
-
-  <!-- 🎛️ Modal de gravação -->
   <div class="recording-modal hidden-until-ready" id="recordingModal">
     <div class="recording-indicator">
       <div class="recording-dot"></div>
@@ -273,74 +181,72 @@
     <button class="send-button" id="sendButton">📤</button>
   </div>
 
-  <!-- ============================================= -->
-  <!-- SCRIPTS DE INICIALIZAÇÃO E CONFIGURAÇÃO -->
-  <!-- ============================================= -->
-
   <script>
-    // ===== VERIFICAÇÃO DE DEPENDÊNCIAS MELHORADA =====
-    window.depsReady = new Promise((resolve, reject) => {
-      let attempts = 0;
-      const maxAttempts = 50; // 5 segundos
+    // ===== VERIFICAÇÃO DE DEPENDÊNCIAS CORRIGIDA =====
+    window.depsReady = new Promise(function(resolve, reject) {
+      var attempts = 0;
+      var maxAttempts = 50;
 
       function checkDeps() {
         attempts++;
         
-        // Verificar se Socket.IO está carregado
         if (typeof io !== 'undefined') {
           console.log('✅ Socket.IO carregado com sucesso');
-          document.getElementById('fallbackMessage')?.style.display = 'none';
+          var fallback = document.getElementById('fallbackMessage');
+          if (fallback) fallback.style.display = 'none';
           resolve();
           return;
         }
 
         if (attempts >= maxAttempts) {
           console.error('❌ Timeout: Socket.IO não carregado');
-          document.getElementById('fallbackMessage')?.style.display = 'block';
+          var fallback = document.getElementById('fallbackMessage');
+          if (fallback) fallback.style.display = 'block';
           reject(new Error('Socket.IO não carregado após 5 segundos'));
           return;
         }
 
-        console.log(`⏳ Aguardando Socket.IO... (tentativa ${attempts}/${maxAttempts})`);
+        console.log('⏳ Aguardando Socket.IO... (' + attempts + '/' + maxAttempts + ')');
         setTimeout(checkDeps, 100);
       }
       
       checkDeps();
     });
 
-    // ===== FUNÇÕES GLOBAIS DE CONTROLE DE INTERFACE =====
+    // ===== FUNÇÕES GLOBAIS =====
     window.liberarInterface = function () {
       console.log('✅ Interface já está visível');
-      document.getElementById('fallbackMessage')?.style.display = 'none';
+      var fallback = document.getElementById('fallbackMessage');
+      if (fallback) fallback.style.display = 'none';
     };
 
     window.mostrarErroCarregamento = function (mensagem) {
       console.error('Erro de carregamento:', mensagem);
-      const fallback = document.getElementById('fallbackMessage');
+      var fallback = document.getElementById('fallbackMessage');
       if (fallback) {
-        fallback.innerHTML = `<h3>Erro de Carregamento</h3><p>${mensagem}</p>`;
+        fallback.innerHTML = '<h3>Erro de Carregamento</h3><p>' + mensagem + '</p>';
         fallback.style.display = 'block';
       }
     };
 
-    // 🆕 FUNÇÃO PARA COMPARTILHAR NAS REDES SOCIAIS
+    // FUNÇÃO PARA COMPARTILHAR NAS REDES SOCIAIS
     function compartilharSocial(rede) {
-      const myId = window.qrCodeData?.myId || '';
-      const token = window.qrCodeData?.token || '';
-      const lang = window.qrCodeData?.lang || 'pt-BR';
+      var myId = window.qrCodeData && window.qrCodeData.myId ? window.qrCodeData.myId : '';
+      var token = window.qrCodeData && window.qrCodeData.token ? window.qrCodeData.token : '';
+      var lang = window.qrCodeData && window.qrCodeData.lang ? window.qrCodeData.lang : 'pt-BR';
       
-      const callerUrl = `${window.location.origin}/caller.html?targetId=${myId}&token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
+      var callerUrl = window.location.origin + '/caller.html?targetId=' + myId + '&token=' + encodeURIComponent(token) + '&lang=' + encodeURIComponent(lang);
       
-      const texto = "Conecte-se comigo via tradução em tempo real!";
-      const urlEncoded = encodeURIComponent(callerUrl);
-      const textoEncoded = encodeURIComponent(texto);
+      var texto = "Conecte-se comigo via tradução em tempo real!";
+      var urlEncoded = encodeURIComponent(callerUrl);
+      var textoEncoded = encodeURIComponent(texto);
       
-      const urls = {
-        facebook: `https://www.facebook.com/sharer/sharer.php?u=${urlEncoded}`,
-        twitter: `https://twitter.com/intent/tweet?url=${urlEncoded}&text=${textoEncoded}`,
-        linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${urlEncoded}`,
-        whatsapp: `https://api.whatsapp.com/send?text=${textoEncoded}%20${urlEncoded}`,
-        telegram: `https://t.me/share/url?url=${urlEncoded}&text=${textoEncoded}`
+      var urls = {
+        facebook: 'https://www.facebook.com/sharer/sharer.php?u=' + urlEncoded,
+        twitter: 'https://twitter.com/intent/tweet?url=' + urlEncoded + '&text=' + textoEncoded,
+        linkedin: 'https://www.linkedin.com/sharing/share-offsite/?url=' + urlEncoded,
+        whatsapp: 'https://api.whatsapp.com/send?text=' + textoEncoded + '%20' + urlEncoded,
+        telegram: 'https://t.me/share/url?url=' + urlEncoded + '&text=' + textoEncoded
       };
       
       if (urls[rede]) {
@@ -348,69 +254,93 @@
       }
     }
 
-    // 🆕 FUNÇÃO PARA COPIAR LINK
+    // FUNÇÃO PARA COPIAR LINK
     window.copiarLink = function() {
-      const myId = window.qrCodeData?.myId || '';
-      const token = window.qrCodeData?.token || '';
-      const lang = window.qrCodeData?.lang || 'pt-BR';
+      var myId = window.qrCodeData && window.qrCodeData.myId ? window.qrCodeData.myId : '';
+      var token = window.qrCodeData && window.qrCodeData.token ? window.qrCodeData.token : '';
+      var lang = window.qrCodeData && window.qrCodeData.lang ? window.qrCodeData.lang : 'pt-BR';
       
-      const callerUrl = `${window.location.origin}/caller.html?targetId=${myId}&token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
+      var callerUrl = window.location.origin + '/caller.html?targetId=' + myId + '&token=' + encodeURIComponent(token) + '&lang=' + encodeURIComponent(lang);
       
-      navigator.clipboard.writeText(callerUrl).then(() => {
-        alert('Link copiado para a área de transferência!');
-      }).catch(err => {
-        console.error('Erro ao copiar:', err);
-        // Fallback para dispositivos móveis
-        const textArea = document.createElement('textarea');
-        textArea.value = callerUrl;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-        alert('Link copiado!');
-      });
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(callerUrl).then(function() {
+          alert('Link copiado para a área de transferência!');
+        }).catch(function(err) {
+          console.error('Erro ao copiar:', err);
+          copiarFallback(callerUrl);
+        });
+      } else {
+        copiarFallback(callerUrl);
+      }
     };
 
-    // 🆕 CONFIGURAR BOTÃO COPIAR QUANDO O DOCUMENTO CARREGAR
+    function copiarFallback(callerUrl) {
+      var textArea = document.createElement('textarea');
+      textArea.value = callerUrl;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      alert('Link copiado!');
+    }
+
+    // CONFIGURAR BOTÃO COPIAR
     document.addEventListener('DOMContentLoaded', function() {
-      const copiarBtn = document.getElementById('copiarLink');
+      var copiarBtn = document.getElementById('copiarLink');
       if (copiarBtn) {
         copiarBtn.addEventListener('click', window.copiarLink);
       }
     });
   </script>
 
-  <!-- ============================================= -->
-  <!-- IMPORTAÇÃO DOS SCRIPTS DA APLICAÇÃO -->
-  <!-- ============================================= -->
-
-  <!-- 📦 Scripts do receptor - AGUARDAM DEPENDÊNCIAS -->
   <script>
-    window.depsReady.then(() => {
-      console.log('🚀 Iniciando carregamento dos scripts da aplicação...');
-      
-      // Carregar scripts após dependências estarem prontas
-      const scripts = [
+    // CARREGAMENTO DOS SCRIPTS CORRIGIDO
+    if (window.depsReady) {
+      window.depsReady.then(function() {
+        console.log('🚀 Iniciando carregamento dos scripts da aplicação...');
+        
+        var scripts = [
+          './js/receiver/receiver-ui.js',
+          './js/receiver/receiver-trz.js'
+        ];
+        
+        scripts.forEach(function(src) {
+          var script = document.createElement('script');
+          script.src = src;
+          if (src.includes('receiver-ui.js')) {
+            script.type = 'module';
+          }
+          script.onerror = function() {
+            console.error('❌ Erro ao carregar script:', src);
+            if (window.mostrarErroCarregamento) {
+              window.mostrarErroCarregamento('Falha ao carregar: ' + src);
+            }
+          };
+          document.body.appendChild(script);
+        });
+      }).catch(function(error) {
+        console.error('❌ Erro ao carregar dependências:', error);
+        if (window.mostrarErroCarregamento) {
+          window.mostrarErroCarregamento('Falha ao carregar dependências necessárias');
+        }
+      });
+    } else {
+      console.error('❌ window.depsReady não está definido');
+      // Fallback: carregar scripts mesmo sem depsReady
+      var fallbackScripts = [
         './js/receiver/receiver-ui.js',
         './js/receiver/receiver-trz.js'
       ];
       
-      scripts.forEach(src => {
-        const script = document.createElement('script');
+      fallbackScripts.forEach(function(src) {
+        var script = document.createElement('script');
         script.src = src;
         if (src.includes('receiver-ui.js')) {
           script.type = 'module';
         }
-        script.onerror = function() {
-          console.error('❌ Erro ao carregar script:', src);
-          window.mostrarErroCarregamento(`Falha ao carregar: ${src}`);
-        };
         document.body.appendChild(script);
       });
-    }).catch(error => {
-      console.error('❌ Erro ao carregar dependências:', error);
-      window.mostrarErroCarregamento('Falha ao carregar dependências necessárias');
-    });
+    }
   </script>
 
 </body>
