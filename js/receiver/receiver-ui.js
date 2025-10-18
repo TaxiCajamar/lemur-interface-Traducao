@@ -721,10 +721,10 @@ async function iniciarCameraAposPermissoes() {
         const myId = crypto.randomUUID().substr(0, 8);
 
         const params = new URLSearchParams(window.location.search);
-        const token = params.get('token') || '';
-        const lang = params.get('lang') || navigator.language || 'pt-BR';
+const token = params.get('token') || '';
+const lang = params.get('lang') || navigator.language || 'pt-BR';
 
-        window.targetTranslationLang = lang;
+const myId = fakeRandomUUID(fixedId).substr(0, 8);
 
         // ✅ GUARDA INFORMAÇÕES PARA QR CODE
         window.qrCodeData = {
