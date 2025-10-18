@@ -33,7 +33,6 @@ function setupInstructionToggle() {
     });
 }
 
-// Inicializa o toggle quando a página carregar
 document.addEventListener('DOMContentLoaded', function() {
     setupInstructionToggle();
 });
@@ -659,7 +658,7 @@ async function falarTextoSistemaHibrido(mensagem, elemento, imagemImpaciente, id
     }
 }
 
-// ✅ CORREÇÃO CRÍTICA: INICIALIZAÇÃO DO WEBRTC CORRIGIDA
+// ✅✅✅ CORREÇÃO CRÍTICA: INICIALIZAÇÃO DO WEBRTC CORRIGIDA (SEM DUPLICAÇÃO DE myId)
 async function iniciarCameraAposPermissoes() {
     try {
         console.log('🎥 Tentando iniciar câmera (modo resiliente)...');
@@ -687,7 +686,6 @@ async function iniciarCameraAposPermissoes() {
             
             console.log('✅ Câmera iniciada com sucesso');
             
-            // 🆕 INICIALIZA VIGILANTE DE CÂMERA
             if (typeof CameraVigilante !== 'undefined') {
                 window.cameraVigilante = new CameraVigilante();
                 window.cameraVigilante.iniciarMonitoramento();
@@ -697,13 +695,11 @@ async function iniciarCameraAposPermissoes() {
             window.localStream = null;
         }
 
-        // ✅ REMOVE LOADING
         const mobileLoading = document.getElementById('mobileLoading');
         if (mobileLoading) {
             mobileLoading.style.display = 'none';
         }
 
-        // ✅ MOSTRA BOTÃO CLICK
         setTimeout(() => {
             const elementoClick = document.getElementById('click');
             if (elementoClick) {
@@ -713,35 +709,29 @@ async function iniciarCameraAposPermissoes() {
             }
         }, 500);
         
-        // ✅✅✅ CORREÇÃO CRÍTICA: INICIALIZA WEBRTC APENAS UMA VEZ
         console.log('🌐 Inicializando WebRTC Core...');
         window.rtcCore = new WebRTCCore();
 
-        // ✅ GERA ID ÚNICO PARA ESTA SESSÃO
-        const myId = crypto.randomUUID().substr(0, 8);
+        // ✅✅✅ CORREÇÃO CRÍTICA: APENAS UMA DECLARAÇÃO DE myId
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get('token') || '';
+        const last8 = params.get('last8') || '';
+        const lang = params.get('lang') || navigator.language || 'pt-BR';
 
-        // ✅✅✅ CORREÇÃO: RECEIVER USA TOKEN + LAST8 + LANG (3 INFORMAÇÕES)
-const params = new URLSearchParams(window.location.search);
-const token = params.get('token') || '';
-const last8 = params.get('last8') || ''; // ✅ NOVO PARÂMETRO
-const lang = params.get('lang') || navigator.language || 'pt-BR';
+        // ✅ USA O LAST8 COMO ID FIXO (JÁ VEM PRONTO DO DART)
+        const myId = last8 || (token.length >= 8 ? token.substring(token.length - 8) : '00000000');
 
-// ✅ USA O LAST8 COMO ID FIXO (JÁ VEM PRONTO DO DART)
-const myId = last8 || (token.length >= 8 ? token.substring(token.length - 8) : '00000000');
+        console.log('🆔 ID FIXO do Receiver:', myId);
+        console.log('🔢 Last8 recebido:', last8);
+        console.log('🔑 Token:', token.substring(0, 20) + '...');
+        console.log('🌐 Idioma:', lang);
 
-console.log('🆔 ID FIXO do Receiver:', myId);
-console.log('🔢 Last8 recebido:', last8);
-console.log('🔑 Token:', token.substring(0, 20) + '...');
-console.log('🌐 Idioma:', lang);
-
-        // ✅ GUARDA INFORMAÇÕES PARA QR CODE
         window.qrCodeData = {
             myId: myId,
             token: token,
             lang: lang
         };
 
-        // ✅ CONFIGURA BOTÃO QR CODE
         document.getElementById('logo-traduz').addEventListener('click', function() {
             const overlay = document.querySelector('.info-overlay');
             const qrcodeContainer = document.getElementById('qrcode');
@@ -806,7 +796,6 @@ console.log('🌐 Idioma:', lang);
             console.log('✅ QR Code e Link gerados/reativados!');
         });
 
-        // ✅ FECHAR QR CODE AO CLICAR FORA
         document.querySelector('.info-overlay').addEventListener('click', function(e) {
             if (e.target === this) {
                 this.classList.add('hidden');
@@ -814,15 +803,12 @@ console.log('🌐 Idioma:', lang);
             }
         });
 
-        // ✅✅✅ CORREÇÃO CRÍTICA: INICIALIZA WEBRTC APENAS DEPOIS DE TUDO CONFIGURADO
         console.log('🔌 Inicializando WebRTC com ID:', myId);
         window.rtcCore.initialize(myId);
         
-        // ✅✅✅ CORREÇÃO: CONFIGURA HANDLERS ANTES DE QUALQUER COMUNICAÇÃO
         console.log('🔧 Configurando handlers do WebRTC...');
         window.rtcCore.setupSocketHandlers();
 
-        // ✅✅✅ CORREÇÃO: CONFIGURA CALLBACKS DE ENTRADA ANTES DE RECEBER CHAMADAS
         window.rtcCore.setIncomingCallCallback((offer, idiomaDoCaller) => {
             console.log('📞 Chamada recebida - Com/Sem câmera');
 
@@ -833,7 +819,6 @@ console.log('🌐 Idioma:', lang);
 
             console.log('🎯 Vou traduzir:', idiomaDoCaller, '→', lang);
 
-            // ✅✅✅ CORREÇÃO: PASSA O STREAM CORRETO (PODE SER NULL SE SEM CÂMERA)
             window.rtcCore.handleIncomingCall(offer, window.localStream, (remoteStream) => {
                 if (remoteStream) {
                     remoteStream.getAudioTracks().forEach(track => track.enabled = false);
@@ -866,7 +851,6 @@ console.log('🌐 Idioma:', lang);
             });
         });
 
-        // ✅✅✅ CORREÇÃO: CONFIGURA DATA CHANNEL CALLBACK
         window.rtcCore.setDataChannelCallback(async (mensagem) => {
             iniciarSomDigitacao();
 
@@ -896,7 +880,6 @@ console.log('🌐 Idioma:', lang);
             await falarTextoSistemaHibrido(mensagem, elemento, imagemImpaciente, idiomaExato);
         });
 
-        // ✅ TRADUZ FRASES RESTANTES
         const frasesParaTraduzir = {
             "translator-label": "Real-time translation.",
             "qr-modal-title": "This is your online key",
@@ -914,8 +897,6 @@ console.log('🌐 Idioma:', lang);
         })();
 
         aplicarBandeiraLocal(lang);
-
-        // ✅ INICIA OBSERVADOR PARA ESCONDER CLICK
         esconderClickQuandoConectar();
 
         console.log('✅✅✅ WebRTC Receiver completamente inicializado e pronto!');
