@@ -62,7 +62,195 @@
 </head>
 
 <body>
-  <!-- ... (resto do seu HTML permanece igual) ... -->
+
+  <!-- ============================================= -->
+  <!-- CONTAINER PRINCIPAL DA APLICAÇÃO -->
+  <!-- ============================================= -->
+
+  <!-- 🧩 Container principal -->
+  <div class="box-principal">
+
+    <!-- ============================================= -->
+    <!-- ELEMENTOS DE MARCA E IDENTIDADE VISUAL -->
+    <!-- ============================================= -->
+
+    <!-- 🐵 Logo Lemur -->
+    <img src="assets/images/lemurBlu.png" alt="Lemur Logo" class="logo" />
+
+    <!-- 🌉 Imagem ponte -->
+    <img src="assets/images/Bridg.png" alt="ponte" class="ponte" />
+
+    <!-- 👆 Imagem de clique -->
+    <img id="click" src="assets/images/click.png" alt="Click" />
+    
+    <!-- ============================================= -->
+    <!-- SISTEMA DE LOADING E INDICADORES -->
+    <!-- ============================================= -->
+
+    <!-- ⏳ Loader de carregamento -->
+    <div id="mobileLoading" class="mobile-loader">
+      <div class="loader-circle"></div>
+    </div>
+
+    <!-- ============================================= -->
+    <!-- COMPONENTE DE INSTRUÇÕES INTERATIVAS -->
+    <!-- ============================================= -->
+
+    <!-- 📋 Instruction box with toggle -->
+    <div class="instruction-box expandido" id="instructionBox">
+      <button class="instruction-toggle" id="instructionToggle"></button>
+      <div class="instruction-content">
+        <div class="instruction-item">
+          <img src="assets/images/hello.png" alt="Hello icon" />
+          <span id="welcome-text">Welcome! Let's begin.</span>
+        </div>
+         <div class="instruction-item">
+      <img src="assets/images/realtime.png" alt="Realtime icon" />
+      <span id="translator-label-2">Real-time translation.</span>
+    </div>
+        <div class="instruction-item">
+          <img src="assets/images/QRcode.png" alt="QR icon" />
+          <span id="tap-qr">Tap the QR code to start.</span>
+        </div>
+        <div class="instruction-item">
+          <img src="assets/images/mobil.png" alt="Mobile icon" />
+          <span id="quick-scan">Ask to scan the QR.</span>
+        </div>
+        <div class="instruction-item">
+          <img src="assets/images/Ancioso.png" alt="Loading icon" />
+          <span id="wait-connection">Waiting for connection.</span>
+        </div>
+        <div class="instruction-item">
+          <img src="assets/images/juntos.png" alt="Connected icon" />
+          <span id="both-connected">Both online.</span>
+        </div>
+         <div class="instruction-item">
+          <img src="assets/images/trduz.png" alt="Message icon" />
+          <span id="check-replies">Read the message.</span>
+        </div>
+        <div class="instruction-item">
+          <img src="assets/images/mic.png" alt="Mic icon" />
+          <span id="drop-voice">Speak clearly.</span>
+        </div>
+        <div class="instruction-item">
+          <img src="assets/images/cam.png" alt="Camera icon" />
+          <span id="flip-cam">Flip the camera. Share!</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================= -->
+    <!-- BOTÕES DE CONTROLE PRINCIPAIS -->
+    <!-- ============================================= -->
+
+    <!-- 🔑 Botão para gerar QR Code -->
+    <button id="logo-traduz" class="botao-key">
+      <img src="assets/images/key.png" alt="Gerar QR Code" />
+    </button>
+
+    <!-- 🔄 Botão para alternar câmera -->
+    <button id="toggleCamera" class="camera-toggle-btn">
+      <img src="assets/images/girar-camera.png" alt="Alternar Câmera" />
+    </button>
+
+    <!-- ============================================= -->
+    <!-- ELEMENTOS DE TEXTO E LABELS -->
+    <!-- ============================================= -->
+
+    <!-- 🏷️ Subtítulo de tradução -->
+    <div class="translator-label" id="translator-label">
+      Real-time translation.
+    </div>
+
+    <!-- ============================================= -->
+    <!-- INDICADORES DE IDIOMA E BANDEIRAS -->
+    <!-- ============================================= -->
+
+    <!-- 🏳️ Idiomas -->
+    <div class="remoter-Lang">🏳️</div>
+    <div class="local-Lang">🏳️</div>
+    <div class="local-mic-Lang">🏳️</div>
+
+    <!-- ============================================= -->
+    <!-- SISTEMA DE VÍDEO E STREAMING -->
+    <!-- ============================================= -->
+
+    <!-- 🎥 Container de vídeo remoto -->
+    <div class="video-wrapper">
+      <!-- Vídeo do usuário remoto -->
+      <video id="remoteVideo" autoplay playsinline></video>
+
+      <!-- 📺 Vídeo local em Picture-in-Picture -->
+      <div class="pip-local-wrapper">
+        <video id="localVideo" autoplay muted playsinline></video>
+      </div>
+    </div>
+   
+    <!-- ============================================= -->
+    <!-- OVERLAY DE QR CODE (INICIALMENTE OCULTO) -->
+    <!-- ============================================= -->
+
+    <!-- 🧾 Overlay com QR Code E BOTÃO COPIAR -->
+    <div class="info-overlay hidden" id="qrOverlay">
+      <h2 id="qr-modal-title">This is your online key</h2>
+
+      <div class="qrcode-container">
+        <div id="qrcode"></div>
+      </div>
+
+      <p class="qr-modal-description" id="qr-modal-description">
+        You can ask to scan, share or print on your business card.
+      </p>
+
+      <!-- 🆕 BOTÕES DE COMPARTILHAMENTO -->
+      <div class="social-buttons">
+        <button class="social-btn facebook" onclick="compartilharSocial('facebook')">f</button>
+        <button class="social-btn twitter" onclick="compartilharSocial('twitter')">t</button>
+        <button class="social-btn linkedin" onclick="compartilharSocial('linkedin')">in</button>
+        <button class="social-btn whatsapp" onclick="compartilharSocial('whatsapp')">w</button>
+        <button class="social-btn telegram" onclick="compartilharSocial('telegram')">tg</button>
+      </div>
+
+      <!-- 🆕 BOTÃO COPIAR SIMPLES E UNIVERSAL -->
+      <button id="copiarLink" class="btn-copiar-simples">🔗</button>
+    </div>
+
+    <!-- ============================================= -->
+    <!-- ÁREA DE EXIBIÇÃO DE TEXTO TRADUZIDO -->
+    <!-- ============================================= -->
+
+    <!-- 🎙️ Texto traduzido por voz -->
+    <div id="texto-recebido"></div>
+
+    <!-- ============================================= -->
+    <!-- INDICADORES DE IDIOMA ATUAL -->
+    <!-- ============================================= -->
+
+    <!-- 🏳️ Bandeira do idioma atual -->
+    <div class="language-flag" id="currentLanguageFlag">🇧🇷</div>
+
+    <!-- ============================================= -->
+    <!-- BOTÕES DE CONTROLE DE ÁUDIO -->
+    <!-- ============================================= -->
+
+    <!-- 🎤 Botão de gravação -->
+    <button class="record-btn" id="recordButton" disabled>🎤</button>
+
+  </div> <!-- 🎯 FIM do .box-principal -->
+
+  <!-- ============================================= -->
+  <!-- MODAL DE GRAVAÇÃO (FORA DO CONTAINER PRINCIPAL) -->
+  <!-- ============================================= -->
+
+  <!-- 🎛️ Modal de gravação -->
+  <div class="recording-modal hidden-until-ready" id="recordingModal">
+    <div class="recording-indicator">
+      <div class="recording-dot"></div>
+      <div class="recording-text">●</div>
+      <div class="recording-timer" id="recordingTimer">0:00</div>
+    </div>
+    <button class="send-button" id="sendButton">📤</button>
+  </div>
 
   <!-- ============================================= -->
   <!-- SCRIPTS DE INICIALIZAÇÃO E CONFIGURAÇÃO -->
@@ -142,6 +330,14 @@
         alert('Link copiado!');
       });
     };
+
+    // 🆕 CONFIGURAR BOTÃO COPIAR QUANDO O DOCUMENTO CARREGAR
+    document.addEventListener('DOMContentLoaded', function() {
+      const copiarBtn = document.getElementById('copiarLink');
+      if (copiarBtn) {
+        copiarBtn.addEventListener('click', window.copiarLink);
+      }
+    });
   </script>
 
   <!-- ============================================= -->
@@ -151,6 +347,8 @@
   <!-- 📦 Scripts do receptor - AGUARDAM DEPENDÊNCIAS -->
   <script>
     window.depsReady.then(() => {
+      console.log('🚀 Iniciando carregamento dos scripts da aplicação...');
+      
       // Carregar scripts após dependências estarem prontas
       const scripts = [
         './js/receiver/receiver-ui.js',
@@ -163,6 +361,9 @@
         if (src.includes('receiver-ui.js')) {
           script.type = 'module';
         }
+        script.onerror = function() {
+          console.error('❌ Erro ao carregar script:', src);
+        };
         document.body.appendChild(script);
       });
     }).catch(error => {
