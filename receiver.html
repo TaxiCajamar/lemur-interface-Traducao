@@ -51,7 +51,7 @@
     /* 🆕 ESTILOS PARA LINKS FIXOS DE REDES SOCIAIS */
     .social-links-fixed {
       position: absolute;
-      top: 22%; /* Logo abaixo do subtítulo de 15% */
+      top: 22%;
       left: 50%;
       transform: translateX(-50%);
       display: flex;
@@ -82,6 +82,9 @@
     .social-btn-fixed:hover {
       transform: scale(1.1);
     }
+
+    .instagram { background: #E4405F; }
+    .website { background: #4CAF50; }
   </style>
 </head>
 
@@ -262,35 +265,62 @@
   </div>
 
   <!-- ============================================= -->
-  <!-- IMPORTAÇÃO DE BIBLIOTECAS EXTERNAS -->
+  <!-- SCRIPTS CORRIGIDOS - ORDEM CORRETA -->
   <!-- ============================================= -->
 
-  <script src="https://lemur-signal-ings.onrender.com/socket.io/socket.io.js"></script>
-
-  <!-- ============================================= -->
-  <!-- SCRIPTS DE INICIALIZAÇÃO E CONFIGURAÇÃO -->
-  <!-- ============================================= -->
+  <!-- ✅ 1. Socket.IO PRIMEIRO -->
+  <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
 
   <script>
-    // ===== FUNÇÕES GLOBAIS DE CONTROLE DE INTERFACE =====
-    
+    // ===== CONFIGURAÇÃO GLOBAL =====
+    window.SIGNALING_SERVER_URL = 'https://lemur-signal.onrender.com';
+    window.APP_CONFIG = {
+      debug: true,
+      autoReconnect: true,
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' }
+      ]
+    };
+
+    // ===== VERIFICAÇÃO DE DEPENDÊNCIAS =====
+    function verificarDependencias() {
+      const dependencias = {
+        'Socket.IO': typeof io !== 'undefined',
+        'QRCode.js': typeof QRCode !== 'undefined'
+      };
+      
+      console.log('🔍 Verificando dependências:', dependencias);
+      
+      if (!dependencias['Socket.IO']) {
+        console.error('❌ Socket.IO não carregado. Recarregando página...');
+        setTimeout(() => location.reload(), 2000);
+        return false;
+      }
+      
+      console.log('✅ Todas as dependências carregadas');
+      return true;
+    }
+
+    // ===== FUNÇÕES GLOBAIS =====
     window.liberarInterface = function () {
-      console.log('✅ Interface já está visível');
+      console.log('✅ Interface liberada');
+      document.getElementById('mobileLoading')?.classList.add('hidden');
     };
 
     window.mostrarErroCarregamento = function (mensagem) {
+      console.error('❌ Erro de carregamento:', mensagem);
       alert('Erro: ' + mensagem);
     };
 
-    document.addEventListener('DOMContentLoaded', function () {
-      const overlay = document.querySelector('.info-overlay');
-      if (overlay) {
-        overlay.classList.add('hidden');
-      }
-    });
-
-    // 🆕 FUNÇÃO PARA COMPARTILHAR NAS REDES SOCIAIS (QR CODE)
+    // 🆕 FUNÇÃO PARA COMPARTILHAR NAS REDES SOCIAIS
     function compartilharSocial(rede) {
+      if (!window.qrCodeData) {
+        console.error('❌ QR Code não gerado ainda');
+        alert('Gere o QR Code primeiro!');
+        return;
+      }
+      
       const myId = window.qrCodeData?.myId || '';
       const token = window.qrCodeData?.token || '';
       const lang = window.qrCodeData?.lang || 'pt-BR';
@@ -309,14 +339,30 @@
         telegram: `https://t.me/share/url?url=${urlEncoded}&text=${textoEncoded}`
       };
       
-      window.open(urls[rede], '_blank', 'width=600,height=400');
+      if (urls[rede]) {
+        window.open(urls[rede], '_blank', 'width=600,height=400');
+      }
     }
+
+    // ===== INICIALIZAÇÃO SEGURA =====
+    document.addEventListener('DOMContentLoaded', function () {
+      console.log('🚀 DOM Carregado - Iniciando verificação...');
+      
+      if (!verificarDependencias()) {
+        return;
+      }
+      
+      // Oculta overlay inicial
+      const overlay = document.querySelector('.info-overlay');
+      if (overlay) {
+        overlay.classList.add('hidden');
+      }
+      
+      console.log('✅ Sistema pronto para inicialização dos módulos');
+    });
   </script>
 
-  <!-- ============================================= -->
-  <!-- IMPORTAÇÃO DOS SCRIPTS DA APLICAÇÃO -->
-  <!-- ============================================= -->
-
+  <!-- ✅ 2. Módulos da aplicação DEPOIS das dependências -->
   <script type="module" src="./js/receiver/receiver-ui.js"></script>
   <script src="./js/receiver/receiver-trz.js"></script>
 
