@@ -814,13 +814,7 @@ document.getElementById('logo-traduz').addEventListener('click', function() {
     
     // 🔄 VERIFICA CONEXÃO WEBRTC DE FORMA MAIS INTELIGENTE
     const remoteVideo = document.getElementById('remoteVideo');
-    const isConnected = remoteVideo && remoteVideo.srcObject;
-    
-    if (isConnected) {
-        console.log('❌ WebRTC já conectado - QR Code não pode ser reaberto');
-        return; // ⬅️ Apenas retorna silenciosamente
-    }
-    
+       
     console.log('🗝️ Gerando/Reabrindo QR Code e Link...');
     
     // 🔄 LIMPA QR CODE ANTERIOR SE EXISTIR
