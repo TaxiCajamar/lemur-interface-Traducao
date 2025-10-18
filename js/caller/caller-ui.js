@@ -824,7 +824,7 @@ async function falarTextoSistemaHibrido(mensagem, elemento, imagemImpaciente, id
     }
 }
 
-// ✅ CORREÇÃO CRÍTICA: INICIALIZAÇÃO DO WEBRTC CALLER
+// ✅✅✅ CORREÇÃO CRÍTICA: INICIALIZAÇÃO DO WEBRTC CALLER (SEM DUPLICAÇÃO DE myId)
 async function iniciarCameraAposPermissoes() {
     try {
         console.log('🎥 Tentando iniciar câmera CALLER (modo resiliente)...');
@@ -899,8 +899,13 @@ async function iniciarCameraAposPermissoes() {
             await falarTextoSistemaHibrido(mensagem, elemento, imagemImpaciente, idiomaExato);
         });
 
-        // ✅✅✅ CORREÇÃO: GERA ID ÚNICO CORRETAMENTE
-        const myId = crypto.randomUUID().substr(0, 8);
+        // ✅✅✅ CORREÇÃO: APENAS UMA DECLARAÇÃO DE myId
+        const urlParams = new URLSearchParams(window.location.search);
+        const receiverId = urlParams.get('targetId') || '';
+        const receiverToken = urlParams.get('token') || '';
+        const receiverLang = urlParams.get('lang') || 'pt-BR';
+
+        const myId = crypto.randomUUID().substr(0, 8); // ✅ ID DINÂMICO
         document.getElementById('myId').textContent = myId;
 
         console.log('🔌 Inicializando socket handlers CALLER...');
@@ -911,15 +916,6 @@ async function iniciarCameraAposPermissoes() {
         window.rtcCore.isInitialized = true;
         console.log('✅ WebRTC CALLER inicializado com ID:', myId);
 
-        // ✅ JÁ ESTÁ CORRETO - APENAS CONFIRMAR
-const urlParams = new URLSearchParams(window.location.search);
-const receiverId = urlParams.get('targetId') || '';
-const receiverToken = urlParams.get('token') || '';
-const receiverLang = urlParams.get('lang') || 'pt-BR';
-
-const myId = crypto.randomUUID().substr(0, 8); // ✅ ID DINÂMICO
-
-        
         window.receiverInfo = {
           id: receiverId,
           token: receiverToken,
