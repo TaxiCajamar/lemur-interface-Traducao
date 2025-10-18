@@ -1,167 +1,142 @@
-<!-- ============================================= -->
-<!-- CONFIGURAÇÃO INICIAL DO DOCUMENTO HTML -->
-<!-- ============================================= -->
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <!-- ===== METADADOS E CONFIGURAÇÕES BÁSICAS ===== -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lemur-EchoMeP2P-Notificador</title>
 
-  <!-- ===== IMPORTAÇÃO DE ESTILOS ===== -->
-  
-  <!-- 🎨 Estilos principais -->
   <link rel="stylesheet" href="mobile-style.css" />
 
-  <!-- ===== ESTILOS INLINE ADICIONAIS ===== -->
-  
-  <!-- 🔒 Estilo para overlay oculto -->
   <style>
     .info-overlay.hidden {
       opacity: 0 !important;
       pointer-events: none !important;
     }
+    
+    /* 🆕 ESTILOS PARA BOTÕES DE REDES SOCIAIS FIXAS (IGUAL AO RECEIVER) */
+    .social-links-fixed {
+      position: absolute;
+      top: 22%;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin: 10px 0;
+      flex-wrap: wrap;
+      width: 80%;
+      z-index: 10;
+    }
+
+    .social-btn-fixed {
+      width: 35px;
+      height: 35px;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s;
+      text-decoration: none;
+    }
+
+    .social-btn-fixed:hover {
+      transform: scale(1.1);
+    }
+
+    .linkedin { background: #0077b5; }
+    .instagram { background: #E4405F; }
+    .facebook { background: #3b5998; }
+    .website { background: #4CAF50; }
+    .whatsapp { background: #25d366; }
   </style>
 </head>
 
 <body>
 
-  <!-- ============================================= -->
-  <!-- CONTAINER PRINCIPAL DA APLICAÇÃO -->
-  <!-- ============================================= -->
-
-  <!-- 🧩 Container principal -->
   <div class="box-principal">
 
-    <!-- ============================================= -->
-    <!-- ELEMENTOS DE MARCA E IDENTIDADE VISUAL -->
-    <!-- ============================================= -->
-
-    <!-- 🐵 Logo Lemur -->
     <img src="assets/images/lemurBlu.png" alt="Lemur Logo" class="logo" />
-
-    <!-- 🌉 Imagem ponte -->
     <img src="assets/images/Bridg.png" alt="ponte" class="ponte" />
         
-    <!-- ============================================= -->
-    <!-- SISTEMA DE LOADING E INDICADORES -->
-    <!-- ============================================= -->
-
-    <!-- ⏳ Loader de carregamento -->
     <div id="mobileLoading" class="mobile-loader">
       <div class="loader-circle"></div>
     </div>
 
-    <!-- ============================================= -->
-    <!-- COMPONENTE DE INSTRUÇÕES INTERATIVAS -->
-    <!-- ============================================= -->
+    <div class="instruction-box expandido" id="instructionBox">
+      <button class="instruction-toggle" id="instructionToggle"></button>
+      <div class="instruction-content">
+        <div class="instruction-item">
+          <img src="assets/images/hello.png" alt="Hello icon" />
+          <span id="welcome-text">Welcome! Let's begin.</span>
+        </div>
+        <div class="instruction-item">
+          <img src="assets/images/realtime.png" alt="Realtime icon" />
+          <span id="translator-label-2">Real-time translation.</span>
+        </div>
+        <div class="instruction-item">
+          <img src="assets/images/Ancioso.png" alt="Loading icon" />
+          <span id="wait-connection">Waiting for connection.</span>
+        </div>
+        <div class="instruction-item">
+          <img src="assets/images/juntos.png" alt="Connected icon" />
+          <span id="both-connected">Both online.</span>
+        </div>
+        <div class="instruction-item">
+          <img src="assets/images/trduz.png" alt="Message icon" />
+          <span id="check-replies">Read the message.</span>
+        </div>
+        <div class="instruction-item">
+          <img src="assets/images/mic.png" alt="Mic icon" />
+          <span id="drop-voice">Speak clearly.</span>
+        </div>
+        <div class="instruction-item">
+          <img src="assets/images/cam.png" alt="Camera icon" />
+          <span id="flip-cam">Flip the camera. Share!</span>
+        </div>
+      </div>
+    </div>
 
-     <!-- 📋 Instruction box with toggle -->
-<div class="instruction-box expandido" id="instructionBox">
-  <button class="instruction-toggle" id="instructionToggle"></button>
-  <div class="instruction-content">
-    <div class="instruction-item">
-      <img src="assets/images/hello.png" alt="Hello icon" />
-      <span id="welcome-text">Welcome! Let's begin.</span>
-    </div>
-    <div class="instruction-item">
-  <img src="assets/images/realtime.png" alt="Realtime icon" />
-  <span id="translator-label-2">Real-time translation.</span>  <!-- ⬅️ MUDE PARA ID ÚNICO -->
-</div>
-    <div class="instruction-item">
-      <img src="assets/images/Ancioso.png" alt="Loading icon" />
-      <span id="wait-connection">Waiting for connection.</span>
-    </div>
-    <div class="instruction-item">
-      <img src="assets/images/juntos.png" alt="Connected icon" />
-      <span id="both-connected">Both online.</span>
-    </div>
-    <div class="instruction-item">
-      <img src="assets/images/trduz.png" alt="Message icon" />
-      <span id="check-replies">Read the message.</span>
-    </div>
-    <div class="instruction-item">
-      <img src="assets/images/mic.png" alt="Mic icon" />
-      <span id="drop-voice">Speak clearly.</span>
-    </div>
-    <div class="instruction-item">
-      <img src="assets/images/cam.png" alt="Camera icon" />
-      <span id="flip-cam">Flip the camera. Share!</span>
-    </div>
-  </div>
-</div>
-    <!-- ============================================= -->
-    <!-- BOTÕES DE CONTROLE PRINCIPAIS -->
-    <!-- ============================================= -->
-    
-    <!-- 🔄 Botão para alternar câmera -->
     <button id="toggleCamera" class="camera-toggle-btn">
       <img src="assets/images/girar-camera.png" alt="Alternar Câmera" />
     </button>
 
-    <!-- ============================================= -->
-    <!-- ELEMENTOS DE TEXTO E LABELS -->
-    <!-- ============================================= -->
-
-    <!-- 🏷️ Subtítulo de tradução -->
     <div class="translator-label" id="translator-label">
       Real-time translation.
     </div>
 
-    <!-- ============================================= -->
-    <!-- INDICADORES DE IDIOMA E BANDEIRAS -->
-    <!-- ============================================= -->
+    <!-- 🆕 LINKS DE REDES SOCIAIS FIXOS (IGUAL AO RECEIVER) -->
+    <div class="social-links-fixed">
+      <a href="https://www.linkedin.com/company/lemurinnovation" target="_blank" class="social-btn-fixed linkedin">in</a>
+      <a href="https://www.instagram.com/lemurinnovation" target="_blank" class="social-btn-fixed instagram">ig</a>
+      <a href="https://www.facebook.com/people/Lemur-Innovation/100063853285249/" target="_blank" class="social-btn-fixed facebook">f</a>
+      <a href="https://lemurinnovation.com/" target="_blank" class="social-btn-fixed website">🌐</a>
+      <a href="https://wa.me/5511999999999" target="_blank" class="social-btn-fixed whatsapp">w</a>
+    </div>
 
-    <!-- 🏳️ Idiomas -->
     <div class="remoter-Lang">🏳️</div>
     <div class="local-Lang">🏳️</div>
     <div class="local-mic-Lang">🏳️</div>
 
-    <!-- ============================================= -->
-    <!-- SISTEMA DE VÍDEO E STREAMING -->
-    <!-- ============================================= -->
-
-    <!-- 🎥 Container de vídeo remoto -->
     <div class="video-wrapper">
-      <!-- Vídeo do usuário remoto -->
       <video id="remoteVideo" autoplay playsinline></video>
-
-      <!-- 📺 Vídeo local em Picture-in-Picture -->
       <div class="pip-local-wrapper">
         <video id="localVideo" autoplay muted playsinline></video>
       </div>
     </div>
    
-    <!-- ============================================= -->
-    <!-- ÁREA DE EXIBIÇÃO DE TEXTO TRADUZIDO -->
-    <!-- ============================================= -->
-
-    <!-- 🎙️ Texto traduzido por voz -->
     <div id="texto-recebido"></div>
 
-    <!-- ============================================= -->
-    <!-- INDICADORES DE IDIOMA ATUAL -->
-    <!-- ============================================= -->
-
-    <!-- 🏳️ Bandeira do idioma atual -->
     <div class="language-flag" id="currentLanguageFlag">🇧🇷</div>
 
-    <!-- ============================================= -->
-    <!-- BOTÕES DE CONTROLE DE ÁUDIO -->
-    <!-- ============================================= -->
-
-    <!-- 🎤 Botão de gravação -->
     <button class="record-btn" id="recordButton" disabled>🎤</button>
 
-  </div> <!-- Fim do .box-principal -->
+  </div>
 
-  <!-- ============================================= -->
-  <!-- MODAL DE GRAVAÇÃO (FORA DO CONTAINER PRINCIPAL) -->
-  <!-- ============================================= -->
-
-  <!-- 🎛️ Modal de gravação -->
   <div class="recording-modal hidden-until-ready" id="recordingModal">
     <div class="recording-indicator">
       <div class="recording-dot"></div>
@@ -171,44 +146,51 @@
     <button class="send-button" id="sendButton">📤</button>
   </div>
 
-  <!-- ============================================= -->
-  <!-- IMPORTAÇÃO DE BIBLIOTECAS EXTERNAS -->
-  <!-- ============================================= -->
-
-  <!-- 🔌 Socket.IO para comunicação em tempo real -->
-  <script src="https://lemur-signal-ings.onrender.com/socket.io/socket.io.js"></script>
-
-  <!-- ============================================= -->
-  <!-- SCRIPTS DE INICIALIZAÇÃO E CONFIGURAÇÃO -->
-  <!-- ============================================= -->
+  <!-- ✅ CORRIGIDO: Socket.IO DO CDN OFICIAL (IGUAL AO RECEIVER) -->
+  <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
 
   <script>
-    // ===== FUNÇÕES GLOBAIS DE CONTROLE DE INTERFACE =====
-    
-    // ✅ Libera interface após carregamento
-    window.liberarInterface = function () {
-      console.log('✅ Interface já está visível');
+    // ===== CONFIGURAÇÃO GLOBAL SINCRONIZADA =====
+    window.SIGNALING_SERVER_URL = 'https://lemur-signal.onrender.com';
+    window.APP_CONFIG = {
+      debug: true,
+      autoReconnect: true
     };
 
-    // ✅ Exibe erro de carregamento
-    window.mostrarErroCarregamento = function (mensagem) {
-      alert('Erro: ' + mensagem);
-    };
-
-    // ✅ Oculta overlay ao carregar
-    document.addEventListener('DOMContentLoaded', function () {
-      const overlay = document.querySelector('.info-overlay');
-      if (overlay) {
-        overlay.classList.add('hidden');
+    // ===== VERIFICAÇÃO DE DEPENDÊNCIAS (IGUAL AO RECEIVER) =====
+    function verificarDependencias() {
+      if (typeof io === 'undefined') {
+        console.error('❌ Socket.IO não carregado. Recarregando página...');
+        setTimeout(() => location.reload(), 2000);
+        return false;
       }
+      console.log('✅ Todas as dependências carregadas (Notificador)');
+      return true;
+    }
+
+    // ===== FUNÇÕES GLOBAIS ATUALIZADAS =====
+    window.liberarInterface = function () {
+      console.log('✅ Interface do notificador liberada');
+      document.getElementById('mobileLoading')?.classList.add('hidden');
+    };
+
+    window.mostrarErroCarregamento = function (mensagem) {
+      console.error('❌ Erro no notificador:', mensagem);
+      alert('Erro no Notificador: ' + mensagem);
+    };
+
+    // ===== INICIALIZAÇÃO SEGURA =====
+    document.addEventListener('DOMContentLoaded', function () {
+      console.log('🚀 Notificador - DOM Carregado');
+      
+      if (!verificarDependencias()) {
+        return;
+      }
+      
+      console.log('✅ Notificador pronto para inicialização');
     });
   </script>
 
-  <!-- ============================================= -->
-  <!-- IMPORTAÇÃO DOS SCRIPTS DA APLICAÇÃO -->
-  <!-- ============================================= -->
-
-  <!-- 📦 Scripts do notificador -->
   <script type="module" src="./js/notificador/notificador-ui.js"></script>
   <script src="./js/notificador/notificador-trz.js"></script>
 
