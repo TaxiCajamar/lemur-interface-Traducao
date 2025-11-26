@@ -1,4 +1,3 @@
-
 // 🎯 CONTROLE DO TOGGLE DAS INSTRUÇÕES
 function setupInstructionToggle() {
     const instructionBox = document.getElementById('instructionBox');
@@ -315,7 +314,7 @@ async function iniciarCameraAposPermissoes() {
             lang: lang
         };
 
-        // ✅ 5. CONFIGURA BOTÃO QR CODE (MESMO CÓDIGO DO ORIGINAL)
+        // ✅ 5. CONFIGURA BOTÃO QR CODE (MODIFICADO: QR CODE SIMPLIFICADO)
         document.getElementById('logo-traduz').addEventListener('click', function() {
             const overlay = document.querySelector('.info-overlay');
             const qrcodeContainer = document.getElementById('qrcode');
@@ -334,13 +333,14 @@ async function iniciarCameraAposPermissoes() {
                 return;
             }
             
-            console.log('🗝️ Gerando/Reabrindo QR Code e Link...');
+            console.log('🗝️ Gerando/Reabrindo QR Code SIMPLIFICADO...');
             
             if (qrcodeContainer) {
                 qrcodeContainer.innerHTML = '';
             }
             
-            const callerUrl = `${window.location.origin}/caller-selector.html?targetId=${window.qrCodeData.myId}&token=${encodeURIComponent(window.qrCodeData.token)}&lang=${encodeURIComponent(window.qrCodeData.lang)}`;
+            // 🎯 MODIFICAÇÃO 1: QR CODE APENAS COM ID (SEM TOKEN E SEM LANG)
+            const callerUrl = `${window.location.origin}/caller-selector.html?targetId=${window.qrCodeData.myId}`;
             
             QRCodeGenerator.generate("qrcode", callerUrl);
             
@@ -377,7 +377,7 @@ async function iniciarCameraAposPermissoes() {
                 overlay.classList.remove('hidden');
             }
             
-            console.log('✅ QR Code e Link gerados/reativados!');
+            console.log('✅ QR Code SIMPLIFICADO gerado/reativado!');
         });
 
         // Fechar QR Code ao clicar fora (MESMO CÓDIGO DO ORIGINAL)
@@ -421,7 +421,7 @@ async function iniciarCameraAposPermissoes() {
             await ttsHibrido.falarTextoSistemaHibrido(mensagem, elemento, imagemImpaciente, idiomaExato);
         });
 
-        // ✅ 7. CONFIGURA HANDLER DE CHAMADAS (MESMO CÓDIGO DO ORIGINAL)
+        // ✅ 7. CONFIGURA HANDLER DE CHAMADAS (MODIFICADO: ENVIA DADOS APÓS CONEXÃO)
         window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
             console.log('📞 Chamada recebida - Com/Sem câmera');
 
@@ -459,6 +459,17 @@ async function iniciarCameraAposPermissoes() {
                     const remoteLangElement = document.querySelector('.remoter-Lang');
                     if (remoteLangElement) remoteLangElement.textContent = '🔴';
                 }
+
+                // 🎯 MODIFICAÇÃO 2: ENVIA TOKEN E LANG DO RECEIVER VIA WEBRTC APÓS CONEXÃO
+                setTimeout(() => {
+                    const dadosCompletos = {
+                        tipo: 'dadosReceiver',
+                        token: window.qrCodeData.token,
+                        lang: window.qrCodeData.lang
+                    };
+                    window.rtcCore.sendData(JSON.stringify(dadosCompletos));
+                    console.log('📦 Dados do Receiver enviados via WebRTC:', dadosCompletos);
+                }, 1000);
             });
         };
 
