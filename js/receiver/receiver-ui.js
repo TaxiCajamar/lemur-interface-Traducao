@@ -460,15 +460,19 @@ async function iniciarCameraAposPermissoes() {
                     if (remoteLangElement) remoteLangElement.textContent = '🔴';
                 }
 
-                // 🎯 MODIFICAÇÃO 2: ENVIA TOKEN E LANG DO RECEIVER VIA WEBRTC APÓS CONEXÃO
+                // 🎯🎯🎯 MODIFICAÇÃO CRÍTICA: ENVIA TOKEN E LANG DO RECEIVER VIA WEBRTC APÓS CONEXÃO
                 setTimeout(() => {
-                    const dadosCompletos = {
-                        tipo: 'dadosReceiver',
-                        token: window.qrCodeData.token,
-                        lang: window.qrCodeData.lang
-                    };
-                    window.rtcCore.sendData(JSON.stringify(dadosCompletos));
-                    console.log('📦 Dados do Receiver enviados via WebRTC:', dadosCompletos);
+                    if (window.rtcCore && window.rtcCore.sendData && window.qrCodeData && window.qrCodeData.token) {
+                        const dadosCompletos = {
+                            tipo: 'dadosReceiver',
+                            token: window.qrCodeData.token,
+                            lang: window.qrCodeData.lang
+                        };
+                        window.rtcCore.sendData(JSON.stringify(dadosCompletos));
+                        console.log('📦 Dados do Receiver enviados via WebRTC:', dadosCompletos);
+                    } else {
+                        console.log('❌ Não foi possível enviar dados: WebRTC ou token não disponível');
+                    }
                 }, 1000);
             });
         };
