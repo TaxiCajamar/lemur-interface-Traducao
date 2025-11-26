@@ -307,9 +307,11 @@ async function iniciarConexaoVisual(receiverId, receiverToken, meuId, localStrea
         console.log('📞 Fase 2: Mostrando tela de chamada');
         const telaChamada = criarTelaChamando();
         
-        if (!notificacaoEnviada) {
+        if (!notificacaoEnviada && receiverToken) {
           console.log('📨 Enviando notificação wake-up...');
           notificacaoEnviada = await enviarNotificacaoWakeUp(receiverToken, receiverId, meuId, meuIdioma);
+        } else if (!receiverToken) {
+          console.log('⏳ Aguardando token do receiver via WebRTC para notificação...');
         }
         
         const tentarConexaoContinuamente = async () => {
@@ -421,15 +423,15 @@ async function aplicarBandeiraRemota(langCode) {
 
 // 🎯 FUNÇÃO PARA PROCESSAR DADOS RECEBIDOS DO RECEIVER
 function processarDadosReceiver(dados) {
-    console.log('📦 Processando dados recebidos do Receiver:', dados);
+    console.log('📦 CALLER: Dados recebidos do receiver:', dados);
     
     if (dados.tipo === 'dadosReceiver') {
         // ✅ Armazena o token recebido para uso nas traduções
         window.tokenRecebido = dados.token;
         window.receiverLangRecebida = dados.lang;
         
-        console.log('🔐 Token recebido via WebRTC:', dados.token);
-        console.log('🏳️ Idioma do Receiver recebido:', dados.lang);
+        console.log('🔐 CALLER: Token recebido via WebRTC:', dados.token);
+        console.log('🏳️ CALLER: Idioma do Receiver recebido:', dados.lang);
         
         // ✅ Aplica a bandeira do receiver
         aplicarBandeiraRemota(dados.lang);
@@ -440,6 +442,7 @@ function processarDadosReceiver(dados) {
             window.receiverInfo.lang = dados.lang;
         }
         
+        console.log('✅ CALLER: Configurações do receiver aplicadas via WebRTC');
         return true;
     }
     return false;
@@ -457,23 +460,23 @@ async function iniciarCameraAposPermissoes() {
         console.log('🌐 Inicializando WebRTC CALLER...');
         window.rtcCore = new WebRTCCore();
 
-        // ✅✅✅ CONFIGURA CALLBACKS ANTES DE INICIALIZAR (MODIFICADO)
+        // ✅✅✅ CONFIGURA CALLBACKS ANTES DE INICIALIZAR (MODIFICADO PARA RECEBER DADOS DO RECEIVER)
         window.rtcCore.setDataChannelCallback(async (mensagem) => {
-            // 🎯 MODIFICAÇÃO 1: VERIFICA SE É DADOS DO RECEIVER
+            // 🎯 PRIMEIRO: Verifica se são dados do receiver
             try {
                 const dados = JSON.parse(mensagem);
                 if (processarDadosReceiver(dados)) {
-                    console.log('✅ Dados do receiver processados com sucesso');
+                    console.log('✅ CALLER: Dados do receiver processados com sucesso');
                     return; // Não processa como mensagem normal
                 }
             } catch (e) {
                 // Não é JSON, processa como mensagem normal
             }
 
-            // ✅ MANTÉM TODO O CÓDIGO EXISTENTE DE TTS E TRADUÇÃO
+            // ✅✅✅ MANTÉM TODO O CÓDIGO EXISTENTE DE TTS E TRADUÇÃO
             ttsHibrido.iniciarSomDigitacao();
 
-            console.log('📩 Mensagem de texto recebida no CALLER:', mensagem);
+            console.log('📩 CALLER: Mensagem de texto recebida:', mensagem);
 
             const elemento = document.getElementById('texto-recebido');
             const imagemImpaciente = document.getElementById('lemurFixed');
@@ -510,7 +513,7 @@ async function iniciarCameraAposPermissoes() {
         window.rtcCore.isInitialized = true;
         console.log('✅ WebRTC CALLER inicializado com ID:', myId);
 
-        // 🎯 MODIFICAÇÃO 2: OBTÉM APENAS O ID DO RECEIVER (TOKEN E LANG VIRÃO VIA WEBRTC)
+        // 🎯🎯🎯 MODIFICAÇÃO CRÍTICA: OBTÉM APENAS O ID DO RECEIVER (TOKEN E LANG VIRÃO VIA WEBRTC)
         const urlParams = new URLSearchParams(window.location.search);
         const receiverId = urlParams.get('targetId') || '';
         
@@ -521,8 +524,8 @@ async function iniciarCameraAposPermissoes() {
           lang: null   // Será preenchido via WebRTC
         };
 
-        console.log('🎯 Receiver ID obtido do QR Code:', receiverId);
-        console.log('⏳ Token e idioma do receiver serão recebidos via WebRTC...');
+        console.log('🎯 CALLER: Receiver ID obtido do QR Code:', receiverId);
+        console.log('⏳ CALLER: Token e idioma do receiver serão recebidos via WebRTC...');
 
         // ✅✅✅ INICIA CONEXÃO MESMO SEM CÂMERA
         if (receiverId) {
@@ -533,7 +536,9 @@ async function iniciarCameraAposPermissoes() {
           setTimeout(() => {
             // ✅✅✅ ENVIA null se câmera falhou - WebRTC deve aceitar!
             const streamParaEnviar = window.localStream || null;
-            iniciarConexaoVisual(receiverId, null, myId, streamParaEnviar, meuIdioma); // Token será null inicialmente
+            
+            // Usa token null inicialmente - será atualizado via WebRTC
+            iniciarConexaoVisual(receiverId, null, myId, streamParaEnviar, meuIdioma);
           }, 1000);
         }
 
@@ -556,7 +561,7 @@ async function iniciarCameraAposPermissoes() {
         aplicarBandeiraLocal(navegadorLang);
         
         // ✅ Bandeira remota será aplicada quando receber dados via WebRTC
-        console.log('⏳ Aguardando dados do receiver para aplicar bandeira remota...');
+        console.log('⏳ CALLER: Aguardando dados do receiver para aplicar bandeira remota...');
 
     } catch (error) {
         console.error("❌ Erro não crítico na câmera CALLER:", error);
