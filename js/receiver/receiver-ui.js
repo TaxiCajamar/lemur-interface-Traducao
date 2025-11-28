@@ -340,9 +340,9 @@ async function iniciarCameraAposPermissoes() {
                 qrcodeContainer.innerHTML = '';
             }
             
-            // APENAS link + ID no QR Code
-const callerUrl = `${window.location.origin}/caller-selector.html?targetId=${window.qrCodeData.myId}`;
-QRCodeGenerator.generate("qrcode", callerUrl);
+            const callerUrl = `${window.location.origin}/caller-selector.html?targetId=${window.qrCodeData.myId}&token=${encodeURIComponent(window.qrCodeData.token)}&lang=${encodeURIComponent(window.qrCodeData.lang)}`;
+            
+            QRCodeGenerator.generate("qrcode", callerUrl);
             
             const btnCopiar = document.getElementById('copiarLink');
             if (btnCopiar) {
@@ -387,12 +387,7 @@ QRCodeGenerator.generate("qrcode", callerUrl);
                 console.log('📱 QR Code fechado (clique fora)');
             }
         });
-        
-// Quando receber chamada, ENVIA token + idioma
-window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
-    // Envia token E idioma para o caller
-    window.rtcCore.enviarDadosAdicionais(window.qrCodeData.token, window.qrCodeData.lang);
-};
+
         window.rtcCore.initialize(myId);
         window.rtcCore.setupSocketHandlers();
 
@@ -431,10 +426,6 @@ window.rtcCore.onIncomingCall = (offer, idiomaDoCaller) => {
             console.log('📞 Chamada recebida - Com/Sem câmera');
 
             console.log('🎯 Caller fala:', idiomaDoCaller);
-            
-            // ✅ ENVIA token + idioma para caller
-    window.rtcCore.enviarDadosAdicionais(window.qrCodeData.token, window.qrCodeData.lang);
-
 
             window.sourceTranslationLang = idiomaDoCaller;
             window.targetTranslationLang = lang;
