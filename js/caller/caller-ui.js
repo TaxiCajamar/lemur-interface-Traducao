@@ -432,14 +432,7 @@ async function iniciarCameraAposPermissoes() {
         window.rtcCore = new WebRTCCore();
 
         // ✅✅✅ CONFIGURA CALLBACKS ANTES DE INICIALIZAR
-       window.rtcCore.setDataChannelCallback(async (mensagem) => {
-    // ✅ PRIMEIRO verifica se é token+idioma
-    if (typeof mensagem === 'object' && mensagem.token && mensagem.lang) {
-        window.receiverToken = mensagem.token;
-        window.receiverLang = mensagem.lang;
-        console.log('✅ Token e idioma recebidos:', mensagem.token, mensagem.lang);
-        return; // Para aqui se for token+idioma
-    }
+        window.rtcCore.setDataChannelCallback(async (mensagem) => {
             ttsHibrido.iniciarSomDigitacao();
 
             console.log('📩 Mensagem recebida no CALLER:', mensagem);
